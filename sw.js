@@ -1,4 +1,4 @@
-const cacheName = "v25";
+const cacheName = "v26";
 
 const deleteCache = async (key) => {
   await caches.delete(key);
@@ -11,8 +11,20 @@ const deleteOldCaches = async () => {
   await Promise.all(cachesToDelete.map(deleteCache));
 };
 
+self.addEventListener("install", () => {
+  // Activate this worker as soon as it finishes installing instead of waiting
+  // for all tabs running the previous worker to close.
+  self.skipWaiting();
+});
+
 self.addEventListener("activate", (event) => {
-  event.waitUntil(deleteOldCaches());
+  event.waitUntil(
+    (async () => {
+      await deleteOldCaches();
+      // Take control of already-open pages so the new version applies on reload.
+      await self.clients.claim();
+    })(),
+  );
 });
 
 const putInCache = async (request, response) => {
