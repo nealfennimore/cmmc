@@ -145,7 +145,7 @@ export const Navigation = () => {
                                 </div>
                                 <div className="py-1" role="none">
                                     <a
-                                        href="https://github.com/JAKTOOL/cmmc"
+                                        href="https://github.com/nealfennimore/cmmc"
                                         className="block px-4 py-2 text-sm text-gray-700 flex flex-row"
                                         tabIndex={100}
                                     >
