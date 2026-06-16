@@ -63,20 +63,20 @@ export const Navigation = () => {
                         xmlns="http://www.w3.org/2000/svg"
                         aria-label="getCMMC mark"
                         viewBox="0 0 80 80"
-                        className="fill-white h-[50px]"
+                        className="fill-white h-[40px]"
                     >
                         <path
                             fill="#122a47"
                             stroke="#3fc7e8"
-                            stroke-width="3"
+                            strokeWidth="3"
                             d="m40 8 28 16v32L40 72 12 56V24z"
                         />
                         <path
                             fill="none"
                             stroke="#f2f5fa"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="4.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="4.5"
                             d="m27 39 10 9 17-19"
                         />
                     </svg>
