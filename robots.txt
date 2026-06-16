@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /
+
+Host: https://app.getcmmc.consulting
+Sitemap: https://app.getcmmc.consulting/sitemap.xml
