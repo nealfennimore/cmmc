@@ -4,6 +4,7 @@ import { useManifestContext } from "@/app/context/manifest";
 import { toNum, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBSecurityRequirement } from "@/app/db";
 import { useActionState } from "react";
+import { menuItemClasses } from "./ui";
 
 export const POAM = () => {
     const manifest = useManifestContext();
@@ -81,7 +82,7 @@ export const POAM = () => {
         <form action={formAction}>
             <button
                 type="submit"
-                className="block px-4 py-2 text-sm text-gray-700 w-full text-left flex items-center justify-between w-full"
+                className={menuItemClasses()}
                 disabled={isPending}
                 tabIndex={-1}
             >

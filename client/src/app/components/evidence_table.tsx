@@ -111,7 +111,7 @@ export const EvidenceTable = () => {
                         <Link
                             key={`${artifact.id}-${requirement}`}
                             href={`${path}/requirement/${requirement}`}
-                            className="text-blue-400 mr-2"
+                            className="mr-2 text-primary hover:underline"
                         >
                             {requirement}
                         </Link>
@@ -141,7 +141,7 @@ export const EvidenceTable = () => {
             className="w-full"
         >
             <section className="w-full flex flex-col">
-                <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+                <div className="relative overflow-x-auto rounded-lg border border-border shadow-sm">
                     <Table
                         sorters={sorters}
                         filters={filters}

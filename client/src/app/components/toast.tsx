@@ -15,7 +15,7 @@ interface ToastProps {
 const CloseIcon = ({ onClick }: { onClick: CallableFunction }) => (
     <button
         type="button"
-        className="ms-auto flex items-center justify-center text-body hover:text-heading bg-transparent box-border border border-transparent hover:bg-neutral-secondary-medium focus:ring-4 focus:ring-neutral-tertiary font-medium leading-5 rounded text-sm h-8 w-8 focus:outline-none"
+        className="ms-auto inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={onClick}
         aria-label="Close"
     >
@@ -41,7 +41,7 @@ const CloseIcon = ({ onClick }: { onClick: CallableFunction }) => (
 );
 
 const IconDanger = () => (
-    <div className="inline-flex items-center justify-center shrink-0 w-7 h-7 text-red-600 bg-red-300 rounded">
+    <div className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-red-100 text-red-600">
         <svg
             className="w-5 h-5"
             aria-hidden="true"
@@ -63,7 +63,7 @@ const IconDanger = () => (
     </div>
 );
 const IconWarning = () => (
-    <div className="inline-flex items-center justify-center shrink-0 w-7 h-7 text-yellow-600 bg-yellow-300 rounded">
+    <div className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-600">
         <svg
             className="w-5 h-5"
             aria-hidden="true"
@@ -86,9 +86,7 @@ const IconWarning = () => (
 );
 
 const IconSuccess = () => (
-    <div
-        className={`inline-flex items-center justify-center shrink-0 w-7 h-7 text-green-600 bg-green-300 rounded"`}
-    >
+    <div className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-green-100 text-green-600">
         <svg
             className="w-5 h-5"
             aria-hidden="true"
@@ -129,7 +127,7 @@ export const Toast = ({
     return (
         <div
             id={identifier}
-            className="flex items-center w-full max-w-sm p-4 text-body bg-white rounded-base shadow-xs border border-default mb-2"
+            className="mb-2 flex w-full max-w-sm items-center rounded-lg border border-border bg-card p-4 text-card-foreground shadow-md"
             role="alert"
             ref={node}
         >
@@ -144,7 +142,7 @@ export const ToastContainer = () => {
     const { notificationsList, removeNotification } = useNotification();
 
     return (
-        <aside className="fixed flex flex-col items-center w-full max-w-xs p-4 text-body bg-neutral-primary-soft rounded-base top-20 end-5 z-20">
+        <aside className="fixed end-5 top-20 z-20 flex w-full max-w-xs flex-col items-center p-4">
             {notificationsList.map((notification) => {
                 return (
                     <Toast

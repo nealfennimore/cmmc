@@ -12,7 +12,7 @@ export const Discussions = ({ requirementId }) => {
         <>
             {discussion.map((discussion) => (
                 <p
-                    className="text-base flex flex-col flex-1"
+                    className="flex flex-1 flex-col text-base leading-relaxed"
                     key={discussion.element_identifier}
                 >
                     {discussion.text}

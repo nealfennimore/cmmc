@@ -11,6 +11,7 @@ import { EvidenceState } from "./evidence";
 import { IconInfo } from "./icon_info";
 import { Popover } from "./popover";
 import { StatusState } from "./status";
+import { Heading } from "./ui";
 
 export const Requirements = ({ familyId }: { familyId: string }) => {
     const manifest = useManifestContext();
@@ -32,14 +33,18 @@ export const Requirements = ({ familyId }: { familyId: string }) => {
     return (
         <>
             <Breadcrumbs familyId={familyId} />
-            <h2 className="text-4xl block sm:flex flex-row items-center">
+            <Heading level={2} className="flex flex-wrap items-center gap-2">
                 Requirements for {family.element_identifier}: {family.title}{" "}
-                <button className="ml-2" popoverTarget="requirements-popover">
+                <button
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                    popoverTarget="requirements-popover"
+                    aria-label="About requirements"
+                >
                     <IconInfo inline={false} />
                 </button>
                 <StatusState status={familyStatus?.status} />
                 <EvidenceState evidence={familyEvidence?.hasEvidence} />
-            </h2>
+            </Heading>
             <Popover id="requirements-popover">
                 <IconInfo />
                 <span>Requirements from NIST 800-171 {revision}</span>
@@ -50,18 +55,15 @@ export const Requirements = ({ familyId }: { familyId: string }) => {
                 next={next}
                 elementType="family"
             />
-            <ol>
+            <ol className="flex w-full flex-col gap-3">
                 {requirements?.map((requirement) => {
                     const withdrawn =
                         manifest.withdrawReason.byRequirements[requirement.id];
                     const className = withdrawn ? "line-through" : "";
                     return (
-                        <li
-                            className="flex items-center mb-2"
-                            key={requirement.element_identifier}
-                        >
+                        <li key={requirement.element_identifier}>
                             <Link
-                                className="flex"
+                                className="flex items-center rounded-lg border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary hover:bg-secondary"
                                 href={`${path}/requirement/${requirement.element_identifier}`}
                             >
                                 <StatusState
@@ -69,10 +71,12 @@ export const Requirements = ({ familyId }: { familyId: string }) => {
                                         requirement.element_identifier,
                                     )}
                                 />
-                                <h3 className={`text-2xl ${className}`}>
-                                    {requirement.element_identifier}:{" "}
+                                <span className={`text-lg font-medium ${className}`}>
+                                    <span className="text-muted-foreground">
+                                        {requirement.element_identifier}:
+                                    </span>{" "}
                                     {requirement.title}
-                                </h3>
+                                </span>
                                 <EvidenceState
                                     evidence={familyEvidence?.requirementEvidence(
                                         requirement.element_identifier,
@@ -82,9 +86,7 @@ export const Requirements = ({ familyId }: { familyId: string }) => {
                         </li>
                     );
                 })}
-                <br />
             </ol>
-            <br />
         </>
     );
 };

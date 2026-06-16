@@ -43,7 +43,7 @@ export const FamilyBranch = ({
             <div className="flex items-center">
                 <StatusState status={familyStatus?.status} size="sm" />
                 <Link
-                    className="grow"
+                    className="grow hover:underline"
                     href={`${path}/family/${family.element_identifier}`}
                 >
                     {family.element_identifier}: {family.title}
@@ -122,6 +122,7 @@ export const RequirementLeaf = ({
         >
             <StatusState status={status} size="xs" />
             <Link
+                className="hover:underline"
                 href={`${path}/requirement/${requirement.element_identifier}`}
             >
                 {requirement.element_identifier}:{" "}
@@ -145,15 +146,15 @@ export const Tree = ({
     return (
         <div
             id="drawer-contact"
-            className={`fixed top-0 right-0 z-40 h-screen p-4 overflow-y-auto transition-transform md:border-l border-gray-600 ${
+            className={`fixed right-0 top-0 z-40 h-screen w-full overflow-y-auto bg-slate-900 p-4 text-slate-100 transition-transform md:max-w-md md:border-l md:border-slate-800 ${
                 !isOpen ? "translate-x-full" : ""
-            } w-full md:max-w-md bg-gray-900 text-gray-100`}
+            }`}
             tabIndex={-1}
             aria-labelledby="drawer-contact-label"
         >
             <h5
                 id="drawer-left-label"
-                className="inline-flex items-center mb-4 text-base font-semibold text-gray-500 dark:text-gray-400"
+                className="mb-4 inline-flex items-center text-base font-semibold text-slate-400"
             >
                 Overview
             </h5>
@@ -161,7 +162,7 @@ export const Tree = ({
                 type="button"
                 data-drawer-hide="drawer-left-example"
                 aria-controls="drawer-left-example"
-                className="text-gray-400 bg-transparent rounded-lg text-sm w-8 h-8 absolute top-2.5 end-2.5 inline-flex items-center justify-center hover:bg-gray-600 hover:text-white"
+                className="absolute end-2.5 top-2.5 inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => setOpen(false)}
             >
                 <svg

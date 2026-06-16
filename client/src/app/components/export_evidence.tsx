@@ -3,6 +3,7 @@ import { IDB, IDBEvidenceV2 } from "@/app/db";
 import { toFSName } from "@/app/utils/file";
 import Link from "next/link";
 import { useActionState } from "react";
+import { menuItemClasses } from "./ui";
 
 const download = async (artifact: IDBEvidenceV2) => {
     const file = new File([artifact.data], artifact.filename, {
@@ -22,7 +23,7 @@ const download = async (artifact: IDBEvidenceV2) => {
 export const ViewEvidence = ({ path }) => (
     <Link
         href={`${path}/evidence`}
-        className="block px-4 py-2 text-sm text-gray-700 w-full text-left flex items-center justify-between w-full"
+        className={menuItemClasses()}
         tabIndex={-1}
     >
         <span>View Evidence</span>
@@ -63,7 +64,7 @@ export const ExportEvidence = () => {
         <form action={formAction}>
             <button
                 type="submit"
-                className="block px-4 py-2 text-sm text-gray-700 w-full text-left flex items-center justify-between w-full"
+                className={menuItemClasses()}
                 disabled={isPending}
                 tabIndex={-1}
             >

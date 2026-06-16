@@ -3,6 +3,7 @@ import { ElementWrapper } from "@/api/entities/Framework";
 import { toPath, useRevisionContext } from "@/app/context/revision";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { buttonClasses } from "./ui";
 
 interface PageNavigationProps {
     previous?: ElementWrapper | undefined;
@@ -42,15 +43,6 @@ export const ContentNavigation = ({
     const previousRef = useRef<HTMLAnchorElement>(null);
     const nextRef = useRef<HTMLAnchorElement>(null);
 
-    let nextClasses = "rounded-r-lg rounded-l-lg";
-    if (previous) {
-        nextClasses = "rounded-r-lg";
-    }
-    let prevClasses = "rounded-r-lg rounded-l-lg";
-    if (next) {
-        prevClasses = "rounded-l-lg border-r";
-    }
-
     useEffect(() => {
         if (nextRef.current && inViewport(nextRef.current)) {
             nextRef.current.focus();
@@ -63,16 +55,16 @@ export const ContentNavigation = ({
     const nextElement = elementIdentity(next);
 
     return (
-        <aside className="w-5/6 flex flex-row mb-4">
+        <aside className="mb-4 flex w-full flex-row flex-wrap gap-2">
             {previous && (
                 <Link
                     href={`${path}/${elementType}/${prevElement}`}
-                    className={`flex flex-row items-center bg-gray-200 text-gray-700 border-gray-400 py-2 px-4 border-b-4 hover:bg-gray-300 ${prevClasses}`}
+                    className={buttonClasses({ variant: "outline" })}
                     tabIndex={10}
                     ref={previousRef}
                 >
                     <svg
-                        className="w-6 h-6 text-gray-500"
+                        className="h-5 w-5 text-muted-foreground"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -85,7 +77,7 @@ export const ContentNavigation = ({
                             d="M15 19l-7-7 7-7"
                         ></path>
                     </svg>
-                    <span className="mr-4 ml-2">
+                    <span className="truncate">
                         <span>{prevElement}</span>
                         {!!previous.title && (
                             <span className="hidden md:inline">
@@ -98,11 +90,11 @@ export const ContentNavigation = ({
             {next && (
                 <Link
                     href={`${path}/${elementType}/${nextElement}`}
-                    className={`flex flex-row items-center bg-gray-200 text-gray-700 border-gray-400 py-2 px-4 border-b-4 hover:bg-gray-300 ${nextClasses}`}
+                    className={buttonClasses({ variant: "outline" })}
                     tabIndex={11}
                     ref={nextRef}
                 >
-                    <span className="ml-4 mr-2">
+                    <span className="truncate">
                         <span>{nextElement}</span>
                         {!!next.title && (
                             <span className="hidden md:inline">
@@ -111,7 +103,7 @@ export const ContentNavigation = ({
                         )}
                     </span>
                     <svg
-                        className="w-6 h-6 text-gray-500"
+                        className="h-5 w-5 text-muted-foreground"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
