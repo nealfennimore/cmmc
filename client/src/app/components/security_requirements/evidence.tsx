@@ -9,6 +9,7 @@ import { isImage } from "@/app/utils/file";
 import {
     ChangeEvent,
     Dispatch,
+    Fragment,
     ReactNode,
     SetStateAction,
     useActionState,
@@ -241,9 +242,13 @@ const Badge = ({
         return <NameChange artifact={artifact} />;
     }
 
+    // URL evidence stays blue (info); file evidence is a subtle gray (neutral)
+    // so the two groups read differently at a glance.
+    const variant = artifact.type === "url" ? "info" : "neutral";
+
     return (
         <span
-            className={badgeClasses("info", "me-2 mb-2 shrink")}
+            className={badgeClasses(variant, "me-2 mb-2 shrink")}
             onContextMenu={onContextMenu}
         >
             {children}
@@ -275,7 +280,7 @@ const Badge = ({
 export const FileBadge = ({ artifact }: { artifact: IDBEvidenceV2 }) => {
     return (
         <button
-            className="flex items-center border-r border-blue-200 pr-2"
+            className="flex items-center border-r border-border pr-2"
             title={`${artifact.data.byteLength} bytes | ${artifact.type}`}
             onClick={() => viewFile(artifact)}
         >
@@ -378,15 +383,27 @@ export const EvidenceBadges = ({
     lastResetAt: null | number;
     requirementId: string;
 }) => {
-    return evidence?.map((artifact) => (
-        <EvidenceBadge
-            key={artifact.id}
-            artifact={artifact}
-            evidence={evidence}
-            setEvidence={setEvidence}
-            lastResetAt={lastResetAt}
-            requirementId={requirementId}
-        />
+    // Show URL evidence first, then files. Files are pushed onto their own
+    // line via a full-width flex break so links and files read as two groups.
+    const isUrl = (artifact: IDBEvidenceV2) => artifact.type === "url";
+    const sorted = [...(evidence ?? [])].sort(
+        (a, b) => Number(isUrl(b)) - Number(isUrl(a)),
+    );
+    const firstFileIndex = sorted.findIndex((artifact) => !isUrl(artifact));
+
+    return sorted.map((artifact, index) => (
+        <Fragment key={artifact.id}>
+            {index === firstFileIndex && index > 0 && (
+                <span className="basis-full" aria-hidden="true" />
+            )}
+            <EvidenceBadge
+                artifact={artifact}
+                evidence={evidence}
+                setEvidence={setEvidence}
+                lastResetAt={lastResetAt}
+                requirementId={requirementId}
+            />
+        </Fragment>
     ));
 };
 
