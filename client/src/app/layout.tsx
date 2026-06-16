@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DM_Serif_Display } from "next/font/google";
 import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
@@ -12,6 +13,11 @@ const geistMono = localFont({
     src: "./fonts/GeistMonoVF.woff",
     variable: "--font-geist-mono",
     weight: "100 900",
+});
+const dmSerifDisplay = DM_Serif_Display({
+    subsets: ["latin"],
+    weight: "400",
+    variable: "--font-dm-serif",
 });
 
 export const metadata: Metadata = {
@@ -35,7 +41,7 @@ export default function RootLayout({
                 <Script id="service-worker">{`"serviceWorker" in navigator && navigator.serviceWorker.register("/sw.js", { scope: "/" });`}</Script>
             </head>
             <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+                className={`${geistSans.variable} ${geistMono.variable} ${dmSerifDisplay.variable} antialiased`}
             >
                 {children}
             </body>
