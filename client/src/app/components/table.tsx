@@ -2,6 +2,7 @@
 import { debounce } from "./security_requirements/utils";
 
 import React, { useEffect, useState } from "react";
+import { Input } from "./ui";
 
 interface TableRowProps {
     values: string[];
@@ -55,15 +56,13 @@ const Sortable = ({ text, colIndex, orders, setOrders }: SortableProps) => {
     };
 
     const order = orders?.[colIndex] ?? Order.NONE;
-    const top =
-        order === Order.ASC ? "" : "dark:stroke-zinc-500 stroke-zinc-100";
-    const bottom =
-        order === Order.DESC ? "" : "dark:stroke-zinc-500 stroke-zinc-100";
+    const top = order === Order.ASC ? "" : "stroke-slate-300";
+    const bottom = order === Order.DESC ? "" : "stroke-slate-300";
 
     return (
         <button
             type="button"
-            className="flex items-center text-xs text-gray-100 uppercase"
+            className="flex items-center gap-1 text-xs font-medium uppercase text-muted-foreground transition-colors hover:text-foreground"
             onClick={toggleOrder}
         >
             {text}
@@ -113,10 +112,10 @@ interface SearchableProps {
 const Searchable = ({ text, colIndex }: SearchableProps) => {
     return (
         <span className="ml-4">
-            <input
+            <Input
                 name={`searches_${colIndex}`}
                 type="text"
-                className="w-full px-2 py-1 text-xs rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="h-7 px-2 text-xs"
                 placeholder={`Filter ${text}`}
             />
         </span>
@@ -151,7 +150,7 @@ function TableHeader({
     return (
         <th
             scope="col"
-            className={`px-6 py-3 uppercase ${className ?? ""}`}
+            className={`px-6 py-3 ${className ?? ""}`}
             data-searchable="true"
         >
             <div className="flex items-center">
@@ -164,7 +163,7 @@ function TableHeader({
                     />
                 )}
                 {!sorter && (
-                    <span className="text-xs uppercase bg-zinc-50 dark:bg-zinc-700 dark:text-zinc-300">
+                    <span className="text-xs font-medium uppercase text-muted-foreground">
                         {text}
                     </span>
                 )}
@@ -183,7 +182,7 @@ function TableHeader({
 
 function TableRow({ columns, classNames, onClick }: TableRowProps) {
     return (
-        <tr className="odd:bg-gray-100 even:bg-gray-200 border-b border-zinc-200">
+        <tr className="border-b border-border bg-card transition-colors hover:bg-secondary">
             {columns.map((Element, idx) => (
                 <td
                     key={idx}
@@ -343,10 +342,10 @@ export function Table({
 
     return (
         <table
-            className="w-full text-sm text-left rtl:text-right text-gray-500"
+            className="w-full text-left text-sm text-foreground rtl:text-right"
             onChange={debouncedHandleChange}
         >
-            <thead className="text-xs uppercase bg-gray-800">
+            <thead className="border-b border-border bg-secondary text-xs uppercase text-muted-foreground">
                 <tr>
                     {tableHeaders.map((headerProps, index) => (
                         <TableHeader

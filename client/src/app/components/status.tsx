@@ -63,6 +63,17 @@ export const calcStatus = (statuses: Status[] | undefined) => {
     return Status.NOT_STARTED;
 };
 
+// Static map so Tailwind can see the full class names (it purges `text-${size}`).
+const sizeClasses: Record<string, string> = {
+    xs: "text-xs",
+    sm: "text-sm",
+    base: "text-base",
+    lg: "text-lg",
+    xl: "text-xl",
+    "2xl": "text-2xl",
+};
+export const toSizeClass = (size = "xl") => sizeClasses[size] ?? "text-xl";
+
 const StatusSpan = ({
     status,
     size = "xl",
@@ -74,7 +85,7 @@ const StatusSpan = ({
         case Status.IMPLEMENTED:
             return (
                 <span
-                    className={`text-${size} text-green-600 mx-2`}
+                    className={`${toSizeClass(size)} text-green-600 mx-2`}
                     title="Implemented"
                 >
                     🟢
@@ -83,7 +94,7 @@ const StatusSpan = ({
         case Status.NOT_IMPLEMENTED:
             return (
                 <span
-                    className={`text-${size} text-red-600 mx-2`}
+                    className={`${toSizeClass(size)} text-red-600 mx-2`}
                     title="Not implemented"
                 >
                     🔴
@@ -92,7 +103,7 @@ const StatusSpan = ({
         case Status.NOT_APPLICABLE:
             return (
                 <span
-                    className={`text-${size} text-black mx-2`}
+                    className={`${toSizeClass(size)} text-black mx-2`}
                     title="Not applicable"
                 >
                     ⚫
@@ -101,7 +112,7 @@ const StatusSpan = ({
         case Status.NEEDS_WORK:
             return (
                 <span
-                    className={`text-${size} text-black mx-2`}
+                    className={`${toSizeClass(size)} text-black mx-2`}
                     title="Has work remaining"
                 >
                     🚧
@@ -110,7 +121,7 @@ const StatusSpan = ({
         case Status.PARTIALLY_IMPLEMENTED:
             return (
                 <span
-                    className={`text-${size} text-black mx-2`}
+                    className={`${toSizeClass(size)} text-black mx-2`}
                     title="Partially implemented"
                 >
                     🟡
@@ -119,7 +130,7 @@ const StatusSpan = ({
         default:
             return (
                 <span
-                    className={`text-${size} text-gray-600 mx-2`}
+                    className={`${toSizeClass(size)} text-muted-foreground mx-2`}
                     title="Not started"
                 >
                     ⚪

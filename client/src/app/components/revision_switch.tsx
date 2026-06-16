@@ -74,10 +74,10 @@ export const RevisionSwitch = () => {
                 title={`Toggle 800-171 revision to ${
                     nextRevision
                 }. CMMC currently only uses R2.`}
-                className={`px-3 me-2 text-sm font-medium focus:z-20 focus:ring-4 focus:ring-gray-100 focus:ring-gray-700 text-gray-500 border-gray-600 border-r flex items-center ${
+                className={`me-2 inline-flex items-center rounded-md border px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     revision === Revision.V2
-                        ? "bg-green-300 border border-green-500 text-green-600 hover:text-green-800"
-                        : "bg-yellow-300 border border-yellow-500 text-yellow-600 hover:text-yellow-800"
+                        ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                        : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
                 }`}
             >
                 {revision}

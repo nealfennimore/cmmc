@@ -17,14 +17,14 @@ export const TotalScore = ({}: Props) => {
         revision === Revision.V2 ? globalScore?.rev2Score : globalScore?.score;
     return (
         <div>
-            <span className="text-sm text-gray-400 mr-2">SPRS:</span>
-            <span className="text-sm text-gray-400 mr-2">
+            <span className="mr-1 text-sm text-muted-foreground">SPRS:</span>
+            <span className="mr-2 text-sm font-medium text-foreground">
                 {renderNumber(score ?? 0)}/{GlobalScore.maxScore}
             </span>
             {revision === Revision.V3 && (
                 <>
-                    <button popoverTarget="sprs-popover">
-                        <IconInfo className="fill-gray-300" />
+                    <button popoverTarget="sprs-popover" aria-label="SPRS info">
+                        <IconInfo className="fill-muted-foreground" />
                     </button>
                     <Popover id="sprs-popover">
                         <IconInfo />

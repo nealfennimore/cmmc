@@ -3,21 +3,45 @@
 @tailwind utilities;
 
 :root {
-    --background: #ffffff;
-    --foreground: #171717;
-}
+    /* Surfaces */
+    --background: #f8fafc; /* slate-50  — app canvas */
+    --foreground: #0f172a; /* slate-900 — body text */
+    --surface: #ffffff;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
 
-/* @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-} */
+    /* Brand */
+    --primary: #2563eb; /* blue-600 */
+    --primary-foreground: #ffffff;
+
+    /* Neutrals */
+    --secondary: #f1f5f9; /* slate-100 */
+    --secondary-foreground: #0f172a;
+    --muted: #f1f5f9; /* slate-100 */
+    --muted-foreground: #64748b; /* slate-500 */
+    --accent: #eff6ff; /* blue-50 */
+    --accent-foreground: #1e3a8a; /* blue-900 */
+
+    /* Semantic */
+    --destructive: #dc2626; /* red-600 */
+    --destructive-foreground: #ffffff;
+    --success: #16a34a; /* green-600 */
+    --success-foreground: #ffffff;
+    --warning: #d97706; /* amber-600 */
+    --warning-foreground: #ffffff;
+
+    /* Lines & focus */
+    --border: #e2e8f0; /* slate-200 */
+    --input: #cbd5e1; /* slate-300 */
+    --ring: #3b82f6; /* blue-500 */
+
+    --radius: 0.5rem;
+}
 
 body {
     color: var(--foreground);
     background: var(--background);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
 body > div {
@@ -26,7 +50,9 @@ body > div {
 
 .discussion > a,
 .md-output a {
-    color: #3b82f6;
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
 .md-output > * {
@@ -47,8 +73,9 @@ body > div {
 }
 
 .md-output blockquote {
-    border-left: 2px solid silver;
-    padding-left: 4px;
+    border-left: 2px solid var(--border);
+    padding-left: 8px;
+    color: var(--muted-foreground);
 }
 
 .md-output h6 {

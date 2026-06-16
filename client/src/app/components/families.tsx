@@ -9,6 +9,7 @@ import { EvidenceState } from "./evidence";
 import { IconInfo } from "./icon_info";
 import { Popover } from "./popover";
 import { StatusState } from "./status";
+import { Heading } from "./ui";
 
 export const Families = () => {
     const revision = useRevisionContext();
@@ -24,12 +25,16 @@ export const Families = () => {
     return (
         <>
             <Breadcrumbs />
-            <h2 className="text-4xl block sm:flex items-center">
+            <Heading level={2} className="flex flex-wrap items-center gap-2">
                 SP NIST 800-171 Families {revision}
-                <button className="ml-2" popoverTarget="families-popover">
+                <button
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                    popoverTarget="families-popover"
+                    aria-label="About families"
+                >
                     <IconInfo inline={false} />
                 </button>
-            </h2>
+            </Heading>
             <Popover id="families-popover">
                 <IconInfo />
                 <span>
@@ -38,35 +43,31 @@ export const Families = () => {
                     CMMC revision.
                 </span>
             </Popover>
-            <ul>
+            <ul className="flex w-full flex-col gap-3">
                 {families.map((family) => (
-                    <li className="flex mb-2" key={family.element_identifier}>
+                    <li key={family.element_identifier}>
                         <Link
-                            className="flex flex-col"
+                            className="flex items-center rounded-lg border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary hover:bg-secondary"
                             href={`${path}/family/${family.element_identifier}`}
                         >
-                            <h3 className="text-2xl flex flex-row">
-                                <StatusState
-                                    status={
-                                        globalStatus?.[
-                                            family.element_identifier
-                                        ]?.status
-                                    }
-                                />
-                                <span className="flex flex-col mr-2">
+                            <StatusState
+                                status={
+                                    globalStatus?.[family.element_identifier]
+                                        ?.status
+                                }
+                            />
+                            <span className="text-lg font-medium">
+                                <span className="text-muted-foreground">
                                     {family.element_identifier}:
-                                </span>
-                                <span className="flex flex-col">
-                                    {family.title}
-                                </span>
-                                <EvidenceState
-                                    evidence={
-                                        globalEvidence?.[
-                                            family.element_identifier
-                                        ]?.hasEvidence
-                                    }
-                                />
-                            </h3>
+                                </span>{" "}
+                                {family.title}
+                            </span>
+                            <EvidenceState
+                                evidence={
+                                    globalEvidence?.[family.element_identifier]
+                                        ?.hasEvidence
+                                }
+                            />
                         </Link>
                     </li>
                 ))}

@@ -3,6 +3,7 @@ import { ElementWrapper } from "@/api/entities/Framework";
 import { marked } from "marked";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Status, StatusState } from "../status";
+import { Label, Select, Textarea } from "../ui";
 
 export interface SecurityRequirementProps {
     securityRequirement: ElementWrapper;
@@ -43,14 +44,13 @@ export const SelectStatus = ({
 
     return (
         <div onBlur={emitChange} onClick={setToChanged} onKeyUp={setToChanged}>
-            <select
+            <Select
                 // HACK: To get around react resetting select element back to default value
                 // as it doesn't re-render properly otherwise
                 key={`${id}-${isPending}`}
                 id={id}
                 name={id}
                 ref={inputRef}
-                className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                 disabled={isPending}
                 defaultValue={defaultValue}
                 tabIndex={20}
@@ -64,7 +64,7 @@ export const SelectStatus = ({
                 )}
                 <option value={Status.NOT_APPLICABLE}>Not Applicable</option>
                 <option value={Status.NOT_STARTED}>Not Started</option>
-            </select>
+            </Select>
             {/* 
                 NOTE: Don't allow status to be stored until an actual change has occurred (first committed to as user by clicking on the select parent element)
 
@@ -86,12 +86,9 @@ export const SecurityRequirementSelect = ({
     const key = `${securityRequirement.subSubRequirement}.status`;
     return (
         <div className="flex flex-col md:mr-2 lg:mr-4" key={key}>
-            <label
-                htmlFor={key}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 my-2"
-            >
+            <Label htmlFor={key} className="my-2">
                 Status
-            </label>
+            </Label>
             <SelectStatus
                 id={key}
                 isPending={isPending}
@@ -175,32 +172,29 @@ export const SecurityRequirementNote = ({
 
     return (
         <div className="flex flex-col grow w-full lg:w-10/12" ref={parentRef}>
-            <label
-                htmlFor={key}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 my-2"
-            >
+            <Label htmlFor={key} className="my-2">
                 Description
-            </label>
+            </Label>
             <div className="relative grow-wrap" ref={growAreaRef}>
-                <textarea
+                <Textarea
                     ref={textareaRef}
                     tabIndex={20}
                     name={key}
                     id={key}
                     onInput={replicateGrowArea}
                     onFocus={replicateGrowArea}
-                    className={`min-h-32 grow z-0 w-full rounded-md border border-input bg-transparent px-3 py-3 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm ${
+                    className={`z-0 grow ${
                         showOutput && textareaRef?.current?.value
                             ? "absolute opacity-0"
                             : ""
                     }`}
                     disabled={isPending}
                     defaultValue={initialState[key]}
-                ></textarea>
+                ></Textarea>
                 <div
                     ref={mdRef}
                     tabIndex={-1}
-                    className={`min-h-32 relative z-10 md-output w-full rounded-md border border-input bg-white px-3 py-3 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm ${
+                    className={`md-output relative z-10 min-h-32 w-full rounded-md border border-input bg-surface px-3 py-2 text-sm text-foreground shadow-sm ${
                         showOutput && textareaRef?.current?.value
                             ? ""
                             : "hidden"
@@ -220,8 +214,8 @@ export const SecurityRequirement = ({
 }: SecurityRequirementProps) => {
     return (
         <li className="mb-6">
-            <fieldset className="flex flex-col grow">
-                <legend className="text-2xl flex flex-row items-center text-left">
+            <fieldset className="flex grow flex-col">
+                <legend className="flex flex-row items-center text-left text-xl font-semibold tracking-tight">
                     <StatusState
                         status={
                             initialState[
@@ -233,7 +227,9 @@ export const SecurityRequirement = ({
                         {securityRequirement.subSubRequirement}
                     </h4>
                 </legend>
-                <p className="text-lg my-2">{securityRequirement.text}</p>
+                <p className="my-2 text-base leading-relaxed">
+                    {securityRequirement.text}
+                </p>
                 <div className="flex flex-col md:flex-row">
                     <SecurityRequirementSelect
                         securityRequirement={securityRequirement}

@@ -7,6 +7,7 @@ import { EvidenceState } from "../evidence";
 import { IconInfo } from "../icon_info";
 import { Popover } from "../popover";
 import { StatusState } from "../status";
+import { Heading } from "../ui";
 import { SecurityForm } from "./security_form";
 
 const secReqReg = /\d{2}.\d{2}.\d{2},?/gm;
@@ -26,7 +27,7 @@ const WithdrawnInto = ({ text }: { text: string }) => {
                 <Link
                     key={_id}
                     href={`${path}/requirement/${_id}`}
-                    className="text-xs mr-1"
+                    className="mr-1 text-xs text-primary hover:underline"
                 >
                     {id}
                 </Link>
@@ -59,26 +60,30 @@ export const WithdrawnSecurityRequirement = ({
         <>
             <Breadcrumbs requirementId={requirementId} />
 
-            <h3 className="text-3xl mt-6 block sm:flex items-center">
+            <Heading
+                level={2}
+                as="h3"
+                className="mt-6 flex flex-wrap items-center gap-2"
+            >
                 Security Requirements for {requirement.requirement}
                 <StatusState statuses={statuses} />
                 <EvidenceState evidence={evidence} />
-            </h3>
+            </Heading>
 
             <div
                 id="alert-additional-content-5"
-                className="p-4 border border-yellow-100 text-yellow-800  rounded-lg bg-yellow-50 "
+                className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800"
                 role="alert"
             >
-                <div className="flex items-center">
+                <div className="flex items-center gap-1">
                     <IconInfo />
                     <span className="sr-only">Info</span>
-                    <h3 className="text-lg font-sm text-gray-800 ">
+                    <h4 className="text-lg font-semibold text-amber-900">
                         Withdrawn
-                    </h3>
+                    </h4>
                 </div>
-                <div className="mt-2 mb-4 text-xs text-gray-800">
-                    <p className="mb-2">
+                <div className="mt-2 text-sm text-amber-800">
+                    <p>
                         This security requirement has been withdrawn from
                         NIST-SP 800-171 revision 3, but is retained as CMMC is
                         using revision 2.
@@ -101,7 +106,7 @@ export const WithdrawnSecurityRequirement = ({
                         href={`https://csrc.nist.gov/projects/cprt/catalog#/cprt/framework/version/SP_800_171_3_0_0/home?element=${requirement.id}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs text-gray-600"
+                        className="text-xs text-muted-foreground hover:text-foreground hover:underline"
                     >
                         View CPRT {requirement.id}
                     </a>

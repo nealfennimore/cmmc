@@ -8,7 +8,7 @@ export const Notification = ({
 }) => (
     <div
         {...props}
-        className="w-full max-w-md text-sm text-blue-800 rounded-lg bg-blue-50 border border-blue-300 normal-case p-4 shadow-md z-0"
+        className="z-0 w-full max-w-md rounded-lg border border-blue-200 bg-accent p-4 text-sm normal-case text-accent-foreground shadow-md"
     >
         {children}
     </div>

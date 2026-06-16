@@ -49,12 +49,12 @@ export const Breadcrumbs = ({ familyId, requirementId }: BreadcrumbsProps) => {
     }
 
     return (
-        <aside className="flex flex-wrap justify-between items-center w-full mx-auto">
-            <div>
+        <aside className="mx-auto flex w-full flex-wrap items-center justify-between gap-2">
+            <nav aria-label="Breadcrumb" className="flex flex-wrap items-center">
                 {links.map((link, index) => (
-                    <span key={index}>
+                    <span key={index} className="flex items-center">
                         <Link
-                            className="text-sm text-gray-600"
+                            className="text-sm text-muted-foreground transition-colors hover:text-foreground aria-disabled:pointer-events-none aria-disabled:text-foreground"
                             href={link.href}
                             aria-disabled={link.disabled}
                             tabIndex={60}
@@ -62,11 +62,13 @@ export const Breadcrumbs = ({ familyId, requirementId }: BreadcrumbsProps) => {
                             {link.text}
                         </Link>
                         {index < links.length - 1 && (
-                            <span className="text-sm mx-2"> &gt; </span>
+                            <span className="mx-2 text-sm text-muted-foreground">
+                                /
+                            </span>
                         )}
                     </span>
                 ))}
-            </div>
+            </nav>
             <div className="flex items-center">
                 <RevisionSwitch />
                 <TotalScore />

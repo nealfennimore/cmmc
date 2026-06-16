@@ -1,6 +1,7 @@
 "use client";
 import { viewFile } from "@/app/components/security_requirements/utils";
 import { IDBEvidenceV2 } from "@/app/db";
+import { toSizeClass } from "./status";
 
 interface EvidenceStateProps {
     evidence?: boolean[] | boolean;
@@ -17,7 +18,7 @@ const EvidenceSpan = ({
     return (
         evidence && (
             <span
-                className={`text-${size} text-gray-600 mx-2`}
+                className={`${toSizeClass(size)} text-muted-foreground mx-2`}
                 title="Has evidence"
             >
                 🧾
@@ -81,7 +82,7 @@ export const FileBadge = ({
 }) => {
     return (
         <button
-            className="pr-2 flex"
+            className="flex items-center pr-2 text-primary hover:underline"
             title={`${artifact.data.byteLength} bytes | ${artifact.type}`}
             onClick={() => viewFile(artifact)}
         >
@@ -108,7 +109,11 @@ export const LinkBadge = ({
     };
 
     return (
-        <button className="pr-2 flex" title={`${url}`} onClick={onClick}>
+        <button
+            className="flex items-center pr-2 text-primary hover:underline"
+            title={`${url}`}
+            onClick={onClick}
+        >
             {!hideIcon && <IconExternal />}
             <span>{artifact.filename}</span>
         </button>

@@ -17,6 +17,7 @@ import {
     useRef,
     useState,
 } from "react";
+import { badgeClasses, Button, Heading, Input } from "../ui";
 
 const deriveEvidence = async ({
     type,
@@ -129,11 +130,11 @@ export const Files = ({
     return (
         <label
             htmlFor="evidence"
-            className="flex flex-col items-center justify-center border border-gray-200 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+            className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-input bg-card transition-colors hover:bg-secondary"
         >
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+            <div className="flex flex-col items-center justify-center pb-6 pt-5">
                 <svg
-                    className="w-8 h-8 mb-4 text-gray-500"
+                    className="mb-4 h-8 w-8 text-muted-foreground"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -148,7 +149,7 @@ export const Files = ({
                     />
                 </svg>
 
-                <p className="mb-2 text-sm text-gray-500 p-2">
+                <p className="p-2 text-sm text-muted-foreground">
                     Click or drop file evidence
                 </p>
             </div>
@@ -180,20 +181,17 @@ const NameChange = ({ artifact }: { artifact: IDBEvidenceV2 }) => {
     }, [input?.current]);
 
     return (
-        <label className="text-blue-800 border border-blue-200 flex items-center me-2">
-            <input
+        <label className="me-2 flex items-center gap-1">
+            <Input
                 type="text"
-                className="py-0.5 pl-2.5"
+                className="h-7 w-36 text-xs"
                 id={`name.${artifact.id}`}
                 name={`name.${artifact.id}`}
                 placeholder={nameWithoutSuffix}
                 defaultValue={nameWithoutSuffix}
                 ref={input}
             />
-            <button
-                type="submit"
-                className="bg-blue-100 text-blue-800 border border-blue-200 text-xs font-medium px-2.5 py-0.5 rounded-sm h-full"
-            >
+            <Button type="submit" size="sm" className="h-7 px-2" aria-label="Save name">
                 <svg
                     className="w-4 h-4"
                     xmlns="http://www.w3.org/2000/svg"
@@ -208,7 +206,7 @@ const NameChange = ({ artifact }: { artifact: IDBEvidenceV2 }) => {
                         d="m18 10-4-4M2.5 21.5l3.384-.376c.414-.046.62-.069.814-.131a2 2 0 0 0 .485-.234c.17-.111.317-.259.61-.553L21 7a2.828 2.828 0 1 0-4-4L3.794 16.206c-.294.294-.442.442-.553.611a2 2 0 0 0-.234.485c-.062.193-.085.4-.131.814z"
                     />
                 </svg>
-            </button>
+            </Button>
         </label>
     );
 };
@@ -245,11 +243,15 @@ const Badge = ({
 
     return (
         <span
-            className="flex shrink items-center max-h-[20px] bg-blue-100 text-blue-800 border border-blue-200 text-xs font-medium me-2 mb-2 px-2.5 py-0.5 rounded-sm"
+            className={badgeClasses("info", "me-2 mb-2 shrink")}
             onContextMenu={onContextMenu}
         >
             {children}
-            <button onClick={onDelete} className="pl-2">
+            <button
+                onClick={onDelete}
+                className="pl-2 transition-opacity hover:opacity-70"
+                aria-label="Remove evidence"
+            >
                 <svg
                     className="w-2 h-2"
                     aria-hidden="true"
@@ -273,7 +275,7 @@ const Badge = ({
 export const FileBadge = ({ artifact }: { artifact: IDBEvidenceV2 }) => {
     return (
         <button
-            className="border-r border-blue-200 pr-2 flex"
+            className="flex items-center border-r border-blue-200 pr-2"
             title={`${artifact.data.byteLength} bytes | ${artifact.type}`}
             onClick={() => viewFile(artifact)}
         >
@@ -295,7 +297,7 @@ export const LinkBadge = ({ artifact }: { artifact: IDBEvidenceV2 }) => {
 
     return (
         <button
-            className="border-r border-blue-200 pr-2 flex"
+            className="flex items-center border-r border-blue-200 pr-2"
             title={`${url}`}
             onClick={onClick}
         >
@@ -595,9 +597,13 @@ export const Evidence = ({ requirementId }: { requirementId: string }) => {
 
     return (
         <>
-            <h4 className="text-2xl block sm:flex mb-6 items-center -translate-y-full">
+            <Heading
+                level={3}
+                as="h4"
+                className="mb-6 flex -translate-y-full items-center"
+            >
                 Evidence
-            </h4>
+            </Heading>
             <form
                 className="flex flex-col md:flex-row shrink mb-4 -translate-y-[36px]"
                 action={formAction}
@@ -610,16 +616,17 @@ export const Evidence = ({ requirementId }: { requirementId: string }) => {
                         uploading={uploading}
                     />
                     <div className="relative w-full mt-4">
-                        <input
+                        <Input
                             type="url"
                             name="url"
                             id="url"
-                            className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg block w-full p-2.5"
+                            className="pe-12"
                             placeholder={`Add URL to evidence`}
                         />
                         <button
                             type="submit"
-                            className="absolute top-0 end-0 p-2.5 h-full rounded-e-lg flex items-center px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 border-l border-gray-200 border border-gray-200"
+                            aria-label="Add URL evidence"
+                            className="absolute end-0 top-0 inline-flex h-full items-center rounded-e-md border-l border-input bg-secondary px-3 text-muted-foreground transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                             <IconLink />
                         </button>

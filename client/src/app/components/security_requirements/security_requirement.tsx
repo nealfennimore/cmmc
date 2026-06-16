@@ -9,6 +9,7 @@ import { EvidenceState } from "../evidence";
 import { IconInfo } from "../icon_info";
 import { Popover } from "../popover";
 import { StatusState } from "../status";
+import { Heading } from "../ui";
 import { SecurityForm } from "./security_form";
 
 const re = new RegExp(/\d{1,2}\.\d{1,2}\.\d{1,2}/, "gm");
@@ -38,14 +39,18 @@ export const SecurityRequirement = ({
     return (
         <>
             <Breadcrumbs requirementId={requirementId} />
-            <h3 className="text-3xl block sm:flex mt-6 items-center">
+            <Heading
+                level={2}
+                as="h3"
+                className="mt-6 flex flex-wrap items-center gap-2"
+            >
                 Security Requirements for {requirement.requirement}{" "}
                 {requirement.title}
                 <StatusState statuses={statuses} />
                 <EvidenceState evidence={evidence} />
-            </h3>
+            </Heading>
             <p
-                className="text-base discussion"
+                className="discussion text-base leading-relaxed"
                 dangerouslySetInnerHTML={{
                     __html:
                         revision === Revision.V2
@@ -59,7 +64,7 @@ export const SecurityRequirement = ({
                         href={`https://csrc.nist.gov/projects/cprt/catalog#/cprt/framework/version/SP_800_171_3_0_0/home?element=${requirement.id}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs text-gray-600"
+                        className="text-xs text-muted-foreground hover:text-foreground hover:underline"
                     >
                         View CPRT {requirement.id}
                     </a>
@@ -177,7 +182,7 @@ export const SecurityRequirement = ({
                                 <Link
                                     key={id}
                                     href={`/r2/requirement/${id}`}
-                                    className="text-xs mr-2"
+                                    className="mr-2 text-xs text-primary hover:underline"
                                 >
                                     {id}
                                 </Link>

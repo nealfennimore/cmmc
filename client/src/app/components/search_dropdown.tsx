@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Input } from "./ui";
 
 export interface Option {
     label: string;
@@ -117,31 +118,32 @@ export function SearchDropdown({
 
     return (
         <div ref={containerRef} className="relative w-full mt-4">
-            <input
+            <Input
                 value={query}
                 placeholder={placeholder}
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => results.length && setOpen(true)}
                 onKeyDown={handleKeyDown}
-                className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg block w-full p-2.5"
+                className="pe-12"
             />
             <button
                 type="submit"
-                className="absolute top-0 end-0 p-2.5 h-full rounded-e-lg flex items-center px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 border-l border-gray-200 border border-gray-200"
+                aria-label="Search"
+                className="absolute end-0 top-0 inline-flex h-full items-center rounded-e-md border-l border-input bg-secondary px-3 text-muted-foreground transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <IconSearch />
             </button>
 
             {open && results.length > 0 && (
-                <ul className="absolute z-20 mt-1 w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg max-h-60 overflow-y-auto shadow-sm">
+                <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-border bg-card text-sm text-foreground shadow-lg">
                     {results.map((item, i) => (
                         <li
                             key={item.label + i}
                             onMouseDown={() => select(item)}
-                            className={`cursor-pointer px-2.5 py-2 ${
+                            className={`cursor-pointer px-3 py-2 ${
                                 i === activeIndex
-                                    ? "bg-gray-200"
-                                    : "hover:bg-gray-100"
+                                    ? "bg-secondary"
+                                    : "hover:bg-secondary"
                             }`}
                         >
                             {item.label}

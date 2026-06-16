@@ -4,6 +4,7 @@ import { Revision, toNum, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBEvidenceV2 } from "@/app/db";
 import { hashType, HashType, toFSName } from "@/app/utils/file";
 import { useActionState } from "react";
+import { menuItemClasses } from "./ui";
 
 interface ArtifactMapping extends Omit<IDBEvidenceV2, "data" | "filename"> {
     url?: string;
@@ -111,7 +112,6 @@ export const ExportEvidenceMap = () => {
                 byRequirements: requirementsMapping,
             };
 
-            debugger;
 
             await download(evidenceMapping, revision);
         }
@@ -123,7 +123,7 @@ export const ExportEvidenceMap = () => {
             <form action={formAction}>
                 <button
                     type="submit"
-                    className="block px-4 py-2 text-sm text-gray-700 w-full text-left flex items-center justify-between w-full"
+                    className={menuItemClasses()}
                     disabled={isPending}
                     tabIndex={-1}
                 >

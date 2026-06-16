@@ -8,6 +8,7 @@ import { Export, Import } from "./export_import";
 import { Markdown } from "./markdown";
 import { POAM } from "./poam";
 import { Tree } from "./tree";
+import { menuItemClasses } from "./ui";
 
 export const Navigation = () => {
     const revision = useRevisionContext();
@@ -50,9 +51,9 @@ export const Navigation = () => {
     return [
         <nav
             key="nav"
-            className="bg-gray-900 fixed w-full z-40 top-0 start-0 border-b border-gray-600"
+            className="fixed top-0 start-0 z-40 w-full border-b border-slate-800 bg-slate-900"
         >
-            <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+            <div className="mx-auto flex max-w-screen-xl flex-wrap items-center justify-between p-4 sm:px-6 lg:px-8">
                 <a
                     href={path}
                     className="flex items-center space-x-3 rtl:space-x-reverse block"
@@ -72,17 +73,17 @@ export const Navigation = () => {
                 <div className="flex items-center md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
                     <button
                         key="tree-open"
-                        className="px-5 me-2  text-sm font-medium focus:z-20 focus:ring-4 focus:ring-gray-100 focus:ring-gray-700 text-gray-500 border-gray-600 border-r hover:text-gray-600 flex items-center"
+                        className="me-2 inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         onClick={() => {
                             setTreeIsOpen(!isTreeOpen);
                         }}
                     >
-                        <span className="mr-1 hidden md:block">Overview</span>
+                        <span className="hidden md:block">Overview</span>
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             xmlSpace="preserve"
                             viewBox="0 0 135.467 135.467"
-                            className="w-5 fill-gray-500 "
+                            className="w-5 fill-current"
                         >
                             <path
                                 d="M66.041 79.726v33.867h33.867V79.726H82.975Zm13.494 40.746v67.477h6.88v-.01l27.053.067 27.054.067.07 6.813.07 6.813h33.859v-33.866h-33.867v13.494h-54.24v-40.749l27.054.068 27.054.067.07 6.68.07 6.681h33.859v-33.602h-33.867v13.494h-54.24v-13.494h-3.44z"
@@ -94,7 +95,7 @@ export const Navigation = () => {
                         <div>
                             <button
                                 type="button"
-                                className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-transparent px-3 py-3 text-sm font-semibold text-gray-500 shadow-sm"
+                                className="inline-flex items-center justify-center rounded-md p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 id="menu-button"
                                 aria-expanded="true"
                                 aria-haspopup="true"
@@ -118,7 +119,7 @@ export const Navigation = () => {
                         </div>
                         {isOpen && (
                             <div
-                                className="absolute top-10 right-0 z-100 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none divide-y divide-gray-100"
+                                className="absolute right-0 top-12 z-50 mt-2 w-56 origin-top-right divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-lg focus:outline-none"
                                 role="menu"
                                 aria-orientation="vertical"
                                 aria-labelledby="menu-button"
@@ -146,7 +147,7 @@ export const Navigation = () => {
                                 <div className="py-1" role="none">
                                     <a
                                         href="https://github.com/nealfennimore/cmmc"
-                                        className="block px-4 py-2 text-sm text-gray-700 flex flex-row"
+                                        className={menuItemClasses("justify-start gap-2")}
                                         tabIndex={100}
                                     >
                                         <svg
