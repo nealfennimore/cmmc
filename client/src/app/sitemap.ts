@@ -1,7 +1,7 @@
 import * as Framework from "@/api/entities/Framework";
 import type { MetadataRoute } from "next";
 export const dynamic = "force-static";
-const URL = "https://cmmc.jaktool.com";
+const URL = "https://app.getcmmc.consulting";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const manifestV3 = Framework.manifestV3;

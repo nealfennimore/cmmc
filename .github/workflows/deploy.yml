@@ -3,7 +3,7 @@ name: Deploy Next.js to GitHub Pages
 on:
   push:
     tags:
-      - '*'
+      - "*"
 
 permissions:
   contents: write
@@ -19,12 +19,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Create .env file
         working-directory: ./client
         run: |
-          echo NEXT_PUBLIC_API_URL=https://cmmc.jaktool.com >> .env
+          echo NEXT_PUBLIC_API_URL=https://app.getcmmc.consulting >> .env
           echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
           echo NEXT_PUBLIC_CSP="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src-attr 'self' 'unsafe-inline'"
 
@@ -47,9 +47,9 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          cname: cmmc.jaktool.com
+          cname: app.getcmmc.consulting
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./client/out  # This is the default output directory for `next export`
+          publish_dir: ./client/out # This is the default output directory for `next export`
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
