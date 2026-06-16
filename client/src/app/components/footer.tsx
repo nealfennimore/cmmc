@@ -1,5 +1,5 @@
 export const Footer = () => (
-    <footer className="m-4 rounded-lg border border-border bg-card shadow-sm">
+    <footer>
         <div className="mx-auto w-full max-w-screen-xl p-4 md:py-8">
             <div className="flex flex-row items-center justify-center text-sm text-muted-foreground">
                 Not affiliated with NIST.
