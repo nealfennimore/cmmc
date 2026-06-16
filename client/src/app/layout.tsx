@@ -3,6 +3,7 @@ import { DM_Serif_Display } from "next/font/google";
 import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
+import { SITE_URL, social } from "./seo";
 
 const geistSans = localFont({
     src: "./fonts/GeistVF.woff",
@@ -20,10 +21,16 @@ const dmSerifDisplay = DM_Serif_Display({
     variable: "--font-dm-serif",
 });
 
+const SITE_TITLE = "CMMC | SP NIST 800-171 Rev 3";
+const SITE_DESCRIPTION =
+    "This application simplifies achieving NIST SP 800-171 Revision 3 compliance by providing a user-friendly interface to manage security controls, store data locally, and generate compliance summaries. ";
+
 export const metadata: Metadata = {
-    title: "CMMC | SP NIST 800-171 Rev 3",
-    description:
-        "This application simplifies achieving NIST SP 800-171 Revision 3 compliance by providing a user-friendly interface to manage security controls, store data locally, and generate compliance summaries. ",
+    metadataBase: new URL(SITE_URL),
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    applicationName: "CMMC",
+    ...social({ title: SITE_TITLE, description: SITE_DESCRIPTION, path: "/" }),
 };
 
 export default function RootLayout({

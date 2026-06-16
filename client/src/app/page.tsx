@@ -6,13 +6,17 @@ import { ToastContainer } from "@/app/components/toast";
 import { ManifestV2Component } from "@/app/context/manifest";
 import { ToastNotificationProvider } from "@/app/context/notification";
 import { RevisionV2Component } from "@/app/context/revision";
+import { social } from "@/app/seo";
 import type { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
+    const title = "CMMC | SP NIST 800-171 Rev 2";
+    const description =
+        "This application simplifies achieving NIST SP 800-171 Revision 2 compliance by providing a user-friendly interface to manage security controls, store data locally, and generate compliance summaries. ";
     return {
-        title: "CMMC | SP NIST 800-171 Rev 2",
-        description:
-            "This application simplifies achieving NIST SP 800-171 Revision 2 compliance by providing a user-friendly interface to manage security controls, store data locally, and generate compliance summaries. ",
+        title,
+        description,
+        ...social({ title, description, path: "/" }),
     };
 }
 

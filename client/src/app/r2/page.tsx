@@ -6,13 +6,17 @@ import { ToastContainer } from "@/app/components/toast";
 import { ManifestV2Component } from "@/app/context/manifest";
 import { ToastNotificationProvider } from "@/app/context/notification";
 import { RevisionV2Component } from "@/app/context/revision";
+import { social } from "@/app/seo";
 
 import type { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
+    const title = "Families | CMMC | SP NIST 800-171 Rev 2";
+    const description = "Families for SP NIST 800-171 Rev 2";
     return {
-        title: "Families | CMMC | SP NIST 800-171 Rev 2",
-        description: "Families for SP NIST 800-171 Rev 2",
+        title,
+        description,
+        ...social({ title, description, path: "/r2" }),
     };
 }
 

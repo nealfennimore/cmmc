@@ -233,3 +233,39 @@ export class Manifest {
 
 export const manifestV3 = new Manifest(frameworkV3);
 export const manifestV2 = new Manifest(frameworkV2);
+
+/**
+ * Build a meta-description for a requirement page.
+ *
+ * Rev 2 requirements carry their prose directly on the requirement element,
+ * but Rev 3 requirements have empty text — the prose lives on the child
+ * security requirements. Fall back to stitching those together so every
+ * requirement page ships a real description.
+ */
+export const getRequirementDescription = (
+    manifest: Manifest,
+    requirement_id: string,
+    maxLength = 160,
+): string | undefined => {
+    const requirement = manifest.requirements.byId[requirement_id];
+    let description = requirement?.text?.trim() ?? "";
+
+    if (!description) {
+        const securityRequirements =
+            manifest.securityRequirements.byRequirements[requirement_id] ?? [];
+        description = securityRequirements
+            .map((element) => element.text?.trim())
+            .filter(Boolean)
+            .join(" ");
+    }
+
+    if (!description) {
+        return undefined;
+    }
+
+    if (description.length > maxLength) {
+        description = `${description.slice(0, maxLength - 1).trimEnd()}…`;
+    }
+
+    return description;
+};

@@ -7,6 +7,7 @@ import { ToastContainer } from "@/app/components/toast";
 import { ToastNotificationProvider } from "@/app/context/notification";
 import { ManifestV2Component } from "@/app/context/manifest";
 import { RevisionV2Component } from "@/app/context/revision";
+import { social } from "@/app/seo";
 import type { Metadata, ResolvingMetadata } from "next";
 
 export async function generateStaticParams() {
@@ -29,9 +30,14 @@ export async function generateMetadata(
     const { requirement_id } = await params;
     const manifest = await Framework.manifestV2;
     const requirement = manifest.requirements.byId[requirement_id];
+    const title = `${requirement_id}: ${requirement.title}`;
+    const description = Framework.getRequirementDescription(
+        manifest,
+        requirement_id,
+    );
     return {
-        title: `${requirement_id}: ${requirement.title}`,
-        description: requirement.text,
+        title,
+        description,
         creator: "NIST",
         publisher: "NIST",
         keywords: [
@@ -41,6 +47,11 @@ export async function generateMetadata(
             requirement.type,
         ],
         applicationName: "CMMC",
+        ...social({
+            title,
+            description,
+            path: `/r2/requirement/${requirement_id}`,
+        }),
     };
 }
 

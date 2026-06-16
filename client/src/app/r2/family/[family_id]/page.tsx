@@ -7,6 +7,7 @@ import { ToastContainer } from "@/app/components/toast";
 import { ManifestV2Component } from "@/app/context/manifest";
 import { ToastNotificationProvider } from "@/app/context/notification";
 import { RevisionV2Component } from "@/app/context/revision";
+import { social } from "@/app/seo";
 import type { Metadata, ResolvingMetadata } from "next";
 
 export async function generateStaticParams() {
@@ -27,14 +28,20 @@ export async function generateMetadata(
     parent: ResolvingMetadata,
 ): Promise<Metadata> {
     const { family_id } = await params;
+    const manifest = await Framework.manifestV2;
+    const family = manifest.families.byId[family_id];
+    const familyTitle = family?.title ? `${family.title} (${family_id})` : family_id;
+    const title = `Family ${familyTitle} | CMMC | SP NIST 800-171 Rev 2`;
+    const description = `NIST SP 800-171 Rev 2 ${family?.title ?? `family ${family_id}`} (${family_id}) security requirements.`;
 
     return {
-        title: `Family ${family_id} | CMMC | SP NIST 800-171 Rev 2`,
-        description: `SP NIST 800-171 family ${family_id}`,
+        title,
+        description,
         creator: "NIST",
         publisher: "NIST",
-        keywords: ["CMMC", family_id],
+        keywords: ["CMMC", family_id, family?.title].filter(Boolean) as string[],
         applicationName: "CMMC",
+        ...social({ title, description, path: `/r2/family/${family_id}` }),
     };
 }
 
