@@ -5,7 +5,7 @@ export const Footer = () => (
                 <div className="flex flex-row items-center justify-center">
                     Not affiliated with NIST.
                     <a
-                        href="https://github.com/JAKTOOL/cmmc"
+                        href="https://github.com/nealfennimore/cmmc"
                         className="block text-sm text-gray-500 sm:text-center"
                         tabIndex={100}
                     >
@@ -26,13 +26,13 @@ export const Footer = () => (
                 </div>
             </span>
             <span className="block text-sm text-gray-500 text-center">
-                © 2025{" "}
+                © 2026{" "}
                 <a
-                    href="https://jaktool.com"
+                    href="https://getcmmc.consulting"
                     className="hover:underline"
                     tabIndex={70}
                 >
-                    JAKTOOL
+                    GetCMMC
                 </a>
                 . All Rights Reserved.
             </span>
