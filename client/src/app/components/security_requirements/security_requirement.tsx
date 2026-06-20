@@ -3,6 +3,7 @@ import { SecurityRequirementValue } from "@/api/entities/RequirementValues";
 import { Revision, useRevisionContext } from "@/app/context/revision";
 import { renderNumber } from "@/app/utils/number";
 import Link from "next/link";
+import { AssessmentGuidance } from "../assessment_guidance";
 import { Breadcrumbs } from "../breadcrumbs";
 import { DataTable } from "../datatable";
 import { EvidenceState } from "../evidence";
@@ -222,6 +223,7 @@ export const SecurityRequirement = ({
                     ]}
                 />
             </aside>
+            <AssessmentGuidance requirementId={requirementId} />
             <section className="w-full flex flex-col">
                 <SecurityForm
                     requirement={requirement}
