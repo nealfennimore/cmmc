@@ -91,6 +91,10 @@ jobs:
           echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
 
       - name: Build desktop bundle (inside pinned Nix shell)
+        # linuxdeploy (the AppImage bundler) is itself an AppImage; GitHub runners
+        # lack FUSE, so make it self-extract instead of mounting. No-op on macOS.
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
         run: nix develop .#ci -c bash -c "cd client && npm ci && cargo tauri build"
 
       - name: Attach bundles to release
