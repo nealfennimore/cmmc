@@ -3,7 +3,10 @@
 
   inputs = {
     # Pinned via flake.lock — this is what makes the toolchain reproducible.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    # Kept on 24.11 for its known-good WebKitGTK: 25.05's newer webkit regresses
+    # the webview on NixOS (EGL_BAD_PARAMETER). Rust is NOT taken from here (see
+    # rust-overlay below), so the channel only needs to supply the system libs.
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
     flake-utils.url = "github:numtide/flake-utils";
     # Rust is pinned independently of nixpkgs: Tauri's transitive deps (zvariant,
     # darling, time, plist, ...) keep raising their MSRV, so the channel's rustc
