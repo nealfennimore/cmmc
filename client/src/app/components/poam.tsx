@@ -3,6 +3,7 @@ import { Status } from "@/app/components/status";
 import { useManifestContext } from "@/app/context/manifest";
 import { toNum, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBSecurityRequirement } from "@/app/db";
+import { saveBlob } from "@/app/utils/file";
 import { useActionState } from "react";
 import { menuItemClasses } from "./ui";
 
@@ -61,19 +62,10 @@ export const POAM = () => {
 
         const timestamp = Math.floor(new Date().getTime() / 1000);
 
-        // Create a link element
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `cmmc-800-171-rev-${toNum(revision)}-poam-${timestamp}.md`;
-
-        // Append the link to the body (required for Firefox)
-        document.body.appendChild(link);
-
-        // Programmatically click the link to trigger the download
-        link.click();
-
-        // Clean up and remove the link
-        document.body.removeChild(link);
+        await saveBlob(
+            `cmmc-800-171-rev-${toNum(revision)}-poam-${timestamp}.md`,
+            blob,
+        );
         return payload;
     };
 

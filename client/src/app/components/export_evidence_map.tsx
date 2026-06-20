@@ -2,7 +2,7 @@
 import { useManifestContext } from "@/app/context/manifest";
 import { Revision, toNum, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBEvidenceV2 } from "@/app/db";
-import { hashType, HashType, toFSName } from "@/app/utils/file";
+import { hashType, HashType, saveBlob, toFSName } from "@/app/utils/file";
 import { useActionState } from "react";
 import { menuItemClasses } from "./ui";
 
@@ -19,20 +19,12 @@ interface EvidenceMapping {
 
 const download = async (mapping: EvidenceMapping, revision: Revision) => {
     const data = JSON.stringify(mapping, null, 2);
-    const file = new File([data], "nist", {
-        type: "application/json",
-    });
-
+    const blob = new Blob([data], { type: "application/json" });
     const timestamp = Math.floor(new Date().getTime() / 1000);
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(file);
-    link.download = `cmmc-800-171-rev-${toNum(revision)}-evidence-map-${timestamp}.json`;
-
-    document.body.appendChild(link);
-    link.click();
-
-    URL.revokeObjectURL(link.href);
-    document.body.removeChild(link);
+    await saveBlob(
+        `cmmc-800-171-rev-${toNum(revision)}-evidence-map-${timestamp}.json`,
+        blob,
+    );
 };
 
 export const ExportEvidenceMap = () => {

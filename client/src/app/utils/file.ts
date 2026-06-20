@@ -1,8 +1,27 @@
 "use client";
 import { IDBEvidenceV2 } from "@/app/db";
+import { saveFile } from "./tauri";
 
 export const toFSName = (artifact: IDBEvidenceV2) =>
     `${artifact.id}-${artifact.filename}`;
+
+/**
+ * Save a blob to disk. In the desktop shell this opens a native save dialog;
+ * in the browser it falls back to the standard anchor download.
+ */
+export const saveBlob = async (filename: string, blob: Blob): Promise<void> => {
+    if (await saveFile(filename, blob)) {
+        return;
+    }
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+};
 
 export enum HashType {
     SHA256 = "sha256",

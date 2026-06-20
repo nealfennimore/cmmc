@@ -6,7 +6,7 @@ import {
 import { useNotification } from "@/app/context/notification";
 import { IDB, IDBEvidenceV2 } from "@/app/db";
 import { isImage } from "@/app/utils/file";
-import { openExternal } from "@/app/utils/tauri";
+import { openExternal, openFileInSystemViewer } from "@/app/utils/tauri";
 import {
     ChangeEvent,
     Dispatch,
@@ -314,7 +314,19 @@ export const FileBadge = ({ artifact }: { artifact: IDBEvidenceV2 }) => {
         <button
             className="flex items-center border-r border-border pr-2"
             title={`${artifact.data.byteLength} bytes | ${artifact.type}`}
-            onClick={() => viewFile(artifact)}
+            onClick={async () => {
+                // In the desktop shell, open via the OS default app; the blob
+                // URL in viewFile is the browser fallback.
+                if (
+                    await openFileInSystemViewer(
+                        artifact.filename,
+                        artifact.data,
+                    )
+                ) {
+                    return;
+                }
+                viewFile(artifact);
+            }}
         >
             <IconFileDownload />
             <span>{artifact.filename}</span>
