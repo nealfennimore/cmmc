@@ -27,7 +27,13 @@
     "bundle": {
         "active": true,
         "targets": "all",
-        "icon": ["icons/icon.png"],
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico"
+        ],
         "category": "Productivity",
         "shortDescription": "Offline CMMC / NIST 800-171 compliance",
         "longDescription": "Work through NIST 800-171 controls, record implementation status and evidence, and generate an SSP and POA&M — fully offline, with data stored only on your device."
