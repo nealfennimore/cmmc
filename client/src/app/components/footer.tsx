@@ -49,6 +49,19 @@ export const Footer = () => (
                     </svg>
                 </a>
             </div>
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+                v{process.env.NEXT_PUBLIC_APP_VERSION}
+                {" · "}
+                <a
+                    href={`https://github.com/nealfennimore/cmmc/commit/${process.env.NEXT_PUBLIC_GIT_SHA}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono hover:underline"
+                    tabIndex={101}
+                >
+                    {process.env.NEXT_PUBLIC_GIT_SHA}
+                </a>
+            </p>
         </div>
     </footer>
 );

@@ -58,9 +58,11 @@
         ];
 
         # rustToolchain provides cargo + rustc; cargo-tauri orchestrates them.
+        # git is needed by next.config.ts to stamp the build's commit SHA.
         buildTools = [
           pkgs.nodejs
           pkgs.cargo-tauri
+          pkgs.git
           rustToolchain
         ];
 
