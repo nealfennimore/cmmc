@@ -7,8 +7,6 @@ It was challenging to find resources for [NIST 800-171](https://csrc.nist.gov/pu
 
 By working through the 800-171 controls, you can record an implementation status and notes for each security requirement, attach supporting evidence, follow the assessor's guidance for Rev 2, track your estimated SPRS score, and generate a markdown System Security Plan and a POA&M — all from the browser, with your data never leaving your device.
 
-![Demo](screenshots/demo.gif)
-
 ## Features
 
 - Covers **both NIST 800-171 Rev 2 and Rev 3**, with a one-click revision toggle
@@ -59,7 +57,7 @@ Each Rev 2 requirement page includes a collapsible **Assessment Guidance** panel
 
 ## Privacy
 
-All data is stored locally on your device using [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API). There are no privacy concerns — no third-party tracking, no analytics, and no external servers are used by this application.
+All data is stored locally on your device using [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API). There are no privacy concerns — no third-party tracking, no analytics, and no external servers are used by this application other than Github hosting the static assets.
 
 ## Development
 
