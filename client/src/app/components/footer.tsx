@@ -1,11 +1,36 @@
 export const Footer = () => (
     <footer>
         <div className="mx-auto w-full max-w-screen-xl p-4 md:py-8">
+            <p className="mb-4 text-center text-xs text-muted-foreground">
+                Need a hand?{" "}
+                <a
+                    href="https://getcmmc.consulting/?utm_source=cmmc-app&utm_medium=footer"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-foreground hover:underline"
+                    tabIndex={71}
+                >
+                    GetCMMC
+                </a>{" "}
+                offers senior-led CMMC 2.0 readiness &amp; NIST 800-171
+                consulting — mock assessments, gap analysis, and SSP/POA&amp;M
+                development.
+            </p>
             <div className="flex flex-row items-center justify-center text-sm text-muted-foreground">
-                Not affiliated with NIST.
+                <p>
+                    © 2026{" "}
+                    <a
+                        href="https://getcmmc.consulting"
+                        className="font-medium text-foreground hover:underline"
+                        tabIndex={70}
+                    >
+                        GetCMMC
+                    </a>
+                    . All Rights Reserved.
+                </p>
                 <a
                     href="https://github.com/nealfennimore/cmmc"
-                    className="mx-4 text-muted-foreground transition-colors hover:text-foreground"
+                    className="ml-4 text-muted-foreground transition-colors hover:text-foreground"
                     tabIndex={100}
                     aria-label="View source on GitHub"
                 >
@@ -24,17 +49,6 @@ export const Footer = () => (
                     </svg>
                 </a>
             </div>
-            <p className="text-center text-sm text-muted-foreground">
-                © 2026{" "}
-                <a
-                    href="https://getcmmc.consulting"
-                    className="font-medium text-foreground hover:underline"
-                    tabIndex={70}
-                >
-                    GetCMMC
-                </a>
-                . All Rights Reserved.
-            </p>
         </div>
     </footer>
 );

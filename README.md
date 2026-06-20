@@ -84,3 +84,9 @@ The 800-171 framework data in [`client/public/data`](client/public/data) is sour
 ## License
 
 This project is licensed under the MIT License and has no affiliation with NIST.
+
+## Need help with CMMC?
+
+This app is free and self-serve, but CMMC compliance can get involved. [**GetCMMC**](https://getcmmc.consulting/?utm_source=cmmc-app&utm_medium=readme) offers senior-led **CMMC 2.0 readiness and NIST 800-171 consulting** for DoD contractors — mock assessments, gap analysis with a prioritized remediation roadmap, SSP and POA&M development, and more. Every engagement is led directly by a Lead Certified CMMC Assessor (LCCA).
+
+[Learn more at getcmmc.consulting →](https://getcmmc.consulting/?utm_source=cmmc-app&utm_medium=readme)
