@@ -72,7 +72,6 @@
           export WEBKIT_DISABLE_COMPOSITING_MODE=1
           export WEBKIT_DISABLE_DMABUF_RENDERER=1
           export GIO_MODULE_DIR="${pkgs.glib-networking}/lib/gio/modules/"
-          export NO_STRIP=true
         '';
       in
       {

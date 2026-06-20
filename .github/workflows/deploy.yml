@@ -54,6 +54,8 @@ jobs:
   # Each runner builds natively for its own arch -> no cross-target rust setup.
   # ---------------------------------------------------------------------------
   desktop-nix:
+    env:
+      APPIMAGE_EXTRACT_AND_RUN: 1
     strategy:
       fail-fast: false
       matrix:
@@ -90,12 +92,24 @@ jobs:
         run: |
           echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
 
+      - name: Fix AppImage
+        if: matrix.runner == 'ubuntu-24.04'
+        run: |
+          # Pre-download linuxdeploy to avoid Tauri's download failing
+          # github.com/tauri-apps/tauri/issues/14796
+          mkdir -p ~/.cache/tauri
+          LINUXDEPLOY_URL="https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage"
+          curl -fsSL "$LINUXDEPLOY_URL" -o ~/.cache/tauri/linuxdeploy-x86_64.AppImage
+          chmod +x ~/.cache/tauri/linuxdeploy-x86_64.AppImage
+          # Extract linuxdeploy so it doesn't need FUSE
+          ~/.cache/tauri/linuxdeploy-x86_64.AppImage --appimage-extract >/dev/null 2>&1 || true
+
       - name: Build desktop bundle (inside pinned Nix shell)
         # linuxdeploy (the AppImage bundler) is itself an AppImage; GitHub runners
         # lack FUSE, so make it self-extract instead of mounting. NO_STRIP avoids
         # linuxdeploy stripping the Nix-built binary (also set by the flake's
         # shellHook; pinned here too so it doesn't depend on that). No-op on macOS.
-        run: nix develop .#ci -c bash -c "cd client && npm ci && NO_STRIP=true cargo tauri build"
+        run: nix develop .#ci -c bash -c "cd client && npm ci && cargo tauri build"
 
       - name: Attach bundles to release
         if: github.ref != 'refs/heads/tauri'
