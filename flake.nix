@@ -3,7 +3,9 @@
 
   inputs = {
     # Pinned via flake.lock — this is what makes the toolchain reproducible.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    # 25.05 ships Rust >= 1.86, required because Tauri's dbus/zvariant deps now
+    # need the edition2024 cargo feature (Rust >= 1.85). 24.11's 1.82 is too old.
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
