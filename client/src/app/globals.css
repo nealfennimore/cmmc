@@ -68,6 +68,16 @@ details[open] > summary .chevron {
     margin-left: 16px;
 }
 
+/* Keep long, unbreakable strings (URLs, tokens) from widening the layout. */
+.md-output {
+    overflow-wrap: anywhere;
+}
+
+.md-output pre {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
 .md-output ul {
     list-style-type: circle;
 }
@@ -109,6 +119,9 @@ details[open] > summary .chevron {
 
 .grow-wrap {
     display: grid;
+    /* minmax(0, 1fr) lets the column shrink instead of growing to fit the
+       longest line, so the textarea/preview can't push past the viewport. */
+    grid-template-columns: minmax(0, 1fr);
 }
 .grow-wrap::after {
     content: attr(data-replicated-value) " ";
@@ -124,4 +137,7 @@ details[open] > summary .chevron {
 .grow-wrap::after {
     font: inherit;
     grid-area: 1 / 1 / 2 / 2;
+    /* Wrap long unbreakable strings so the mirror and textarea stay in sync
+       and neither expands the grid column. */
+    overflow-wrap: anywhere;
 }

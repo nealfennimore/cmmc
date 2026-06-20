@@ -171,7 +171,10 @@ export const SecurityRequirementNote = ({
     }, [textareaRef, mdRef]);
 
     return (
-        <div className="flex flex-col grow w-full lg:w-10/12" ref={parentRef}>
+        <div
+            className="flex min-w-0 grow flex-col w-full lg:w-10/12"
+            ref={parentRef}
+        >
             <Label htmlFor={key} className="my-2">
                 Description
             </Label>
