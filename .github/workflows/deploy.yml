@@ -95,10 +95,7 @@ jobs:
         # lack FUSE, so make it self-extract instead of mounting. NO_STRIP avoids
         # linuxdeploy stripping the Nix-built binary (also set by the flake's
         # shellHook; pinned here too so it doesn't depend on that). No-op on macOS.
-        env:
-          APPIMAGE_EXTRACT_AND_RUN: "1"
-          NO_STRIP: "true"
-        run: nix develop .#ci -c bash -c "cd client && npm ci && cargo tauri build"
+        run: nix develop .#ci -c bash -c "cd client && npm ci && NO_STRIP=true cargo tauri build"
 
       - name: Attach bundles to release
         if: github.ref != 'refs/heads/tauri'
