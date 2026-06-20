@@ -9,6 +9,7 @@ import { isImage } from "@/app/utils/file";
 import {
     ChangeEvent,
     Dispatch,
+    DragEvent,
     Fragment,
     ReactNode,
     SetStateAction,
@@ -107,12 +108,14 @@ export const Files = ({
     setUploading: Dispatch<SetStateAction<boolean>>;
     uploading: boolean;
 }) => {
-    const onChange = async (e: ChangeEvent<HTMLInputElement>) => {
-        setUploading(true);
-        if (!e?.target?.files) {
+    const [isDragging, setIsDragging] = useState(false);
+
+    const processFiles = async (files: FileList | null) => {
+        if (!files?.length) {
             return;
         }
-        for (const file of e.target.files) {
+        setUploading(true);
+        for (const file of files) {
             const data = await toBuffer(file);
             const evidence: IDBEvidenceV2 = await deriveEvidence({
                 name: file.name,
@@ -128,10 +131,38 @@ export const Files = ({
         setUploading(false);
     };
 
+    const onChange = (e: ChangeEvent<HTMLInputElement>) =>
+        processFiles(e.target.files);
+
+    // A hidden file input can't be a drop target and a <label> doesn't forward
+    // drop events to its input, so handle drag-and-drop on the label directly.
+    const onDragOver = (e: DragEvent<HTMLLabelElement>) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+    const onDragLeave = (e: DragEvent<HTMLLabelElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+    const onDrop = (e: DragEvent<HTMLLabelElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (!uploading) {
+            processFiles(e.dataTransfer.files);
+        }
+    };
+
     return (
         <label
             htmlFor="evidence"
-            className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-input bg-card transition-colors hover:bg-secondary"
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors hover:bg-secondary ${
+                isDragging
+                    ? "border-primary bg-secondary"
+                    : "border-input bg-card"
+            }`}
         >
             <div className="flex flex-col items-center justify-center pb-6 pt-5">
                 <svg
