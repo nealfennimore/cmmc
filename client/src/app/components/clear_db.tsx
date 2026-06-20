@@ -17,6 +17,7 @@ export const ClearDB = () => {
                 await IDB.securityRequirements.clear();
                 await IDB.requirements.clear();
                 await IDB.evidence.clear();
+                await IDB.examineEvidence.clear();
 
                 resolve(null);
             } finally {

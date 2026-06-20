@@ -6,6 +6,7 @@ import {
     IDBEvidence,
     IDBEvidenceRequirement,
     IDBEvidenceV2,
+    IDBExamineEvidence,
     IDBRequirement,
     IDBSecurityRequirement,
 } from "@/app/db";
@@ -23,6 +24,7 @@ interface ImportExportPayload {
     securityRequirements: IDBSecurityRequirement[];
     evidence?: PortableIDBEvidence[] | PortableIDBEvidenceV2[];
     evidenceRequirements?: IDBEvidenceRequirement[];
+    examineEvidence?: IDBExamineEvidence[];
     version: number;
 }
 
@@ -51,6 +53,7 @@ export const Export = () => {
         const idbSecurityRequirements = await IDB.securityRequirements.getAll();
         const idbEvidence = await IDB.evidence.getAll();
         const idbEvidenceRequirements = await IDB.evidenceRequirements.getAll();
+        const idbExamineEvidence = await IDB.examineEvidence.getAll();
         const evidence = idbEvidence.map((artifact) => ({
             ...artifact,
             data: [...new Uint8Array(artifact.data)],
@@ -63,6 +66,7 @@ export const Export = () => {
             securityRequirements: validSecurityRequirements,
             evidence,
             evidenceRequirements: idbEvidenceRequirements,
+            examineEvidence: idbExamineEvidence,
             version: IDB.version,
         };
 
@@ -133,40 +137,45 @@ export const Import = () => {
                             event?.target?.result as string,
                         ) as ImportExportPayload;
 
-                        if (payload.version !== IDB.version) {
-                            if (payload.version === 3 && IDB.version === 4) {
-                                const evidenceV1 = payload.evidence as
-                                    | PortableIDBEvidence[]
-                                    | undefined;
+                        // v3 reshaped evidence into separate evidence +
+                        // evidence_requirements stores. v4 -> v5 only added the
+                        // examine_evidence store, so v4 exports import as-is
+                        // (just without any examine checklist data).
+                        if (payload.version === 3) {
+                            const evidenceV1 = payload.evidence as
+                                | PortableIDBEvidence[]
+                                | undefined;
 
-                                const evidenceRequirements = evidenceV1?.map(
-                                    (artifact) => ({
-                                        evidence_id: artifact.uuid,
-                                        requirement_id:
-                                            artifact.requirement_id as string,
-                                    }),
-                                );
-                                const evidenceV2 = evidenceV1?.map(
-                                    (artifact) =>
-                                        ({
-                                            id: artifact.uuid,
-                                            type: artifact.type,
-                                            filename: artifact.filename,
-                                            data: artifact.data,
-                                        }) as PortableIDBEvidenceV2,
-                                );
+                            const evidenceRequirements = evidenceV1?.map(
+                                (artifact) => ({
+                                    evidence_id: artifact.uuid,
+                                    requirement_id:
+                                        artifact.requirement_id as string,
+                                }),
+                            );
+                            const evidenceV2 = evidenceV1?.map(
+                                (artifact) =>
+                                    ({
+                                        id: artifact.uuid,
+                                        type: artifact.type,
+                                        filename: artifact.filename,
+                                        data: artifact.data,
+                                    }) as PortableIDBEvidenceV2,
+                            );
 
-                                if (evidenceRequirements?.length) {
-                                    payload.evidenceRequirements =
-                                        evidenceRequirements;
-                                }
-
-                                if (evidenceV2?.length) {
-                                    payload.evidence = evidenceV2;
-                                }
-                            } else {
-                                throw new Error("Database version mismatch");
+                            if (evidenceRequirements?.length) {
+                                payload.evidenceRequirements =
+                                    evidenceRequirements;
                             }
+
+                            if (evidenceV2?.length) {
+                                payload.evidence = evidenceV2;
+                            }
+                        } else if (
+                            payload.version !== 4 &&
+                            payload.version !== IDB.version
+                        ) {
+                            throw new Error("Database version mismatch");
                         }
 
                         const confirm = window.confirm(
@@ -180,6 +189,7 @@ export const Import = () => {
                         await IDB.requirements.clear();
                         await IDB.evidenceRequirements.clear();
                         await IDB.evidence.clear();
+                        await IDB.examineEvidence.clear();
 
                         const requirements: Record<string, IDBRequirement> = {};
 
@@ -214,6 +224,11 @@ export const Import = () => {
                             await IDB.evidenceRequirements.put(
                                 evidenceRequirement,
                             );
+                        }
+
+                        for (const examineEvidence of payload?.examineEvidence ||
+                            []) {
+                            await IDB.examineEvidence.put(examineEvidence);
                         }
 
                         resolve(payload);

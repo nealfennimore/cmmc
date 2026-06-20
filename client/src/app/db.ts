@@ -1,6 +1,6 @@
 "use client";
 import { Status } from "@/app/components/status";
-export const version = 4;
+export const version = 5;
 let loader: Promise<IDBDatabase> | undefined;
 
 enum Table {
@@ -8,6 +8,7 @@ enum Table {
     REQUIREMENTS = "requirements",
     EVIDENCE = "evidence",
     EVIDENCE_REQUIREMENTS = "evidence_requirements",
+    EXAMINE_EVIDENCE = "examine_evidence",
 }
 
 const migrations = {
@@ -146,6 +147,19 @@ const migrations = {
 
         db.deleteObjectStore("evidence_temp");
     },
+    "5": async (event: IDBVersionChangeEvent) => {
+        const db = event.target.result as IDBDatabase;
+
+        // Manual checklist of which "Examine" evidence types an organization
+        // has collected for a requirement. One record per checked item.
+        const examineEvidence = db.createObjectStore(Table.EXAMINE_EVIDENCE, {
+            keyPath: ["requirement_id", "item"],
+        });
+
+        examineEvidence.createIndex("requirement_id", "requirement_id", {
+            unique: false,
+        });
+    },
 };
 
 if (typeof window !== "undefined") {
@@ -204,6 +218,11 @@ export interface IDBEvidenceV2 {
 export interface IDBEvidenceRequirement {
     requirement_id: string;
     evidence_id: string;
+}
+
+export interface IDBExamineEvidence {
+    requirement_id: string;
+    item: string;
 }
 
 enum Permission {
@@ -332,6 +351,9 @@ export class IDB {
     static evidence = new StoreWrapper<IDBEvidenceV2>(Table.EVIDENCE);
     static evidenceRequirements = new StoreWrapper<IDBEvidenceRequirement>(
         Table.EVIDENCE_REQUIREMENTS,
+    );
+    static examineEvidence = new StoreWrapper<IDBExamineEvidence>(
+        Table.EXAMINE_EVIDENCE,
     );
 
     static version = version;

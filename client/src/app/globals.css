@@ -55,6 +55,10 @@ body > div {
     text-underline-offset: 2px;
 }
 
+details[open] > summary .chevron {
+    transform: rotate(180deg);
+}
+
 .md-output > * {
     margin-bottom: 20px;
 }
