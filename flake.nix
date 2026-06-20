@@ -3,18 +3,32 @@
 
   inputs = {
     # Pinned via flake.lock — this is what makes the toolchain reproducible.
-    # 25.05 ships Rust >= 1.86, required because Tauri's dbus/zvariant deps now
-    # need the edition2024 cargo feature (Rust >= 1.85). 24.11's 1.82 is too old.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     flake-utils.url = "github:numtide/flake-utils";
+    # Rust is pinned independently of nixpkgs: Tauri's transitive deps (zvariant,
+    # darling, time, plist, ...) keep raising their MSRV, so the channel's rustc
+    # is perpetually too old. The overlay lets us name an exact Rust version and
+    # bump just `rustVersion` below when deps require it.
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ rust-overlay.overlays.default ];
+        };
         inherit (pkgs) lib;
         isLinux = pkgs.stdenv.isLinux;
+
+        # Bump this when a dependency's MSRV exceeds it (the build error names the
+        # required version). Must be >= the highest MSRV in client/src-tauri/Cargo.lock.
+        rustVersion = "1.88.0";
+        rustToolchain = pkgs.rust-bin.stable.${rustVersion}.default;
 
         # System libraries WebKitGTK and the Tauri bundler link against. Linux
         # only; on macOS the webview is the system WKWebView.
@@ -40,11 +54,11 @@
           wrapGAppsHook3
         ];
 
-        buildTools = with pkgs; [
-          nodejs
-          cargo-tauri
-          rustc
-          cargo
+        # rustToolchain provides cargo + rustc; cargo-tauri orchestrates them.
+        buildTools = [
+          pkgs.nodejs
+          pkgs.cargo-tauri
+          rustToolchain
         ];
 
         # WebKitGTK on NixOS: avoid GPU-compositing crashes and make TLS modules
