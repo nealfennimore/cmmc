@@ -60,7 +60,6 @@ jobs:
         include:
           - runner: ubuntu-22.04 # x86_64 linux: .deb / .rpm / .AppImage
           - runner: macos-14 # apple silicon (aarch64): .dmg
-          - runner: macos-13 # intel (x86_64): .dmg
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
