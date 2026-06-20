@@ -148,6 +148,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: client
+          tauriScript: "npm tauri:win"
           # On the tauri branch, leave tag/release empty so tauri-action only
           # builds (tests the Windows bundle) without publishing a release.
           tagName: ${{ github.ref == 'refs/heads/tauri' && '' || github.ref_name }}
