@@ -92,9 +92,12 @@ jobs:
 
       - name: Build desktop bundle (inside pinned Nix shell)
         # linuxdeploy (the AppImage bundler) is itself an AppImage; GitHub runners
-        # lack FUSE, so make it self-extract instead of mounting. No-op on macOS.
+        # lack FUSE, so make it self-extract instead of mounting. NO_STRIP avoids
+        # linuxdeploy stripping the Nix-built binary (also set by the flake's
+        # shellHook; pinned here too so it doesn't depend on that). No-op on macOS.
         env:
-          APPIMAGE_EXTRACT_AND_RUN: 1
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          NO_STRIP: "true"
         run: nix develop .#ci -c bash -c "cd client && npm ci && cargo tauri build"
 
       - name: Attach bundles to release
