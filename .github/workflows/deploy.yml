@@ -2,6 +2,10 @@ name: Release
 
 on:
   push:
+    # Tags cut a real release. The tauri branch runs the same build for testing
+    # but skips every deploy/publish step (see the `if:` guards below).
+    branches:
+      - tauri
     tags:
       - "*"
 
@@ -31,6 +35,7 @@ jobs:
         run: nix develop .#ci -c bash -c "cd client && npm ci && npm run build"
 
       - name: Deploy to GitHub Pages
+        if: github.ref != 'refs/heads/tauri'
         uses: peaceiris/actions-gh-pages@373f7f263a76c20808c831209c920827a82a2847 # v3
         with:
           cname: app.getcmmc.consulting
@@ -67,6 +72,7 @@ jobs:
         run: nix develop .#ci -c bash -c "cd client && npm ci && cargo tauri build"
 
       - name: Attach bundles to release
+        if: github.ref != 'refs/heads/tauri'
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ github.ref_name }}
@@ -108,5 +114,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: client
-          tagName: ${{ github.ref_name }}
-          releaseName: ${{ github.ref_name }}
+          # On the tauri branch, leave tag/release empty so tauri-action only
+          # builds (tests the Windows bundle) without publishing a release.
+          tagName: ${{ github.ref == 'refs/heads/tauri' && '' || github.ref_name }}
+          releaseName: ${{ github.ref == 'refs/heads/tauri' && '' || github.ref_name }}
