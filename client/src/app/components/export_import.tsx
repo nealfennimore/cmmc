@@ -10,6 +10,7 @@ import {
     IDBRequirement,
     IDBSecurityRequirement,
 } from "@/app/db";
+import { saveBlob } from "@/app/utils/file";
 import { useActionState, useRef } from "react";
 import { menuItemClasses } from "./ui";
 
@@ -77,19 +78,10 @@ export const Export = () => {
 
         const timestamp = Math.floor(new Date().getTime() / 1000);
 
-        // Create a link element
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `cmmc-800-171-rev-${toNum(revision)}-export-${timestamp}.json`;
-
-        // Append the link to the body (required for Firefox)
-        document.body.appendChild(link);
-
-        // Programmatically click the link to trigger the download
-        link.click();
-
-        // Clean up and remove the link
-        document.body.removeChild(link);
+        await saveBlob(
+            `cmmc-800-171-rev-${toNum(revision)}-export-${timestamp}.json`,
+            blob,
+        );
         return payload;
     };
 

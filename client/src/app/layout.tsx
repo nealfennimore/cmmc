@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Serif_Display } from "next/font/google";
 import localFont from "next/font/local";
 import Script from "next/script";
+import { ExternalLinkHandler } from "./components/external_link_handler";
 import "./globals.css";
 import { SITE_URL, social } from "./seo";
 
@@ -50,6 +51,7 @@ export default function RootLayout({
             <body
                 className={`${geistSans.variable} ${geistMono.variable} ${dmSerifDisplay.variable} antialiased`}
             >
+                <ExternalLinkHandler />
                 {children}
             </body>
         </html>

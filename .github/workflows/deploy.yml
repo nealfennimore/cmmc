@@ -1,4 +1,4 @@
-name: Deploy Next.js to GitHub Pages
+name: Release
 
 on:
   push:
@@ -9,49 +9,147 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  # ---------------------------------------------------------------------------
+  # Web app -> GitHub Pages. Built with the Node pinned by the flake so the
+  # hosted build is reproducible too.
+  # ---------------------------------------------------------------------------
+  web:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v2
+      - name: Install Determinate Nix
+        uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+
+      - name: Cache Nix store
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
         with:
-          node-version: "20"
+          primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock', 'flake.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Create .env file
         working-directory: ./client
         run: |
           echo NEXT_PUBLIC_API_URL=https://app.getcmmc.consulting >> .env
           echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
-          echo NEXT_PUBLIC_CSP="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src-attr 'self' 'unsafe-inline'"
 
-      - name: Retrieve the cached "node_modules" directory (if present)
-        uses: actions/cache@v3
-        id: node-cache
-        with:
-          path: ./client/node_modules
-          key: node-modules-${{ runner.os }}-${{ hashFiles('./client/package-lock.json') }}
-
-      - name: Install dependencies
-        run: npm install
-        if: steps.node-cache.outputs.cache-hit != 'true'
-        working-directory: ./client
-
-      - name: Build App
-        run: npm run build
-        working-directory: ./client
+      - name: Build (pinned Node from flake)
+        run: nix develop .#ci -c bash -c "cd client && npm ci && npm run build"
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@373f7f263a76c20808c831209c920827a82a2847 # v3
         with:
           cname: app.getcmmc.consulting
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./client/out # This is the default output directory for `next export`
+          publish_dir: ./client/out
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+  # ---------------------------------------------------------------------------
+  # Desktop bundles for Linux + macOS, built inside the pinned Nix shell so the
+  # toolchain (rust, node, cargo-tauri, webkitgtk) is identical run-to-run.
+  # Each runner builds natively for its own arch -> no cross-target rust setup.
+  # ---------------------------------------------------------------------------
+  desktop-nix:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # AppImage omitted for now: upstream linuxdeploy/FUSE breakage
+          # (tauri-apps/tauri). Re-enable by adding `appimage` to bundleArgs below.
+          - runner: ubuntu-24.04 # x86_64 linux: .deb / .rpm
+            bundleArgs: "--bundles deb rpm"
+          - runner: macos-14 # apple silicon (aarch64): app + .dmg
+            bundleArgs: "" # empty -> Tauri's default targets (app + dmg)
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install Determinate Nix
+        uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+
+      - name: Cache Nix store
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
         with:
+          primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock', 'flake.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Cache cargo (registry + target)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            client/src-tauri/target
+          key: cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('client/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ runner.arch }}-
+
+      # The desktop app is offline-first: don't point it at the hosted API.
+      - name: Create .env file
+        working-directory: ./client
+        run: |
+          echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
+
+      - name: Build desktop bundle (inside pinned Nix shell)
+        # bundleArgs (from the matrix) currently excludes AppImage on Linux — see
+        # the matrix comment. APPIMAGE_EXTRACT_AND_RUN (job env) and NO_STRIP (flake
+        # shellHook) stay in place so re-enabling AppImage needs no other change.
+        run: nix develop .#ci -c bash -c "cd client && npm ci && cargo tauri build ${{ matrix.bundleArgs }}"
+
+      - name: Attach bundles to release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          tag_name: ${{ github.ref_name }}
           generate_release_notes: true
+          fail_on_unmatched_files: false
+          files: |
+            client/src-tauri/target/release/bundle/deb/*.deb
+            client/src-tauri/target/release/bundle/rpm/*.rpm
+            client/src-tauri/target/release/bundle/appimage/*.AppImage
+            client/src-tauri/target/release/bundle/dmg/*.dmg
+
+  # ---------------------------------------------------------------------------
+  # Windows bundle. Nix can't produce native Windows binaries, so this stays on
+  # a native runner with the standard Tauri toolchain via tauri-action.
+  # ---------------------------------------------------------------------------
+  desktop-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable branch, pinned
+
+      - name: Cache cargo (registry + target)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            client/src-tauri/target
+          key: cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('client/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Create .env file
+        working-directory: ./client
+        shell: bash
+        run: |
+          echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
+
+      - name: Install dependencies
+        working-directory: ./client
+        run: npm ci
+
+      - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: client
+          tauriScript: "npm tauri:win"
+          # On the tauri branch, leave tag/release empty so tauri-action only
+          # builds (tests the Windows bundle) without publishing a release.
+          tagName: ${{ github.ref == 'refs/heads/tauri' && '' || github.ref_name }}
+          releaseName: ${{ github.ref == 'refs/heads/tauri' && '' || github.ref_name }}

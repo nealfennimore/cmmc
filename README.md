@@ -21,7 +21,7 @@ By working through the 800-171 controls, you can record an implementation status
 - Generates a POA&M in CSV for unimplemented requirements
 - Exports an evidence map and lets you export/import the entire database for archival or transfer
 - Status icons and per-family/requirement rollups so you can see progress at a glance
-- Works offline as an installable PWA via service workers
+- Works offline as an installable PWA via service workers, or as a native desktop app (see [Desktop app](#desktop-app-tauri))
 
 ### Assessment Guidance (Rev 2)
 
@@ -73,6 +73,31 @@ npm run build  # produce the static export in client/out
 ```
 
 The 800-171 framework data in [`client/public/data`](client/public/data) is sourced from NIST (see [Resources](#resources)). The Rev 2 assessment guidance lives alongside it in [`assessment-guide-requirements.json`](client/public/data/sp_800_171_2_0_0/assessment-guide-requirements.json).
+
+### Desktop app (Tauri)
+
+The same static frontend can be packaged as a fully-offline native desktop app via [Tauri](https://tauri.app), producing small installers (`.dmg`, `.msi`, `.deb`, `.AppImage`) that bundle the entire 800-171 dataset — no network access required. The Tauri project lives in [`client/src-tauri/`](client/src-tauri/).
+
+Prerequisites: the Tauri CLI, a [Rust toolchain](https://www.rust-lang.org/tools/install), and the WebKit/GTK system libraries for your platform (see Tauri's [prerequisites](https://tauri.app/start/prerequisites/)). On NixOS, `nix-shell` provides everything — Rust, WebKitGTK, and the `cargo-tauri` CLI are wired into [`shell.nix`](shell.nix). The `npm run tauri` script forwards to that CLI.
+
+```bash
+cd client
+npm install
+
+npm run tauri dev            # run the desktop app against the dev server
+npm run tauri build          # produce native installers in src-tauri/target/release/bundle
+
+# Regenerate the multi-platform icon set from the source PNG (optional):
+npm run tauri icon public/web-app-manifest-512x512.png
+```
+
+External links (evidence URLs, citations, the consulting link) open in the system browser via [`tauri-plugin-opener`](https://github.com/tauri-apps/plugins-workspace/tree/v2/plugins/opener) rather than navigating the in-app webview.
+
+Notes:
+
+- **Storage is per-app.** The desktop app keeps its own IndexedDB store, separate from the browser/PWA. Use **Export / Import Database** to move data between them.
+- **Routing.** When building under Tauri, `next.config.ts` switches to `trailingSlash` so routes resolve as `…/index.html` under Tauri's asset protocol; the web build keeps its clean URLs.
+- **Distribution.** Shipping installers to end users requires code signing (Apple notarization, Windows Authenticode) to avoid "unidentified developer" warnings.
 
 ## Resources
 

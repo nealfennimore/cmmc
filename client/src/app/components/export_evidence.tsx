@@ -1,23 +1,33 @@
 "use client";
 import { IDB, IDBEvidenceV2 } from "@/app/db";
-import { toFSName } from "@/app/utils/file";
+import { saveBlob, toFSName } from "@/app/utils/file";
+import { saveFilesToDirectory } from "@/app/utils/tauri";
 import Link from "next/link";
 import { useActionState } from "react";
 import { menuItemClasses } from "./ui";
 
-const download = async (artifact: IDBEvidenceV2) => {
-    const file = new File([artifact.data], artifact.filename, {
-        type: artifact.type,
-    });
+const toFile = (artifact: IDBEvidenceV2) =>
+    new File([artifact.data], artifact.filename, { type: artifact.type });
 
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(file);
-    link.download = toFSName(artifact);
-    document.body.appendChild(link);
-    link.click();
+const exportEvidence = async (artifacts: IDBEvidenceV2[]) => {
+    // In the desktop shell, write the whole set into one chosen folder rather
+    // than firing a save dialog per file.
+    if (
+        await saveFilesToDirectory(
+            artifacts.map((artifact) => ({
+                filename: toFSName(artifact),
+                blob: toFile(artifact),
+            })),
+        )
+    ) {
+        return;
+    }
 
-    URL.revokeObjectURL(link.href);
-    document.body.removeChild(link);
+    await Promise.all(
+        artifacts.map((artifact) =>
+            saveBlob(toFSName(artifact), toFile(artifact)),
+        ),
+    );
 };
 
 export const ViewEvidence = ({ path }) => (
@@ -51,10 +61,8 @@ export const ExportEvidence = () => {
             )
         ) {
             const evidence = await IDB.evidence.getAll();
-            await Promise.all(
-                evidence
-                    .filter((artifact) => artifact.type !== "url")
-                    .map(download),
+            await exportEvidence(
+                evidence.filter((artifact) => artifact.type !== "url"),
             );
         }
     };

@@ -4,7 +4,7 @@ import { Status } from "@/app/components/status";
 import { useManifestContext } from "@/app/context/manifest";
 import { toNum, toPath, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBSecurityRequirement } from "@/app/db";
-import { embeddable, snippetable, toFSName } from "@/app/utils/file";
+import { embeddable, saveBlob, snippetable, toFSName } from "@/app/utils/file";
 import { useActionState } from "react";
 import { menuItemClasses } from "./ui";
 
@@ -181,21 +181,10 @@ export const Markdown = () => {
 
         const timestamp = Math.floor(new Date().getTime() / 1000);
 
-        // Create a link element
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `cmmc-800-171-rev-${toNum(revision)}-report-${timestamp}.md`;
-
-        // Append the link to the body (required for Firefox)
-        document.body.appendChild(link);
-
-        // Programmatically click the link to trigger the download
-        link.click();
-
-        // Clean up and remove the link
-        document.body.removeChild(link);
-
-        URL.revokeObjectURL(link.href);
+        await saveBlob(
+            `cmmc-800-171-rev-${toNum(revision)}-report-${timestamp}.md`,
+            blob,
+        );
         return payload;
     };
 

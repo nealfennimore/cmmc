@@ -1,0 +1,41 @@
+{
+    "$schema": "https://schema.tauri.app/config/2",
+    "productName": "CMMC",
+    "version": "0.16.5",
+    "identifier": "consulting.getcmmc.app",
+    "build": {
+        "frontendDist": "../out",
+        "devUrl": "http://localhost:3000",
+        "beforeDevCommand": "npm run dev",
+        "beforeBuildCommand": "npm run build"
+    },
+    "app": {
+        "windows": [
+            {
+                "label": "main",
+                "title": "CMMC",
+                "width": 1280,
+                "height": 800,
+                "minWidth": 800,
+                "minHeight": 600
+            }
+        ],
+        "security": {
+            "csp": null
+        }
+    },
+    "bundle": {
+        "active": true,
+        "targets": "all",
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico"
+        ],
+        "category": "Productivity",
+        "shortDescription": "Offline CMMC / NIST 800-171 compliance",
+        "longDescription": "Work through NIST 800-171 controls, record implementation status and evidence, and generate an SSP and POA&M — fully offline, with data stored only on your device."
+    }
+}

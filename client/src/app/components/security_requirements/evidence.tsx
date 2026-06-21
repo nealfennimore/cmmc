@@ -6,6 +6,7 @@ import {
 import { useNotification } from "@/app/context/notification";
 import { IDB, IDBEvidenceV2 } from "@/app/db";
 import { isImage } from "@/app/utils/file";
+import { openExternal, openFileInSystemViewer } from "@/app/utils/tauri";
 import {
     ChangeEvent,
     Dispatch,
@@ -313,7 +314,19 @@ export const FileBadge = ({ artifact }: { artifact: IDBEvidenceV2 }) => {
         <button
             className="flex items-center border-r border-border pr-2"
             title={`${artifact.data.byteLength} bytes | ${artifact.type}`}
-            onClick={() => viewFile(artifact)}
+            onClick={async () => {
+                // In the desktop shell, open via the OS default app; the blob
+                // URL in viewFile is the browser fallback.
+                if (
+                    await openFileInSystemViewer(
+                        artifact.filename,
+                        artifact.data,
+                    )
+                ) {
+                    return;
+                }
+                viewFile(artifact);
+            }}
         >
             <IconFileDownload />
             <span>{artifact.filename}</span>
@@ -324,6 +337,11 @@ export const LinkBadge = ({ artifact }: { artifact: IDBEvidenceV2 }) => {
     const url = new TextDecoder().decode(artifact.data);
 
     const onClick = async () => {
+        // In the desktop shell this opens the system browser; the detached
+        // anchor below is the browser fallback.
+        if (await openExternal(url)) {
+            return;
+        }
         Object.assign(document.createElement("a"), {
             target: "_blank",
             rel: "noopener noreferrer",
@@ -461,45 +479,65 @@ function pasteImageFromClipboard(requirementId, setEvidence, setUploading) {
             if (["TEXTAREA", "INPUT"].includes(event?.target?.nodeName)) {
                 return false;
             }
-            event.preventDefault();
+            // Gather pasted images. Prefer the paste event's clipboardData,
+            // which works in both browsers and the Tauri (WebKitGTK) webview
+            // without the async Clipboard API's read permission. WebKitGTK
+            // exposes navigator.clipboard.read but it rejects without that
+            // permission, which is why pasting failed inside Tauri.
+            const clipboardEvent = event as ClipboardEvent;
+            const blobs: Blob[] = [];
 
-            const clipboardItems: ClipboardItems | undefined =
-                typeof navigator?.clipboard?.read === "function"
-                    ? await navigator.clipboard.read()
-                    : event?.clipboardData?.files;
-
-            if (
-                !clipboardItems?.length ||
-                !clipboardItems.every((item) => item.types.some(isImage))
-            ) {
-                return false;
+            const items = clipboardEvent.clipboardData?.items;
+            for (let i = 0; i < (items?.length ?? 0); i++) {
+                const item = items![i];
+                if (item.kind === "file" && isImage(item.type)) {
+                    const file = item.getAsFile();
+                    if (file) {
+                        blobs.push(file);
+                    }
+                }
             }
 
-            setUploading(true);
-            for (const clipboardItem of clipboardItems) {
-                let blob: Blob | undefined;
-                if (isImage(clipboardItem?.type)) {
-                    blob = clipboardItem;
-                } else {
-                    const [imageType] = clipboardItem.types?.filter(isImage);
-                    blob = await clipboardItem.getType(imageType);
-                }
-
-                if (blob) {
-                    const data = await toBuffer(blob);
-                    const evidence: IDBEvidenceV2 = await deriveEvidence({
-                        type: blob.type,
-                        data,
-                    });
-                    const [existing] = await IDB.evidence.getAll(evidence.id);
-                    if (!existing) {
-                        await IDB.evidence.put(evidence);
+            // Fall back to the async Clipboard API (e.g. an image copied from
+            // another app rather than pasted as a file).
+            if (
+                !blobs.length &&
+                typeof navigator?.clipboard?.read === "function"
+            ) {
+                try {
+                    const clipboardItems = await navigator.clipboard.read();
+                    for (const clipboardItem of clipboardItems) {
+                        const imageType = clipboardItem.types.find(isImage);
+                        if (imageType) {
+                            blobs.push(await clipboardItem.getType(imageType));
+                        }
                     }
-                    await IDB.evidenceRequirements.put({
-                        evidence_id: evidence.id,
-                        requirement_id: requirementId,
-                    });
+                } catch {
+                    // read() can reject in webviews lacking clipboard-read
+                    // permission; the clipboardData path above is the fallback.
                 }
+            }
+
+            if (!blobs.length) {
+                return false;
+            }
+            clipboardEvent.preventDefault();
+
+            setUploading(true);
+            for (const blob of blobs) {
+                const data = await toBuffer(blob);
+                const evidence: IDBEvidenceV2 = await deriveEvidence({
+                    type: blob.type,
+                    data,
+                });
+                const [existing] = await IDB.evidence.getAll(evidence.id);
+                if (!existing) {
+                    await IDB.evidence.put(evidence);
+                }
+                await IDB.evidenceRequirements.put({
+                    evidence_id: evidence.id,
+                    requirement_id: requirementId,
+                });
             }
             setUploading(false);
             return true;
