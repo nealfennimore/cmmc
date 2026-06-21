@@ -31,7 +31,7 @@ export const Footer = () => (
                 <div className="flex flex-row items-center justify-center gap-2 text-xs text-muted-foreground">
                     <span>
                         <a
-                            href={`https://github.com/nealfennimore/cmmc/releases/tag/${process.env.NEXT_PUBLIC_APP_VERSION?.replace("v", "")}`}
+                            href={`https://github.com/nealfennimore/cmmc/releases/tag/${process.env.NEXT_PUBLIC_APP_VERSION}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="hover:underline"
