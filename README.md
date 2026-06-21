@@ -21,7 +21,7 @@ By working through the 800-171 controls, you can record an implementation status
 - Generates a POA&M in CSV for unimplemented requirements
 - Exports an evidence map and lets you export/import the entire database for archival or transfer
 - Status icons and per-family/requirement rollups so you can see progress at a glance
-- Works offline as an installable PWA via service workers, or as a native desktop app (see [Desktop app](#desktop-app-tauri))
+- Works offline as an installable PWA via service workers, or as a native desktop app for macOS, Windows, and Linux (see [Download](#download))
 
 ### Assessment Guidance (Rev 2)
 
@@ -32,6 +32,29 @@ Each Rev 2 requirement page includes a collapsible **Assessment Guidance** panel
 - **Examine checklist** — tick off the evidence types your organization has actually collected; an at-a-glance count (e.g. `Examine 3/15`) shows on the panel header, and a note reminds you that not every listed item is required to meet the control. These selections are saved locally and are included in database export/import.
 - **Potential assessment considerations** — the kinds of questions an assessor may ask
 - **Key references** — the underlying NIST 800-171 and FAR citations
+
+## Download
+
+There are three ways to run the app. They each keep their own local data, so use **Export / Import Database** (upper-right menu) to move your work between them.
+
+### Web — no install
+
+Open [**app.getcmmc.consulting**](https://app.getcmmc.consulting/) in any modern browser. It works fully offline and can be **installed as a PWA** (use the install icon in the address bar) for an app-like experience.
+
+### Desktop — native, fully offline
+
+Signed installers are published on the [**Releases**](https://github.com/nealfennimore/cmmc/releases/latest) page. Grab the file for your platform:
+
+| Platform                    | File                                     |
+| --------------------------- | ---------------------------------------- |
+| **macOS — Apple Silicon**   | `CMMC_<version>_aarch64.dmg`             |
+| **macOS — Intel**           | `CMMC_<version>_x64.dmg`                 |
+| **Windows**                 | `CMMC_<version>_x64-setup.exe` or `.msi` |
+| **Linux — Debian / Ubuntu** | `CMMC_<version>_amd64.deb`               |
+| **Linux — Fedora / RHEL**   | `CMMC-<version>-1.x86_64.rpm`            |
+
+> [!NOTE]
+> The desktop app stores its data separately from the browser/PWA version — moving between them is a manual **Export / Import Database**.
 
 ## Usage
 
@@ -97,7 +120,7 @@ Notes:
 
 - **Storage is per-app.** The desktop app keeps its own IndexedDB store, separate from the browser/PWA. Use **Export / Import Database** to move data between them.
 - **Routing.** When building under Tauri, `next.config.ts` switches to `trailingSlash` so routes resolve as `…/index.html` under Tauri's asset protocol; the web build keeps its clean URLs.
-- **Distribution.** Shipping installers to end users requires code signing (Apple notarization, Windows Authenticode) to avoid "unidentified developer" warnings.
+- **Distribution.** Tagged releases are built and signed by GitHub Actions ([`deploy.yml`](.github/workflows/deploy.yml)) and attached to the [Releases](https://github.com/nealfennimore/cmmc/releases) page.
 
 ## Resources
 
