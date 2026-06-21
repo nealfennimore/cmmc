@@ -170,8 +170,16 @@ if (typeof window !== "undefined") {
             console.error("Can't use IndexDB");
             reject(event);
         };
-        request.onsuccess = (event) => {
+        request.onsuccess = async (event) => {
             const db = event.target?.result as IDBDatabase;
+            try {
+                await migrateEvidenceIdsToSha256(db);
+            } catch (error) {
+                // A failed normalization shouldn't brick the app: legacy ids
+                // stay internally consistent (links still point at them), so we
+                // log and continue rather than reject the open.
+                console.error("Evidence id migration failed", error);
+            }
             resolve(db);
         };
 
@@ -306,6 +314,104 @@ export const put =
             };
         });
     };
+
+const SHA256_HEX = /^[0-9a-f]{64}$/;
+
+const sha256Hex = async (data: ArrayBuffer): Promise<string> =>
+    [...new Uint8Array(await crypto.subtle.digest("SHA-256", data))]
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
+// Older databases keyed evidence by UUID (and, further back, sha1) instead of a
+// content hash. Normalize any such id to sha256(data) so it matches what
+// deriveEvidence() produces today, repointing the evidence_requirements links
+// that reference it. Idempotent: once every id is a sha256 this is a no-op.
+//
+// Runs before the open promise resolves, so it can't use the helpers' implicit
+// transactions (those await getDB(), which is still pending) — every read/write
+// gets an explicit transaction. All hashing finishes before the write
+// transaction opens: awaiting crypto.subtle inside a live IDB transaction would
+// let it auto-commit and the next write would throw.
+const migrateEvidenceIdsToSha256 = async (db: IDBDatabase): Promise<void> => {
+    if (
+        !db.objectStoreNames.contains(Table.EVIDENCE) ||
+        !db.objectStoreNames.contains(Table.EVIDENCE_REQUIREMENTS)
+    ) {
+        return;
+    }
+
+    // Cheap gate: read keys only, no blob payloads, and bail when nothing is
+    // legacy (the common case on every load after the one-time conversion).
+    const keysTx = db.transaction(Table.EVIDENCE, Permission.READONLY);
+    const keys = await new Promise<IDBValidKey[]>((resolve, reject) => {
+        const request = keysTx.objectStore(Table.EVIDENCE).getAllKeys();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+    if (keys.every((k) => typeof k === "string" && SHA256_HEX.test(k))) {
+        return;
+    }
+
+    const readTx = db.transaction(
+        [Table.EVIDENCE, Table.EVIDENCE_REQUIREMENTS],
+        Permission.READONLY,
+    );
+    const evidence = await getAll<IDBEvidenceV2>(Table.EVIDENCE, readTx)();
+    const links = await getAll<IDBEvidenceRequirement>(
+        Table.EVIDENCE_REQUIREMENTS,
+        readTx,
+    )();
+
+    // Resolve legacy id -> sha256 up front. Done before any write opens.
+    const newIdByOldId = new Map<string, string>();
+    for (const artifact of evidence) {
+        if (SHA256_HEX.test(artifact.id)) {
+            continue;
+        }
+        newIdByOldId.set(artifact.id, await sha256Hex(artifact.data));
+    }
+
+    const writeTx = db.transaction(
+        [Table.EVIDENCE, Table.EVIDENCE_REQUIREMENTS],
+        Permission.READWRITE,
+    );
+    const putEvidence = put<IDBEvidenceV2>(Table.EVIDENCE, writeTx);
+    const deleteEvidence = remove(Table.EVIDENCE, writeTx);
+    const putLink = put<IDBEvidenceRequirement>(
+        Table.EVIDENCE_REQUIREMENTS,
+        writeTx,
+    );
+    const deleteLink = remove(Table.EVIDENCE_REQUIREMENTS, writeTx);
+
+    // Re-key the evidence. put() then delete() of the old key; the keys always
+    // differ (legacy vs sha256). Distinct records with identical content collapse
+    // onto the same sha256 key, matching deriveEvidence()'s dedupe-by-content.
+    for (const artifact of evidence) {
+        const id = newIdByOldId.get(artifact.id);
+        if (!id || id === artifact.id) {
+            continue;
+        }
+        await putEvidence({ ...artifact, id });
+        await deleteEvidence(artifact.id);
+    }
+
+    // Repoint the only foreign key. The composite [evidence_id, requirement_id]
+    // primary key dedupes any links that collapse together.
+    for (const link of links) {
+        const id = newIdByOldId.get(link.evidence_id);
+        if (!id || id === link.evidence_id) {
+            continue;
+        }
+        await deleteLink([link.evidence_id, link.requirement_id]);
+        await putLink({ evidence_id: id, requirement_id: link.requirement_id });
+    }
+
+    await new Promise<void>((resolve, reject) => {
+        writeTx.oncomplete = () => resolve();
+        writeTx.onerror = () => reject(writeTx.error);
+        writeTx.onabort = () => reject(writeTx.error);
+    });
+};
 
 export const clear = (table: string) => async (): Promise<boolean> => {
     const store = await getStore(table, Permission.READWRITE);
