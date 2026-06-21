@@ -30,16 +30,24 @@ export const Footer = () => (
                 </p>
                 <div className="flex flex-row items-center justify-center gap-2 text-xs text-muted-foreground">
                     <span>
-                        v{process.env.NEXT_PUBLIC_APP_VERSION}
+                        <a
+                            href={`https://github.com/nealfennimore/cmmc/releases/tag/${process.env.NEXT_PUBLIC_APP_VERSION?.replace("v", "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline"
+                            tabIndex={101}
+                        >
+                            v{process.env.NEXT_PUBLIC_APP_VERSION}
+                        </a>
                         {" · "}
                         <a
                             href={`https://github.com/nealfennimore/cmmc/commit/${process.env.NEXT_PUBLIC_GIT_SHA}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-mono hover:underline"
-                            tabIndex={101}
+                            tabIndex={102}
                         >
-                            {process.env.NEXT_PUBLIC_GIT_SHA}
+                            <span>{process.env.NEXT_PUBLIC_GIT_SHA}</span>
                         </a>
                     </span>
                     <a
