@@ -149,9 +149,16 @@ jobs:
 
       # App version = release tag (leading "v" stripped), shared by the bundle
       # name (--config below) and the footer (next.config reads APP_VERSION).
+      # We write the override to a file rather than passing inline JSON: on
+      # Windows the escaped quotes get destroyed as the args pass through
+      # npm -> cmd.exe, so tauri receives a truncated string. A file path has
+      # no special characters and survives the quoting intact.
       - name: Resolve version from tag
         shell: bash
-        run: echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+        run: |
+          APP_VERSION="${GITHUB_REF_NAME#v}"
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          echo "{\"version\":\"$APP_VERSION\"}" > client/version-override.json
 
       - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
         env:
@@ -159,7 +166,8 @@ jobs:
         with:
           projectPath: client
           tauriScript: "npm tauri:win"
-          args: '--config "{\"version\":\"${{ env.APP_VERSION }}\"}"'
+          # Config path is resolved relative to projectPath (client).
+          args: "--config version-override.json"
           # On the tauri branch, leave tag/release empty so tauri-action only
           # builds (tests the Windows bundle) without publishing a release.
           tagName: ${{ github.ref == 'refs/heads/tauri' && '' || github.ref_name }}
