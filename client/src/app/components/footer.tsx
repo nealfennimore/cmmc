@@ -16,7 +16,7 @@ export const Footer = () => (
                 consulting — mock assessments, gap analysis, and SSP/POA&amp;M
                 development.
             </p>
-            <div className="flex flex-row items-center justify-center text-sm text-muted-foreground">
+            <div className="flex flex-col items-center justify-center gap-1 text-sm text-muted-foreground lg:flex-row lg:gap-4">
                 <p>
                     © 2026{" "}
                     <a
@@ -28,7 +28,7 @@ export const Footer = () => (
                     </a>
                     . All Rights Reserved.
                 </p>
-                <div className="ml-4 flex flex-row items-center justify-center gap-2 text-xs text-muted-foreground">
+                <div className="flex flex-row items-center justify-center gap-2 text-xs text-muted-foreground">
                     <span>
                         v{process.env.NEXT_PUBLIC_APP_VERSION}
                         {" · "}
