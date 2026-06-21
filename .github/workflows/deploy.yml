@@ -117,6 +117,19 @@ jobs:
   # ---------------------------------------------------------------------------
   desktop-windows:
     runs-on: windows-latest
+    # Windows code signing via Azure Artifact Signing. Set these repo secrets to
+    # enable it (all six required; otherwise the build runs unsigned):
+    #   AZURE_ARTIFACT_SIGNING_ENDPOINT              e.g. https://eus.codesigning.azure.net/
+    #   AZURE_ARTIFACT_SIGNING_ACCOUNT               signing account name
+    #   AZURE_ARTIFACT_SIGNING_CERTIFICATE_PROFILE   certificate profile name
+    #   AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET   app registration
+    # AZURE_ENDPOINT doubles as the "is signing configured?" switch: when the
+    # endpoint secret is unset (forks, or before signing is set up) the build
+    # still runs, just unsigned. The other values are passed to the bundle step
+    # as env vars (read directly by the signing CLI); only the endpoint is needed
+    # here, both to gate the setup step and to build signCommand.
+    env:
+      AZURE_ENDPOINT: ${{ secrets.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -125,6 +138,28 @@ jobs:
           node-version: "20"
 
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable branch, pinned
+
+      # Azure Artifact Signing (formerly Trusted Signing). Only runs when the
+      # endpoint secret is present, so unsigned builds keep working. Tauri calls
+      # artifact-signing-cli per bundled binary/installer via signCommand below.
+      - name: Set up Azure Artifact Signing
+        if: env.AZURE_ENDPOINT != ''
+        shell: pwsh
+        run: |
+          # Pinned release of artifact-signing-cli (the renamed trusted-signing-cli
+          # referenced by the Tauri docs). Ships a single prebuilt Windows binary.
+          $url = "https://github.com/Levminer/trusted-signing-cli/releases/download/0.11.0/artifact-signing-cli.exe"
+          $dir = Join-Path $env:USERPROFILE ".signing-bin"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Invoke-WebRequest -Uri $url -OutFile (Join-Path $dir "artifact-signing-cli.exe")
+          Add-Content $env:GITHUB_PATH $dir
+
+          # The CLI defaults SIGNTOOL_PATH to one pinned SDK build; point it at the
+          # newest signtool actually installed on the runner instead. The default
+          # Azure CLI path it expects already matches the runner image.
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          Add-Content $env:GITHUB_ENV "SIGNTOOL_PATH=$($signtool.FullName)"
 
       - name: Cache cargo (registry + target)
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -158,11 +193,29 @@ jobs:
         run: |
           APP_VERSION="${GITHUB_REF_NAME#v}"
           echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
-          echo "{\"version\":\"$APP_VERSION\"}" > client/version-override.json
+          if [ -n "$AZURE_ENDPOINT" ]; then
+            # Sign Windows binaries/installers during the bundle step. Only the
+            # endpoint is a CLI arg; the account, certificate profile and Azure
+            # credentials are read from the environment by artifact-signing-cli
+            # (see the tauri-action step). %1 is the file path Tauri substitutes;
+            # it is %%1 here to survive printf.
+            printf '{ "version": "%s", "bundle": { "windows": { "signCommand": "artifact-signing-cli -e %s -d CMMC %%1" } } }\n' \
+              "$APP_VERSION" "$AZURE_ENDPOINT" > client/version-override.json
+          else
+            echo "{\"version\":\"$APP_VERSION\"}" > client/version-override.json
+          fi
 
       - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Read by artifact-signing-cli when signCommand runs (no-ops when the
+          # signing secrets are unset). SIGNTOOL_PATH is exported in the setup
+          # step above; AZURE_ENDPOINT is baked into signCommand.
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_ARTIFACT_SIGNING_ACCOUNT: ${{ secrets.AZURE_ARTIFACT_SIGNING_ACCOUNT }}
+          AZURE_ARTIFACT_SIGNING_CERTIFICATE_PROFILE: ${{ secrets.AZURE_ARTIFACT_SIGNING_CERTIFICATE_PROFILE }}
         with:
           projectPath: client
           tauriScript: "npm tauri:win"
@@ -170,5 +223,5 @@ jobs:
           args: "--config version-override.json"
           # On the tauri branch, leave tag/release empty so tauri-action only
           # builds (tests the Windows bundle) without publishing a release.
-          tagName: ${{ github.ref == 'refs/heads/tauri' && '' || github.ref_name }}
-          releaseName: ${{ github.ref == 'refs/heads/tauri' && '' || github.ref_name }}
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
