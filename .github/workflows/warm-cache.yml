@@ -14,8 +14,8 @@ name: Warm cache
 on:
   push:
     branches: [main]
-    paths:
-      - client/src-tauri/Cargo.lock
+    # paths:
+    #   - client/src-tauri/Cargo.lock
 
 permissions:
   contents: read
