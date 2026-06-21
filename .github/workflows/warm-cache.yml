@@ -1,0 +1,137 @@
+name: Warm cache
+
+# Populate the cargo cache on the default branch so tag-triggered release builds
+# (.github/workflows/deploy.yml) can restore it. GitHub scopes caches per ref: a
+# tag run can only fall back to the *default branch*, and nothing else builds on
+# main — so without this every release recompiles all Rust dependencies (the
+# slow part of a Tauri build) from scratch.
+#
+# Gated to Cargo.lock changes, which is when the dependency cache goes stale. The
+# cache keys, paths and toolchains here must stay identical to the matching jobs
+# in deploy.yml, otherwise the release restore won't hit. Each job compiles the
+# Rust crate (deps + app) but skips bundling and publishing — that's all the
+# dependency cache needs.
+on:
+  push:
+    branches: [main]
+    paths:
+      - client/src-tauri/Cargo.lock
+
+permissions:
+  contents: read
+
+concurrency:
+  group: warm-cache
+  cancel-in-progress: true
+
+jobs:
+  # Linux: mirrors desktop-nix — same Nix shell, so the rustc (and thus the
+  # compiled fingerprints) match what the release build will restore.
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install Determinate Nix
+        uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+
+      - name: Cache Nix store
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
+        with:
+          primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock', 'flake.nix') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Cache cargo (registry + target)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            client/src-tauri/target
+          key: cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('client/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Create .env file
+        working-directory: ./client
+        run: |
+          echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
+
+      # npm run build produces the frontend that generate_context! embeds; cargo
+      # build (not tauri build) compiles the same deps without the bundling step.
+      - name: Warm Rust cache
+        run: nix develop .#ci -c bash -c "cd client && npm ci && npm run build && cargo build --release --manifest-path src-tauri/Cargo.toml"
+
+  # Windows: mirrors desktop-windows (dtolnay stable toolchain).
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable branch, pinned
+
+      - name: Cache cargo (registry + target)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            client/src-tauri/target
+          key: cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('client/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Create .env file
+        working-directory: ./client
+        shell: bash
+        run: |
+          echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
+
+      - name: Warm Rust cache
+        working-directory: ./client
+        shell: bash
+        run: npm ci && npm run build && cargo build --release --manifest-path src-tauri/Cargo.toml
+
+  # macOS: mirrors desktop-macos, one cache per target (Apple Silicon + Intel).
+  macos:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin # Apple Silicon
+          - target: x86_64-apple-darwin # Intel
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable branch, pinned
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo (registry + target)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            client/src-tauri/target
+          key: cargo-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('client/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ matrix.target }}-
+
+      - name: Create .env file
+        working-directory: ./client
+        run: |
+          echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
+
+      - name: Warm Rust cache
+        working-directory: ./client
+        run: npm ci && npm run build && cargo build --release --target ${{ matrix.target }} --manifest-path src-tauri/Cargo.toml
