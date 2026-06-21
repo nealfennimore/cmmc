@@ -20,7 +20,7 @@ import {
     useRef,
     useState,
 } from "react";
-import { badgeClasses, Button, Heading, Input } from "../ui";
+import { badgeClasses, Button, buttonClasses, Heading, Input } from "../ui";
 
 const deriveEvidence = async ({
     type,
@@ -49,6 +49,71 @@ const deriveEvidence = async ({
         type: type,
         data,
     };
+};
+
+// Swap the underlying file/URL of an existing evidence item while keeping the
+// requirement links intact. Evidence ids are content hashes, so new data means
+// a new id; we re-point the affected links from the old id to the new one and
+// drop the old artifact once nothing references it anymore.
+const replaceEvidence = async ({
+    oldArtifact,
+    name,
+    type,
+    data,
+    requirementId,
+}: {
+    oldArtifact: IDBEvidenceV2;
+    name?: string;
+    type: string;
+    data: ArrayBuffer;
+    requirementId: string;
+}): Promise<void> => {
+    const newEvidence = await deriveEvidence({ name, type, data });
+
+    // Identical content hashes to the same id; there is nothing to replace.
+    if (newEvidence.id === oldArtifact.id) {
+        return;
+    }
+
+    const links = await IDB.evidenceRequirements.getAll(
+        IDBKeyRange.only(oldArtifact.id),
+        "evidence_id",
+    );
+
+    // When the artifact is shared across requirements, let the user keep the
+    // replacement scoped to this one (mirrors the delete flow's prompt).
+    let scoped = links;
+    if (links.length > 1) {
+        const replaceEverywhere = window.confirm(
+            "This evidence is attached to more than one requirement. Replace it everywhere? Click Cancel to replace it only here.",
+        );
+        if (!replaceEverywhere) {
+            scoped = links.filter(
+                (link) => link.requirement_id === requirementId,
+            );
+        }
+    }
+
+    await IDB.evidence.put(newEvidence);
+    for (const link of scoped) {
+        await IDB.evidenceRequirements.put({
+            evidence_id: newEvidence.id,
+            requirement_id: link.requirement_id,
+        });
+        await IDB.evidenceRequirements.delete([
+            oldArtifact.id,
+            link.requirement_id,
+        ]);
+    }
+
+    // Drop the old artifact once nothing references it anymore.
+    const remaining = await IDB.evidenceRequirements.getAll(
+        IDBKeyRange.only(oldArtifact.id),
+        "evidence_id",
+    );
+    if (!remaining.length) {
+        await IDB.evidence.delete(IDBKeyRange.only(oldArtifact.id));
+    }
 };
 
 const IconFileDownload = () => (
@@ -244,16 +309,125 @@ const NameChange = ({ artifact }: { artifact: IDBEvidenceV2 }) => {
     );
 };
 
+const ReplaceControl = ({
+    artifact,
+    requirementId,
+    setEvidence,
+}: {
+    artifact: IDBEvidenceV2;
+    requirementId: string;
+    setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
+}) => {
+    const [busy, setBusy] = useState(false);
+    const urlInput = useRef<HTMLInputElement>(null);
+
+    const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) {
+            return;
+        }
+        setBusy(true);
+        const data = await toBuffer(file);
+        await replaceEvidence({
+            oldArtifact: artifact,
+            name: file.name,
+            type: file.type,
+            data,
+            requirementId,
+        });
+        await fetchEvidence(requirementId, setEvidence);
+        setBusy(false);
+    };
+
+    const onUrl = async () => {
+        const href = urlInput.current?.value.trim();
+        if (!href) {
+            return;
+        }
+        let url: URL;
+        try {
+            url = new URL(href);
+        } catch {
+            return;
+        }
+        setBusy(true);
+        const data = new TextEncoder().encode(href);
+        await replaceEvidence({
+            oldArtifact: artifact,
+            name: url.host || url.href,
+            type: "url",
+            data: data.buffer,
+            requirementId,
+        });
+        await fetchEvidence(requirementId, setEvidence);
+        setBusy(false);
+    };
+
+    if (artifact.type === "url") {
+        return (
+            <span className="flex items-center gap-1">
+                <Input
+                    ref={urlInput}
+                    type="url"
+                    className="h-7 w-36 text-xs"
+                    placeholder="Replace with URL"
+                    disabled={busy}
+                    // Use a plain handler instead of the form's submit so the
+                    // add-URL action (which keys off a "url" field) is not
+                    // triggered when replacing.
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            onUrl();
+                        }
+                    }}
+                />
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2"
+                    disabled={busy}
+                    onClick={onUrl}
+                >
+                    Replace
+                </Button>
+            </span>
+        );
+    }
+
+    return (
+        <label
+            className={`${buttonClasses({
+                variant: "outline",
+                size: "sm",
+            })} h-7 cursor-pointer px-2`}
+        >
+            Replace file
+            <input
+                type="file"
+                className="hidden"
+                disabled={busy}
+                onChange={onFile}
+            />
+        </label>
+    );
+};
+
 const Badge = ({
     children,
     onDelete,
     artifact,
     lastResetAt,
+    requirementId,
+    setEvidence,
 }: {
     children: ReactNode;
     onDelete: CallableFunction;
     artifact: IDBEvidenceV2;
     lastResetAt: null | number;
+    requirementId: string;
+    setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
 }) => {
     const [isShowing, setShowing] = useState(false);
     const [prevLastResetAt, setPrevLastResetAt] = useState(lastResetAt);
@@ -271,7 +445,16 @@ const Badge = ({
     }
 
     if (isShowing) {
-        return <NameChange artifact={artifact} />;
+        return (
+            <span className="me-2 mb-2 flex flex-col gap-1">
+                <NameChange artifact={artifact} />
+                <ReplaceControl
+                    artifact={artifact}
+                    requirementId={requirementId}
+                    setEvidence={setEvidence}
+                />
+            </span>
+        );
     }
 
     // URL evidence stays blue (info); file evidence is a subtle gray (neutral)
@@ -412,6 +595,8 @@ export const EvidenceBadge = ({
             onDelete={onDelete}
             artifact={artifact}
             lastResetAt={lastResetAt}
+            requirementId={requirementId}
+            setEvidence={setEvidence}
         >
             {artifact.type === "url" ? (
                 <LinkBadge artifact={artifact} />
