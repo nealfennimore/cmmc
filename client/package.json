@@ -5,6 +5,7 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
+        "postbuild": "node scripts/stamp-sw.mjs",
         "start": "next start",
         "lint": "next lint",
         "tauri": "cargo-tauri",
