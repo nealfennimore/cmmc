@@ -9,7 +9,8 @@
         "start": "next start",
         "lint": "next lint",
         "tauri": "cargo-tauri",
-        "tauri:win": "tauri"
+        "tauri:win": "tauri",
+        "tauri:mac": "tauri"
     },
     "dependencies": {
         "marked": "^15.0.3",

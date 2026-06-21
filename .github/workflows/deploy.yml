@@ -333,7 +333,7 @@ jobs:
           APPLE_API_KEY_PATH: ${{ env.APPLE_API_KEY_PATH }}
         with:
           projectPath: client
-          tauriScript: "npm tauri"
+          tauriScript: "npm tauri:mac"
           # Config path is resolved relative to projectPath (client).
           args: "--target ${{ matrix.target }} --config version-override.json"
           tagName: ${{ github.ref_name }}
