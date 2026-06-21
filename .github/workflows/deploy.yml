@@ -44,9 +44,10 @@ jobs:
           publish_dir: ./client/out
 
   # ---------------------------------------------------------------------------
-  # Desktop bundles for Linux + macOS, built inside the pinned Nix shell so the
-  # toolchain (rust, node, cargo-tauri, webkitgtk) is identical run-to-run.
-  # Each runner builds natively for its own arch -> no cross-target rust setup.
+  # Linux desktop bundles, built inside the pinned Nix shell so the toolchain
+  # (rust, node, cargo-tauri, webkitgtk) is identical run-to-run. macOS lives in
+  # its own job (desktop-macos) because signing/notarization needs the native
+  # keychain + codesign tooling that the Nix shell doesn't provide.
   # ---------------------------------------------------------------------------
   desktop-nix:
     strategy:
@@ -57,8 +58,6 @@ jobs:
           # (tauri-apps/tauri). Re-enable by adding `appimage` to bundleArgs below.
           - runner: ubuntu-24.04 # x86_64 linux: .deb / .rpm
             bundleArgs: "--bundles deb rpm"
-          - runner: macos-14 # apple silicon (aarch64): app + .dmg
-            bundleArgs: "" # empty -> Tauri's default targets (app + dmg)
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -109,7 +108,6 @@ jobs:
             client/src-tauri/target/release/bundle/deb/*.deb
             client/src-tauri/target/release/bundle/rpm/*.rpm
             client/src-tauri/target/release/bundle/appimage/*.AppImage
-            client/src-tauri/target/release/bundle/dmg/*.dmg
 
   # ---------------------------------------------------------------------------
   # Windows bundle. Nix can't produce native Windows binaries, so this stays on
@@ -223,5 +221,120 @@ jobs:
           args: "--config version-override.json"
           # On the tauri branch, leave tag/release empty so tauri-action only
           # builds (tests the Windows bundle) without publishing a release.
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
+
+  # ---------------------------------------------------------------------------
+  # macOS bundles (.app/.dmg) for Apple Silicon + Intel, built on a native
+  # runner via tauri-action so the Apple keychain / codesign / notarytool are
+  # available. Signing + notarization run only when the Apple secrets are set,
+  # so forks (and a first run before setup) still produce unsigned bundles.
+  #
+  # Required repo secrets to enable signing + notarization:
+  #   APPLE_CERTIFICATE            base64 of the Developer ID Application .p12
+  #   APPLE_CERTIFICATE_PASSWORD   password the .p12 was exported with
+  #   KEYCHAIN_PASSWORD            any string; password for the temp keychain
+  #   APPLE_API_KEY_P8             base64 of the App Store Connect API key .p8
+  #   APPLE_API_KEY_ID             the key's Key ID (10 chars)
+  #   APPLE_API_ISSUER_ID          the App Store Connect API Issuer ID (UUID)
+  # NOTE: the cert must be a "Developer ID Application" certificate. An "Apple
+  # Development" cert can't be notarized and Gatekeeper will block the .dmg.
+  # The .p8 is signing-independent: the certificate signs, the API key notarizes.
+  # ---------------------------------------------------------------------------
+  desktop-macos:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin # Apple Silicon
+          - target: x86_64-apple-darwin # Intel
+    # Presence of these secrets gates the cert import / API key steps below.
+    env:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable branch, pinned
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo (registry + target)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            client/src-tauri/target
+          key: cargo-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('client/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-${{ matrix.target }}-
+
+      # The desktop app is offline-first: don't point it at the hosted API.
+      - name: Create .env file
+        working-directory: ./client
+        run: |
+          echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
+
+      - name: Install dependencies
+        working-directory: ./client
+        run: npm ci
+
+      # App version = release tag (leading "v" stripped), shared by the bundle
+      # name (--config below) and the footer (next.config reads APP_VERSION).
+      - name: Resolve version from tag
+        run: |
+          APP_VERSION="${GITHUB_REF_NAME#v}"
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          echo "{\"version\":\"$APP_VERSION\"}" > client/version-override.json
+
+      # Import the Developer ID Application cert into a throwaway keychain and
+      # publish the signing identity for tauri-action to pick up.
+      - name: Import Apple Developer certificate
+        if: env.APPLE_CERTIFICATE != ''
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          CERT_ID=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application" | head -1 | awk -F'"' '{print $2}')
+          echo "APPLE_SIGNING_IDENTITY=$CERT_ID" >> "$GITHUB_ENV"
+          rm certificate.p12
+
+      # Decode the App Store Connect API key (.p8) to a file for notarization.
+      # APPLE_API_KEY_PATH must be absolute; $RUNNER_TEMP is cleaned up per job.
+      - name: Prepare App Store Connect API key
+        if: env.APPLE_API_KEY_P8 != ''
+        run: |
+          echo "$APPLE_API_KEY_P8" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+
+      - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # tauri only signs when APPLE_SIGNING_IDENTITY is set (empty -> unsigned),
+          # and only notarizes when the API key trio is present. APPLE_API_KEY is
+          # the Key ID; APPLE_API_KEY_PATH points at the decoded .p8 above.
+          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER_ID }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_KEY_PATH: ${{ env.APPLE_API_KEY_PATH }}
+        with:
+          projectPath: client
+          tauriScript: "npm tauri"
+          # Config path is resolved relative to projectPath (client).
+          args: "--target ${{ matrix.target }} --config version-override.json"
           tagName: ${{ github.ref_name }}
           releaseName: ${{ github.ref_name }}
