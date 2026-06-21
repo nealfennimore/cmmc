@@ -7,9 +7,13 @@ import type { NextConfig } from "next";
 // asset protocol; the web/GitHub Pages build keeps its existing clean URLs.
 const isTauri = !!process.env.TAURI_ENV_PLATFORM;
 
-const { version } = JSON.parse(readFileSync("./package.json", "utf8")) as {
-  version: string;
-};
+// Shown in the footer (and, in CI, stamped into bundle names). Prefer the release
+// tag passed as APP_VERSION with any leading "v" stripped; fall back to
+// package.json for local/dev builds where no tag is set.
+const version =
+  process.env.APP_VERSION?.replace(/^v/, "") ||
+  (JSON.parse(readFileSync("./package.json", "utf8")) as { version: string })
+    .version;
 
 // Short commit the build was cut from, shown in the footer for support/debugging.
 function resolveGitSha(): string {

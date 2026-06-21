@@ -89,11 +89,16 @@ jobs:
         run: |
           echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
 
+      # App version = release tag with any leading "v" stripped, so bundle file
+      # names and the footer track the tag instead of the hardcoded config.
+      - name: Resolve version from tag
+        run: echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
       - name: Build desktop bundle (inside pinned Nix shell)
-        # bundleArgs (from the matrix) currently excludes AppImage on Linux — see
-        # the matrix comment. APPIMAGE_EXTRACT_AND_RUN (job env) and NO_STRIP (flake
-        # shellHook) stay in place so re-enabling AppImage needs no other change.
-        run: nix develop .#ci -c bash -c "cd client && npm ci && cargo tauri build ${{ matrix.bundleArgs }}"
+        # --config overrides the bundle version; APP_VERSION (inherited into the
+        # shell) feeds the footer via next.config. bundleArgs omits AppImage on
+        # Linux for now (see the matrix comment).
+        run: nix develop .#ci -c bash -c "cd client && npm ci && cargo tauri build ${{ matrix.bundleArgs }} --config '{\"version\":\"$APP_VERSION\"}'"
 
       - name: Attach bundles to release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
@@ -142,12 +147,19 @@ jobs:
         working-directory: ./client
         run: npm ci
 
+      # App version = release tag (leading "v" stripped), shared by the bundle
+      # name (--config below) and the footer (next.config reads APP_VERSION).
+      - name: Resolve version from tag
+        shell: bash
+        run: echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
       - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: client
           tauriScript: "npm tauri:win"
+          args: '--config "{\"version\":\"${{ env.APP_VERSION }}\"}"'
           # On the tauri branch, leave tag/release empty so tauri-action only
           # builds (tests the Windows bundle) without publishing a release.
           tagName: ${{ github.ref == 'refs/heads/tauri' && '' || github.ref_name }}
