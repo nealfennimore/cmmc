@@ -289,7 +289,12 @@ const NameChange = ({ artifact }: { artifact: IDBEvidenceV2 }) => {
                 defaultValue={nameWithoutSuffix}
                 ref={input}
             />
-            <Button type="submit" size="sm" className="h-7 px-2" aria-label="Save name">
+            <Button
+                type="submit"
+                size="sm"
+                className="h-7 px-2"
+                aria-label="Save name"
+            >
                 <svg
                     className="w-4 h-4"
                     xmlns="http://www.w3.org/2000/svg"
@@ -871,12 +876,12 @@ export const Evidence = ({ requirementId }: { requirementId: string }) => {
             <Heading
                 level={3}
                 as="h4"
-                className="mb-6 flex -translate-y-full items-center"
+                className=" mb-0 flex -translate-y-full items-center"
             >
                 Evidence
             </Heading>
             <form
-                className="flex flex-col md:flex-row shrink mb-4 -translate-y-[36px]"
+                className="flex flex-col md:flex-row shrink mb-16"
                 action={formAction}
                 ref={formRef}
             >
