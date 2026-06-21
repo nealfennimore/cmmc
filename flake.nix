@@ -54,7 +54,7 @@
         linuxNativeTools = with pkgs; [
           pkg-config
           gobject-introspection
-          wrapGAppsHook3
+          wrapGAppsHook4
         ];
 
         # rustToolchain provides cargo + rustc; cargo-tauri orchestrates them.
@@ -71,6 +71,7 @@
         linuxEnv = ''
           export WEBKIT_DISABLE_COMPOSITING_MODE=1
           export WEBKIT_DISABLE_DMABUF_RENDERER=1
+          export XDG_DATA_DIRS="$GSETTINGS_SCHEMAS_PATH"
           export GIO_MODULE_DIR="${pkgs.glib-networking}/lib/gio/modules/"
         '';
       in
