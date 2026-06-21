@@ -338,3 +338,25 @@ jobs:
           args: "--target ${{ matrix.target }} --config version-override.json"
           tagName: ${{ github.ref_name }}
           releaseName: ${{ github.ref_name }}
+
+  # ---------------------------------------------------------------------------
+  # After all desktop bundles are attached to the release, ping the marketing
+  # site (nealfennimore/cmmc-consulting-site) so it bumps its pinned download
+  # links to this tag and redeploys. Needs a PAT with Contents:write on the
+  # site repo, stored here as the SITE_DISPATCH_TOKEN secret.
+  # ---------------------------------------------------------------------------
+  notify-site:
+    needs: [desktop-nix, desktop-windows, desktop-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger getcmmc.consulting redeploy
+        env:
+          TOKEN: ${{ secrets.SITE_DISPATCH_TOKEN }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          curl -sSf -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/nealfennimore/cmmc-consulting-site/dispatches \
+            -d "{\"event_type\":\"app-release\",\"client_payload\":{\"version\":\"$VERSION\"}}"
