@@ -99,7 +99,6 @@ jobs:
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ github.ref_name }}
-          generate_release_notes: true
           fail_on_unmatched_files: false
           files: |
             client/src-tauri/target/release/bundle/deb/*.deb
