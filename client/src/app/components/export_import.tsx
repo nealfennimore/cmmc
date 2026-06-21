@@ -9,6 +9,7 @@ import {
     IDBExamineEvidence,
     IDBRequirement,
     IDBSecurityRequirement,
+    resetEvidenceIdMigration,
 } from "@/app/db";
 import { saveBlob } from "@/app/utils/file";
 import { useActionState, useRef } from "react";
@@ -230,6 +231,9 @@ export const Import = () => {
                 }
             });
         } finally {
+            // An imported backup can carry legacy (UUID/sha1) evidence ids, so
+            // let the id migration re-run on the reload below.
+            resetEvidenceIdMigration();
             window.location.reload();
         }
     };

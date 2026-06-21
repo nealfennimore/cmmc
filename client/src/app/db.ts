@@ -317,6 +317,37 @@ export const put =
 
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 
+// Once every evidence id is a sha256 there is nothing left to convert (new
+// evidence is always content-hashed), so a persisted flag lets us skip even the
+// key scan on subsequent loads. Import clears it via resetEvidenceIdMigration()
+// because an older backup can reintroduce legacy ids.
+const EVIDENCE_ID_MIGRATION_KEY = "evidence_ids_migrated_to_sha256";
+
+const evidenceIdsMigrated = (): boolean => {
+    try {
+        return localStorage.getItem(EVIDENCE_ID_MIGRATION_KEY) === "true";
+    } catch {
+        return false;
+    }
+};
+
+const markEvidenceIdsMigrated = (): void => {
+    try {
+        localStorage.setItem(EVIDENCE_ID_MIGRATION_KEY, "true");
+    } catch {
+        // Storage can be unavailable (private mode); the key scan still keeps
+        // the migration correct, it just won't be skipped next load.
+    }
+};
+
+export const resetEvidenceIdMigration = (): void => {
+    try {
+        localStorage.removeItem(EVIDENCE_ID_MIGRATION_KEY);
+    } catch {
+        // Ignore — a stale flag only costs one key scan on the next load.
+    }
+};
+
 const sha256Hex = async (data: ArrayBuffer): Promise<string> =>
     [...new Uint8Array(await crypto.subtle.digest("SHA-256", data))]
         .map((b) => b.toString(16).padStart(2, "0"))
@@ -333,6 +364,10 @@ const sha256Hex = async (data: ArrayBuffer): Promise<string> =>
 // transaction opens: awaiting crypto.subtle inside a live IDB transaction would
 // let it auto-commit and the next write would throw.
 const migrateEvidenceIdsToSha256 = async (db: IDBDatabase): Promise<void> => {
+    if (evidenceIdsMigrated()) {
+        return;
+    }
+
     if (
         !db.objectStoreNames.contains(Table.EVIDENCE) ||
         !db.objectStoreNames.contains(Table.EVIDENCE_REQUIREMENTS)
@@ -349,6 +384,7 @@ const migrateEvidenceIdsToSha256 = async (db: IDBDatabase): Promise<void> => {
         request.onerror = () => reject(request.error);
     });
     if (keys.every((k) => typeof k === "string" && SHA256_HEX.test(k))) {
+        markEvidenceIdsMigrated();
         return;
     }
 
@@ -411,6 +447,8 @@ const migrateEvidenceIdsToSha256 = async (db: IDBDatabase): Promise<void> => {
         writeTx.onerror = () => reject(writeTx.error);
         writeTx.onabort = () => reject(writeTx.error);
     });
+
+    markEvidenceIdsMigrated();
 };
 
 export const clear = (table: string) => async (): Promise<boolean> => {
