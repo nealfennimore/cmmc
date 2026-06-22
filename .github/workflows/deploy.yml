@@ -94,10 +94,27 @@ jobs:
         run: echo "APP_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
       - name: Build desktop bundle (inside pinned Nix shell)
+        # Built in two phases so we can patch the binary between compile and
+        # bundle. The Nix toolchain links the executable against the Nix glibc
+        # loader (PT_INTERP -> /nix/store/...-glibc/ld-linux-x86-64.so.2) and
+        # bakes /nix/store rpaths in; neither path exists on a Debian/RPM target,
+        # so the bundled binary would fail to launch there. patchelf rewrites the
+        # interpreter to the distro-standard path and drops the Nix rpaths. The
+        # NEEDED sonames are untouched and resolve to the distro packages the
+        # .deb/.rpm already depend on.
+        #
         # --config overrides the bundle version; APP_VERSION (inherited into the
         # shell) feeds the footer via next.config. bundleArgs omits AppImage on
         # Linux for now (see the matrix comment).
-        run: nix develop .#ci -c bash -c "cd client && npm ci && cargo tauri build ${{ matrix.bundleArgs }} --config '{\"version\":\"$APP_VERSION\"}'"
+        run: |
+          nix develop .#ci -c bash -c '
+            set -euo pipefail
+            cd client
+            npm ci
+            cargo tauri build --no-bundle --config "{\"version\":\"$APP_VERSION\"}"
+            patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 --remove-rpath src-tauri/target/release/cmmc
+            cargo tauri bundle ${{ matrix.bundleArgs }} --config "{\"version\":\"$APP_VERSION\"}"
+          '
 
       - name: Attach bundles to release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
