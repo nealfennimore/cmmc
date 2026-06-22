@@ -44,12 +44,47 @@ jobs:
           publish_dir: ./client/out
 
   # ---------------------------------------------------------------------------
+  # Create the GitHub release once, up front, as a draft. The desktop jobs run
+  # in parallel and each only *uploads* assets to this release; none of them
+  # creates or finalizes it. That avoids the race where two jobs both try to
+  # create/finalize the same tag and the second fails with
+  # "Validation Failed: already_exists (tag_name)". publish-release flips the
+  # draft to published once every desktop job has uploaded.
+  # Idempotent: a re-run reuses the existing release for the tag.
+  # ---------------------------------------------------------------------------
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create.outputs.result }}
+    steps:
+      - name: Create or reuse draft release
+        id: create
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          result-encoding: string
+          script: |
+            const tag = process.env.GITHUB_REF_NAME;
+            const { owner, repo } = context.repo;
+            const existing = await github.paginate(github.rest.repos.listReleases, { owner, repo });
+            const found = existing.find(r => r.tag_name === tag);
+            if (found) {
+              core.info(`Reusing existing release ${found.id} for ${tag}`);
+              return String(found.id);
+            }
+            const { data } = await github.rest.repos.createRelease({
+              owner, repo, tag_name: tag, name: tag, draft: true, prerelease: false,
+            });
+            core.info(`Created draft release ${data.id} for ${tag}`);
+            return String(data.id);
+
+  # ---------------------------------------------------------------------------
   # Linux desktop bundles, built inside the pinned Nix shell so the toolchain
   # (rust, node, cargo-tauri, webkitgtk) is identical run-to-run. macOS lives in
   # its own job (desktop-macos) because signing/notarization needs the native
   # keychain + codesign tooling that the Nix shell doesn't provide.
   # ---------------------------------------------------------------------------
   desktop-nix:
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
@@ -116,21 +151,29 @@ jobs:
             cargo tauri bundle ${{ matrix.bundleArgs }} --config "{\"version\":\"$APP_VERSION\"}"
           '
 
+      # Upload to the draft release created by create-release. Only uploads
+      # assets — does not create or finalize the release — so it can't race the
+      # macOS/Windows jobs uploading to the same release. --clobber makes re-runs
+      # idempotent. nullglob keeps the glob from passing a literal path when a
+      # bundle type is absent (e.g. AppImage, currently disabled).
       - name: Attach bundles to release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          fail_on_unmatched_files: false
-          files: |
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          shopt -s nullglob
+          files=(
             client/src-tauri/target/release/bundle/deb/*.deb
             client/src-tauri/target/release/bundle/rpm/*.rpm
-            client/src-tauri/target/release/bundle/appimage/*.AppImage
+            # client/src-tauri/target/release/bundle/appimage/*.AppImage
+          )
+          gh release upload "${{ github.ref_name }}" "${files[@]}" --clobber
 
   # ---------------------------------------------------------------------------
   # Windows bundle. Nix can't produce native Windows binaries, so this stays on
   # a native runner with the standard Tauri toolchain via tauri-action.
   # ---------------------------------------------------------------------------
   desktop-windows:
+    needs: create-release
     runs-on: windows-latest
     # Windows code signing via Azure Artifact Signing. Set these repo secrets to
     # enable it (all six required; otherwise the build runs unsigned):
@@ -236,10 +279,9 @@ jobs:
           tauriScript: "npm tauri:win"
           # Config path is resolved relative to projectPath (client).
           args: "--config version-override.json"
-          # On the tauri branch, leave tag/release empty so tauri-action only
-          # builds (tests the Windows bundle) without publishing a release.
-          tagName: ${{ github.ref_name }}
-          releaseName: ${{ github.ref_name }}
+          # Upload to the release create-release already made, rather than
+          # creating/finalizing it here (which would race the other jobs).
+          releaseId: ${{ needs.create-release.outputs.release_id }}
 
   # ---------------------------------------------------------------------------
   # macOS bundles (.app/.dmg) for Apple Silicon + Intel, built on a native
@@ -259,6 +301,7 @@ jobs:
   # The .p8 is signing-independent: the certificate signs, the API key notarizes.
   # ---------------------------------------------------------------------------
   desktop-macos:
+    needs: create-release
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -353,17 +396,39 @@ jobs:
           tauriScript: "npm tauri:mac"
           # Config path is resolved relative to projectPath (client).
           args: "--target ${{ matrix.target }} --config version-override.json"
-          tagName: ${{ github.ref_name }}
-          releaseName: ${{ github.ref_name }}
+          # Upload to the release create-release already made, rather than
+          # creating/finalizing it here (which would race the other jobs).
+          releaseId: ${{ needs.create-release.outputs.release_id }}
 
   # ---------------------------------------------------------------------------
-  # After all desktop bundles are attached to the release, ping the marketing
-  # site (nealfennimore/cmmc-consulting-site) so it bumps its pinned download
-  # links to this tag and redeploys. Needs a PAT with Contents:write on the
-  # site repo, stored here as the SITE_DISPATCH_TOKEN secret.
+  # Publish the draft release once every desktop job has finished uploading its
+  # assets. A single job owns finalization, so there's no concurrent "finalize"
+  # to race. Idempotent: setting draft:false on an already-published release is a
+  # no-op update.
+  # ---------------------------------------------------------------------------
+  publish-release:
+    needs: [create-release, desktop-nix, desktop-windows, desktop-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish release
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            await github.rest.repos.updateRelease({
+              owner, repo,
+              release_id: ${{ needs.create-release.outputs.release_id }},
+              draft: false,
+            });
+
+  # ---------------------------------------------------------------------------
+  # After the release is published, ping the marketing site
+  # (nealfennimore/cmmc-consulting-site) so it bumps its pinned download links to
+  # this tag and redeploys. Needs a PAT with Contents:write on the site repo,
+  # stored here as the SITE_DISPATCH_TOKEN secret.
   # ---------------------------------------------------------------------------
   notify-site:
-    needs: [desktop-nix, desktop-windows, desktop-macos]
+    needs: publish-release
     runs-on: ubuntu-latest
     steps:
       - name: Trigger getcmmc.consulting redeploy
