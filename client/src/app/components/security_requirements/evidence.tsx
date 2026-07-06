@@ -92,6 +92,10 @@ const replaceEvidence = async ({
             confirmLabel: "Replace everywhere",
             cancelLabel: "Only here",
         });
+        // Closing the dialog (X / Escape / backdrop) aborts the replacement.
+        if (replaceEverywhere === null) {
+            return;
+        }
         if (!replaceEverywhere) {
             scoped = links.filter(
                 (link) => link.requirement_id === requirementId,
@@ -583,6 +587,10 @@ export const EvidenceBadge = ({
                 cancelLabel: "Only here",
                 variant: "destructive",
             });
+            // Closing the dialog (X / Escape / backdrop) aborts the delete.
+            if (shouldDeleteAll === null) {
+                return;
+            }
             if (shouldDeleteAll) {
                 for (const record of evidenceRequirementRecords) {
                     await IDB.evidenceRequirements.delete([

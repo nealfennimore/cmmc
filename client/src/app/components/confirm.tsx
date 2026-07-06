@@ -128,10 +128,18 @@ function ModalShell({
         >
             <div
                 onClick={(e) => e.stopPropagation()}
-                className={`w-full max-w-md overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-lg transition-all duration-150 ${
+                className={`relative w-full max-w-md overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-lg transition-all duration-150 ${
                     visible ? "scale-100 opacity-100" : "scale-95 opacity-0"
                 }`}
             >
+                <button
+                    type="button"
+                    onClick={() => finish(onDismiss)}
+                    aria-label="Close"
+                    className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                    ✕
+                </button>
                 {children(finish)}
             </div>
         </div>
@@ -143,7 +151,7 @@ function ConfirmDialog({
     onResolve,
 }: {
     options: ConfirmOptions;
-    onResolve: (result: boolean) => void;
+    onResolve: (result: boolean | null) => void;
 }) {
     const {
         title = "Are you sure?",
@@ -160,14 +168,14 @@ function ConfirmDialog({
     return (
         <ModalShell
             ariaLabel={title}
-            onDismiss={() => onResolve(false)}
+            onDismiss={() => onResolve(null)}
             initialFocusRef={confirmRef}
         >
             {(finish) => (
                 <>
                     <div className="flex gap-4 px-6 py-5">
                         {variant === "destructive" && <WarningIcon />}
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0 flex-1 pr-8">
                             <h2 className="text-lg font-semibold tracking-tight">
                                 {title}
                             </h2>
@@ -236,11 +244,11 @@ function OptionsDialog({
             {(finish) => (
                 <>
                     <div className="px-6 py-5">
-                        <h2 className="text-lg font-semibold tracking-tight">
+                        <h2 className="pr-8 text-lg font-semibold tracking-tight">
                             {title}
                         </h2>
                         {message && (
-                            <div className="mt-2 text-sm leading-6 text-muted-foreground">
+                            <div className="mt-2 pr-8 text-sm leading-6 text-muted-foreground">
                                 {message}
                             </div>
                         )}
@@ -355,11 +363,16 @@ export function ConfirmHost() {
 
 /**
  * Themed, promise-based replacement for `window.confirm`. Resolves `true` when
- * the user confirms, `false` when they cancel, dismiss, or press Escape.
+ * the user picks the confirm button, `false` for the cancel button, and `null`
+ * when the dialog is dismissed via the X, Escape, or a backdrop click.
+ *
+ * For a plain yes/no prompt, `null` and `false` are both falsy so a truthiness
+ * check works. When the cancel button is itself an action (e.g. "only here"),
+ * check `result === null` to detect a dismissal and abort instead.
  *
  *     if (await confirm({ title: "Delete?", message: "This cannot be undone." })) { ... }
  */
-export function confirm(options: ConfirmOptions): Promise<boolean> {
+export function confirm(options: ConfirmOptions): Promise<boolean | null> {
     return new Promise((resolve) => {
         pushDialog((dismiss) => (
             <ConfirmDialog
