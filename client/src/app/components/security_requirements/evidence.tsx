@@ -20,6 +20,7 @@ import {
     useRef,
     useState,
 } from "react";
+import { confirm } from "../confirm";
 import { badgeClasses, Button, buttonClasses, Heading, Input } from "../ui";
 
 const deriveEvidence = async ({
@@ -84,9 +85,13 @@ const replaceEvidence = async ({
     // replacement scoped to this one (mirrors the delete flow's prompt).
     let scoped = links;
     if (links.length > 1) {
-        const replaceEverywhere = window.confirm(
-            "This evidence is attached to more than one requirement. Replace it everywhere? Click Cancel to replace it only here.",
-        );
+        const replaceEverywhere = await confirm({
+            title: "Replace shared evidence",
+            message:
+                "This evidence is attached to more than one requirement. Replace it everywhere, or only for this requirement?",
+            confirmLabel: "Replace everywhere",
+            cancelLabel: "Only here",
+        });
         if (!replaceEverywhere) {
             scoped = links.filter(
                 (link) => link.requirement_id === requirementId,
@@ -570,9 +575,14 @@ export const EvidenceBadge = ({
             );
 
         if (evidenceRequirementRecords.length > 1) {
-            const shouldDeleteAll = window.confirm(
-                "The same evidence is attached to more than one requirement. Delete from all?",
-            );
+            const shouldDeleteAll = await confirm({
+                title: "Delete shared evidence",
+                message:
+                    "This evidence is attached to more than one requirement. Delete it from all requirements, or only from this one?",
+                confirmLabel: "Delete from all",
+                cancelLabel: "Only here",
+                variant: "destructive",
+            });
             if (shouldDeleteAll) {
                 for (const record of evidenceRequirementRecords) {
                     await IDB.evidenceRequirements.delete([

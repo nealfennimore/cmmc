@@ -61,6 +61,7 @@
         # git is needed by next.config.ts to stamp the build's commit SHA.
         buildTools = [
           pkgs.nodejs
+          pkgs.typescript
           pkgs.cargo-tauri
           pkgs.git
           rustToolchain

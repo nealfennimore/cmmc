@@ -4,6 +4,7 @@ import { saveBlob, toFSName } from "@/app/utils/file";
 import { saveFilesToDirectory } from "@/app/utils/tauri";
 import Link from "next/link";
 import { useActionState } from "react";
+import { confirm } from "./confirm";
 import { menuItemClasses } from "./ui";
 
 const toFile = (artifact: IDBEvidenceV2) =>
@@ -56,9 +57,12 @@ export const ViewEvidence = ({ path }) => (
 export const ExportEvidence = () => {
     const onClick = async () => {
         if (
-            window.confirm(
-                "This will download all uploaded evidence. Continue?",
-            )
+            await confirm({
+                title: "Download evidence",
+                message:
+                    "This will download all uploaded evidence files to your device.",
+                confirmLabel: "Download",
+            })
         ) {
             const evidence = await IDB.evidence.getAll();
             await exportEvidence(

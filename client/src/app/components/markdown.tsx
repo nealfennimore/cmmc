@@ -6,6 +6,7 @@ import { toNum, toPath, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBSecurityRequirement } from "@/app/db";
 import { embeddable, saveBlob, snippetable, toFSName } from "@/app/utils/file";
 import { useActionState } from "react";
+import { confirmOptions } from "./confirm";
 import { menuItemClasses } from "./ui";
 
 const toStatus = (status?: Status) => {
@@ -27,13 +28,30 @@ export const Markdown = () => {
     const path = toPath(revision);
 
     const onClick = async () => {
-        const shouldIncludeLinks = window.confirm(
-            "Include evidence links in the generated markdown file?",
-        );
+        const choices = await confirmOptions({
+            title: "Generate markdown report",
+            message: "Choose what to include in the generated markdown file.",
+            options: [
+                {
+                    key: "includeLinks",
+                    label: "Include evidence links",
+                    description:
+                        "Add links to evidence in the generated file.",
+                    default: true,
+                },
+                {
+                    key: "embedArtifacts",
+                    label: "Embed evidence files",
+                    description:
+                        "Embed evidence files directly into the generated file.",
+                },
+            ],
+            confirmLabel: "Generate",
+        });
+        if (!choices) return;
 
-        const shouldEmbedArtifacts = window.confirm(
-            "Embed evidence files into the generated markdown file?",
-        );
+        const shouldIncludeLinks = choices.includeLinks;
+        const shouldEmbedArtifacts = choices.embedArtifacts;
 
         const idbSecurityRequirements = await IDB.securityRequirements.getAll();
 

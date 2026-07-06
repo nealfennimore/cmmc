@@ -4,6 +4,7 @@ import { Revision, toNum, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBEvidenceV2 } from "@/app/db";
 import { hashType, HashType, saveBlob, toFSName } from "@/app/utils/file";
 import { useActionState } from "react";
+import { confirm } from "./confirm";
 import { menuItemClasses } from "./ui";
 
 interface ArtifactMapping extends Omit<IDBEvidenceV2, "data" | "filename"> {
@@ -31,7 +32,14 @@ export const ExportEvidenceMap = () => {
     const manifest = useManifestContext();
     const revision = useRevisionContext();
     const onClick = async () => {
-        if (window.confirm("This will download evidence mapping. Continue?")) {
+        if (
+            await confirm({
+                title: "Download evidence map",
+                message:
+                    "This will download a JSON file mapping evidence to requirements.",
+                confirmLabel: "Download",
+            })
+        ) {
             const requirements = manifest.requirements.byId;
             const evidence = await IDB.evidence.getAll();
             const evidenceRequirements =

@@ -1,16 +1,21 @@
 "use client";
 import { IDB } from "@/app/db";
 import { useActionState } from "react";
+import { confirm } from "./confirm";
 import { menuItemClasses } from "./ui";
 
 export const ClearDB = () => {
     const action = async (prevState, formData: FormData) => {
         return await new Promise(async (resolve) => {
             try {
-                const confirm = window.confirm(
-                    "Clear the current database. Continue?"
-                );
-                if (!confirm) {
+                const confirmed = await confirm({
+                    title: "Reset database",
+                    message:
+                        "This clears all locally stored requirements and evidence. This cannot be undone.",
+                    confirmLabel: "Reset database",
+                    variant: "destructive",
+                });
+                if (!confirmed) {
                     return;
                 }
 

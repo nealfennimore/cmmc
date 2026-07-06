@@ -13,6 +13,7 @@ import {
 } from "@/app/db";
 import { saveBlob } from "@/app/utils/file";
 import { useActionState, useRef } from "react";
+import { confirm } from "./confirm";
 import { menuItemClasses } from "./ui";
 
 type PortableIDBEvidence = Omit<IDBEvidence, "data"> & {
@@ -171,10 +172,14 @@ export const Import = () => {
                             throw new Error("Database version mismatch");
                         }
 
-                        const confirm = window.confirm(
-                            "Importing will overwrite the current database. Continue?",
-                        );
-                        if (!confirm) {
+                        const confirmed = await confirm({
+                            title: "Import database",
+                            message:
+                                "Importing will overwrite the current database, replacing all existing requirements and evidence. This cannot be undone.",
+                            confirmLabel: "Overwrite & import",
+                            variant: "destructive",
+                        });
+                        if (!confirmed) {
                             return;
                         }
 

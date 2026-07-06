@@ -7,6 +7,7 @@ import {
     useEffect,
     useState,
 } from "react";
+import { ConfirmHost } from "../components/confirm";
 
 export enum NotificationTypes {
     Success = "success",
@@ -96,6 +97,7 @@ export const ToastNotificationProvider = ({
             }}
         >
             {children}
+            <ConfirmHost />
         </NotificationContext.Provider>
     );
 };
