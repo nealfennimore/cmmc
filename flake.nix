@@ -3,10 +3,15 @@
 
   inputs = {
     # Pinned via flake.lock — this is what makes the toolchain reproducible.
-    # Kept on 24.11 for its known-good WebKitGTK: 25.05's newer webkit regresses
-    # the webview on NixOS (EGL_BAD_PARAMETER). Rust is NOT taken from here (see
-    # rust-overlay below), so the channel only needs to supply the system libs.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    # WebKitGTK is the reason the channel choice matters: 24.11's webkit 2.48.3
+    # and 25.05's 2.48.x abort on current NixOS driver stacks with
+    # "Could not create default EGL display: EGL_BAD_PARAMETER", while 25.11's
+    # webkit 2.52.x is verified working on the same machine. (The earlier
+    # "24.11 known-good" rollback was a red herring: dev builds kept loading the
+    # newer webkit via RUNPATH entries cached in target/, so only clean builds
+    # ever exercised 24.11's webkit — and it fails.) Rust is NOT taken from here
+    # (see rust-overlay below), so the channel mainly supplies the system libs.
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flake-utils.url = "github:numtide/flake-utils";
     # Rust is pinned independently of nixpkgs: Tauri's transitive deps (zvariant,
     # darling, time, plist, ...) keep raising their MSRV, so the channel's rustc
@@ -67,6 +72,17 @@
           rustToolchain
         ];
 
+        # buildRustPackage normally uses the channel's rustc; swap in the pinned
+        # toolchain so the package build gets the same MSRV story as the shells.
+        rustPlatform = pkgs.makeRustPlatform {
+          cargo = rustToolchain;
+          rustc = rustToolchain;
+        };
+
+        # Single source of truth for the app version (release tags track this).
+        appVersion =
+          (builtins.fromJSON (builtins.readFile ./client/package.json)).version;
+
         # WebKitGTK on NixOS: avoid GPU-compositing crashes and make TLS modules
         # resolvable so the Tauri webview can render and reach the network.
         linuxEnv = ''
@@ -77,6 +93,83 @@
         '';
       in
       {
+        # `nix build` / `nix run` — the installable desktop app. Linux-only:
+        # macOS builds go through the normal `cargo tauri build` .app/.dmg path.
+        packages = lib.optionalAttrs isLinux rec {
+          default = cmmc;
+
+          cmmc = rustPlatform.buildRustPackage {
+            pname = "cmmc";
+            version = appVersion;
+
+            # The flake source is already git-filtered, so out/, .next/ and
+            # node_modules/ never leak into the build.
+            src = ./client;
+
+            cargoRoot = "src-tauri";
+            buildAndTestSubdir = "src-tauri";
+            cargoLock.lockFile = ./client/src-tauri/Cargo.lock;
+
+            # node_modules assembled from package-lock.json's own integrity
+            # hashes — no fixed-output hash to keep in sync here.
+            npmDeps = pkgs.importNpmLock { npmRoot = ./client; };
+
+            nativeBuildInputs = [
+              # Must come before cargo-tauri.hook: the hook propagates the
+              # channel's cargo, and PATH follows input order — without this the
+              # channel's older cargo/rustc would win and MSRV breaks again.
+              rustToolchain
+              # Runs `cargo tauri build` (deb bundle) and installs the bundle's
+              # usr/ tree — binary, .desktop entry, and icons — into $out.
+              pkgs.cargo-tauri.hook
+              pkgs.nodejs
+              pkgs.importNpmLock.npmConfigHook
+              pkgs.pkg-config
+              pkgs.gobject-introspection
+              pkgs.wrapGAppsHook3 # webkitgtk_4_1 is GTK3-based
+            ];
+
+            buildInputs = linuxLibs ++ [ pkgs.glib-networking ];
+
+            env = {
+              NEXT_TELEMETRY_DISABLED = "1";
+              # next.config.ts footer stamps: no .git in the sandbox, so feed it
+              # the version and (when the tree is clean enough to know) the rev.
+              APP_VERSION = appVersion;
+            } // lib.optionalAttrs (self ? rev || self ? dirtyRev) {
+              GITHUB_SHA = self.rev or self.dirtyRev;
+            };
+
+            # No Rust tests, and `cargo test` would recompile the app with the
+            # embedded frontend a second time for nothing.
+            doCheck = false;
+
+            # Mirror linuxEnv (the dev shell's known-good WebKitGTK setup)
+            # exactly. Notably XDG_DATA_DIRS is *replaced*, not prefixed, and
+            # host GIO modules are dropped: the host session's newer-glib
+            # modules (gvfs etc.) don't load against this app's older glib, and
+            # a host-polluted environment is what the EGL_BAD_PARAMETER abort
+            # traced back to. These come after wrapGAppsHook's own args, so the
+            # --set/--unset win over its --prefix defaults.
+            preFixup = ''
+              gappsWrapperArgs+=(
+                --set WEBKIT_DISABLE_COMPOSITING_MODE 1
+                --set WEBKIT_DISABLE_DMABUF_RENDERER 1
+                --set XDG_DATA_DIRS "$GSETTINGS_SCHEMAS_PATH"
+                --set GIO_MODULE_DIR "${pkgs.glib-networking}/lib/gio/modules/"
+                --unset GIO_EXTRA_MODULES
+              )
+            '';
+
+            meta = {
+              description = "Offline CMMC / NIST 800-171 compliance app";
+              homepage = "https://github.com/nealfennimore/cmmc";
+              mainProgram = "cmmc";
+              platforms = lib.platforms.linux;
+            };
+          };
+        };
+
         devShells = {
           # Lean shell for CI: just the pinned Tauri build toolchain.
           ci = pkgs.mkShell {
