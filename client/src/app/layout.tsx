@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { DM_Serif_Display } from "next/font/google";
 import localFont from "next/font/local";
 import Script from "next/script";
 import { ExternalLinkHandler } from "./components/external_link_handler";
@@ -16,10 +15,14 @@ const geistMono = localFont({
     variable: "--font-geist-mono",
     weight: "100 900",
 });
-const dmSerifDisplay = DM_Serif_Display({
-    subsets: ["latin"],
+// Vendored (latin subset) so builds don't fetch from Google Fonts — required
+// for sandboxed/offline builds like the Nix package, and keeps the app's
+// no-external-services promise at build time too.
+const dmSerifDisplay = localFont({
+    src: "./fonts/DMSerifDisplay-Regular.woff2",
     weight: "400",
     variable: "--font-dm-serif",
+    adjustFontFallback: "Times New Roman",
 });
 
 const SITE_TITLE = "CMMC | SP NIST 800-171 Rev 3";
