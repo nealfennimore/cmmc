@@ -55,7 +55,10 @@ export const ContentNavigation = ({
     const nextElement = elementIdentity(next);
 
     return (
-        <aside className="mb-4 flex w-full flex-row flex-wrap gap-2">
+        <aside
+            className="mb-4 flex w-full flex-row flex-wrap gap-2"
+            data-tour="content-navigation"
+        >
             {previous && (
                 <Link
                     href={`${path}/${elementType}/${prevElement}`}

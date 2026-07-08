@@ -7,6 +7,7 @@ import { ExportEvidenceMap } from "./export_evidence_map";
 import { Export, Import } from "./export_import";
 import { Markdown } from "./markdown";
 import { POAM } from "./poam";
+import { Tour, TourMenuItem } from "./tour";
 import { Tree } from "./tree";
 import { menuItemClasses } from "./ui";
 
@@ -87,6 +88,7 @@ export const Navigation = () => {
                 <div className="flex items-center md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
                     <button
                         key="tree-open"
+                        data-tour="overview"
                         className="me-2 inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         onClick={() => {
                             setTreeIsOpen(!isTreeOpen);
@@ -111,6 +113,7 @@ export const Navigation = () => {
                                 type="button"
                                 className="inline-flex items-center justify-center rounded-md p-2 text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 id="menu-button"
+                                data-tour="menu"
                                 aria-expanded="true"
                                 aria-haspopup="true"
                                 onClick={() => setIsOpen(!isOpen)}
@@ -159,6 +162,7 @@ export const Navigation = () => {
                                     <ClearDB />
                                 </div>
                                 <div className="py-1" role="none">
+                                    <TourMenuItem />
                                     <a
                                         href="https://github.com/nealfennimore/cmmc"
                                         className={menuItemClasses(
@@ -188,5 +192,6 @@ export const Navigation = () => {
             </div>
         </nav>,
         <Tree key="tree" isOpen={isTreeOpen} setOpen={setTreeIsOpen} />,
+        <Tour key="tour" />,
     ];
 };

@@ -16,7 +16,10 @@ export const Form = ({
     return (
         <>
             <ContentNavigation previous={prev} next={next} />
-            <div className="sticky top-36 left-full flex flex-row-reverse items-center shrink-0 w-1/4 pb-4 z-10 -translate-y-full">
+            <div
+                className="sticky top-36 left-full flex flex-row-reverse items-center shrink-0 w-1/4 pb-4 z-10 -translate-y-full"
+                data-tour="save"
+            >
                 <Button
                     type="submit"
                     variant="success"
@@ -39,6 +42,7 @@ export const Form = ({
                 action={formAction}
                 onChange={debouncedSave}
                 className="basis-full"
+                data-tour="requirement-form"
             >
                 {children}
             </form>

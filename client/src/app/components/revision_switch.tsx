@@ -68,7 +68,7 @@ export const RevisionSwitch = () => {
         values,
     });
     return (
-        <div className="relative inline-block text-left">
+        <div className="relative inline-block text-left" data-tour="revision-switch">
             <Link
                 href={nextPath}
                 title={`Toggle 800-171 revision to ${

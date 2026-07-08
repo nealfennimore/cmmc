@@ -902,6 +902,7 @@ export const Evidence = ({ requirementId }: { requirementId: string }) => {
                 className="flex flex-col md:flex-row shrink mb-16"
                 action={formAction}
                 ref={formRef}
+                data-tour="evidence"
             >
                 <div className="basis-full mb-4 md:mb-0 md:basis-1/3 md:mr-4">
                     <Files

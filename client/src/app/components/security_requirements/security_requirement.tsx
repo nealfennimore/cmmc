@@ -51,6 +51,7 @@ export const SecurityRequirement = ({
                 <EvidenceState evidence={evidence} />
             </Heading>
             <p
+                data-tour="discussion"
                 className="discussion text-base leading-relaxed"
                 dangerouslySetInnerHTML={{
                     __html:
@@ -59,7 +60,10 @@ export const SecurityRequirement = ({
                             : discussion,
                 }}
             ></p>
-            <aside className="flex flex-wrap justify-between items-center w-full mx-auto">
+            <aside
+                className="flex flex-wrap justify-between items-center w-full mx-auto"
+                data-tour="control-values"
+            >
                 <div className="flex mb-4 sm:mb-1">
                     <a
                         href={`https://csrc.nist.gov/projects/cprt/catalog#/cprt/framework/version/SP_800_171_3_0_0/home?element=${requirement.id}`}

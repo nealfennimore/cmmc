@@ -16,7 +16,7 @@ export const TotalScore = ({}: Props) => {
     const score =
         revision === Revision.V2 ? globalScore?.rev2Score : globalScore?.score;
     return (
-        <div>
+        <div data-tour="sprs-score">
             <span className="mr-1 text-sm text-muted-foreground">SPRS:</span>
             <span className="mr-2 text-sm font-medium text-foreground">
                 {renderNumber(score ?? 0)}/{GlobalScore.maxScore}

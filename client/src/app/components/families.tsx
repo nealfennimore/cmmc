@@ -43,7 +43,7 @@ export const Families = () => {
                     CMMC revision.
                 </span>
             </Popover>
-            <ul className="flex w-full flex-col gap-3">
+            <ul className="flex w-full flex-col gap-3" data-tour="families">
                 {families.map((family) => (
                     <li key={family.element_identifier}>
                         <Link

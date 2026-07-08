@@ -12,6 +12,7 @@ By working through the 800-171 controls, you can record an implementation status
 ## Features
 
 - Covers **both NIST 800-171 Rev 2 and Rev 3**, with a one-click revision toggle
+- **Interactive guided tour** — offered on first visit and restartable anytime from the upper-right menu (Take a Tour), it walks through the families, revision switch, SPRS score, evidence, and report generation
 - Stores all data client-side using [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) — no servers, no accounts
 - Record an **implementation status** (implemented, partially implemented, not applicable, not implemented, not started) and **markdown notes** for every security requirement
 - Live **SPRS score** as you work, including an estimated Rev 3 score that maps withdrawn Rev 2 control values into their Rev 3 replacements

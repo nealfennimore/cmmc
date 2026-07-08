@@ -226,7 +226,10 @@ export const AssessmentGuidance = ({
     );
 
     return (
-        <details className="mt-6 w-full rounded-lg border border-border bg-card text-card-foreground shadow-sm">
+        <details
+            className="mt-6 w-full rounded-lg border border-border bg-card text-card-foreground shadow-sm"
+            data-tour="assessment-guidance"
+        >
             <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-4 py-3 font-semibold tracking-tight marker:content-none hover:bg-secondary">
                 <IconInfo className="text-primary" />
                 <span className="flex-1">Assessment Guidance</span>
