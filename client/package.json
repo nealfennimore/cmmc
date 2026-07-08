@@ -1,6 +1,6 @@
 {
     "name": "sp_800_171",
-    "version": "0.18.11",
+    "version": "1.0.0",
     "private": true,
     "scripts": {
         "dev": "next dev",
