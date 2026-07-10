@@ -18,7 +18,21 @@ pub const CHECKOUT_TTL_SECS: i64 = 90 * 24 * 60 * 60;
 /// online users never approach the TTL cliff.
 pub const REFRESH_AFTER_DAYS: i64 = 7;
 
+/// Key of the Keygen package (Dashboard → Packages) with engine "tauri" that
+/// serves app updates. Empty disables update checks entirely.
+pub const KEYGEN_PACKAGE: &str = "cmmc";
+
+/// Linux is notify-only (no AppImage, so no in-place updates); point users at
+/// the download page instead.
+pub const UPDATE_DOWNLOAD_URL: &str = "https://getcmmc.consulting/";
+
 /// Licensing is compiled in but inert until the account constants are set.
 pub fn enabled() -> bool {
     !KEYGEN_ACCOUNT_ID.is_empty() && !KEYGEN_VERIFY_KEY_HEX.is_empty()
+}
+
+/// Update checks ride on licensing (the license key authenticates against the
+/// Keygen distribution engine), so both must be configured.
+pub fn updates_enabled() -> bool {
+    enabled() && !KEYGEN_PACKAGE.is_empty()
 }

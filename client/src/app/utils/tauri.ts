@@ -128,6 +128,66 @@ export const licenseDeactivate = async (): Promise<LicenseInfo | null> => {
     }
 };
 
+/** Result of an update check against the Keygen distribution engine. */
+export interface UpdateInfo {
+    available: boolean;
+    currentVersion: string;
+    version: string | null;
+    notes: string | null;
+    /** False on Linux — offer the download page instead of installing. */
+    platformSupportsInstall: boolean;
+    downloadUrl: string | null;
+}
+
+/**
+ * Check for an app update (requires an active license). Resolves the result
+ * or throws a {@link LicenseError}; `null` in the browser build.
+ */
+export const updateCheck = async (): Promise<UpdateInfo | null> => {
+    const internals =
+        typeof window !== "undefined" ? window.__TAURI_INTERNALS__ : undefined;
+    if (!internals?.invoke) {
+        return null;
+    }
+    try {
+        return await internals.invoke<UpdateInfo>("update_check");
+    } catch (error) {
+        throw toLicenseError(error);
+    }
+};
+
+/**
+ * Download and apply the update found by the last check. Throws a
+ * {@link LicenseError} on failure. On Windows the installer may exit and
+ * relaunch the app before this resolves. No-op in the browser build.
+ */
+export const updateInstall = async (): Promise<void> => {
+    const internals =
+        typeof window !== "undefined" ? window.__TAURI_INTERNALS__ : undefined;
+    if (!internals?.invoke) {
+        return;
+    }
+    try {
+        await internals.invoke("update_install");
+    } catch (error) {
+        throw toLicenseError(error);
+    }
+};
+
+/** Relaunch the app to finish applying an update. No-op in the browser. */
+export const updateRestart = async (): Promise<void> => {
+    const internals =
+        typeof window !== "undefined" ? window.__TAURI_INTERNALS__ : undefined;
+    if (!internals?.invoke) {
+        return;
+    }
+    try {
+        await internals.invoke("update_restart");
+    } catch (error) {
+        console.error("Failed to restart for update", error);
+    }
+};
+
 /**
  * Open a URL in the user's default browser via tauri-plugin-opener. Returns
  * `true` if Tauri handled it, `false` otherwise (e.g. in the browser build) so

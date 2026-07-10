@@ -6,6 +6,7 @@
         "dev": "next dev",
         "build": "next build",
         "postbuild": "node scripts/stamp-sw.mjs",
+        "version": "node scripts/sync-tauri-version.mjs",
         "start": "next start",
         "lint": "next lint",
         "tauri": "cargo-tauri",

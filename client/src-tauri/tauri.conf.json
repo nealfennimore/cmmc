@@ -1,13 +1,21 @@
 {
     "$schema": "https://schema.tauri.app/config/2",
     "productName": "CMMC",
-    "version": "0.16.5",
+    "version": "../package.json",
     "identifier": "consulting.getcmmc.app",
     "build": {
         "frontendDist": "../out",
         "devUrl": "http://localhost:3000",
         "beforeDevCommand": "npm run dev",
         "beforeBuildCommand": "npm run build"
+    },
+    "plugins": {
+        "updater": {
+            "pubkey": "",
+            "windows": {
+                "installMode": "passive"
+            }
+        }
     },
     "app": {
         "windows": [

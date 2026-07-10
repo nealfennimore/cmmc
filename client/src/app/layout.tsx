@@ -4,6 +4,7 @@ import Script from "next/script";
 import { ExternalLinkHandler } from "./components/external_link_handler";
 import { LicenseGate } from "./components/license_gate";
 import { LicenseProvider } from "./context/license";
+import { UpdateProvider } from "./context/update";
 import "./globals.css";
 import { SITE_URL, social } from "./seo";
 
@@ -58,7 +59,9 @@ export default function RootLayout({
             >
                 <ExternalLinkHandler />
                 <LicenseProvider>
-                    <LicenseGate>{children}</LicenseGate>
+                    <UpdateProvider>
+                        <LicenseGate>{children}</LicenseGate>
+                    </UpdateProvider>
                 </LicenseProvider>
             </body>
         </html>

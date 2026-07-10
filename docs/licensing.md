@@ -110,6 +110,79 @@ dormant without the Tauri IPC bridge.
 Rust unit tests cover the certificate parsing/signature verification,
 including trial-license detection: `cd client/src-tauri && cargo test`.
 
+## Auto-updates (Keygen tauri engine)
+
+The desktop app self-updates through [Keygen's Tauri distribution
+engine](https://keygen.sh/docs/api/engines/#engines-tauri): CI mirrors each
+release into a Keygen **package**, and the app checks
+`/v1/accounts/<account>/engines/tauri/<package>` with
+`Authorization: License <key>`. Update checks therefore require an **active
+license** — lapsed annual licenses stop receiving updates, and the LICENSED
+distribution strategy enforces the same on downloads.
+
+Platform behavior:
+
+- **macOS / Windows** — full in-place updates via `tauri-plugin-updater`
+  (`.app.tar.gz` per arch; NSIS `-setup.exe`). Updater artifacts are signed
+  with a dedicated Tauri signing key, independent of OS code signing.
+- **Linux** — notify-only (`.deb`/`.rpm` can't self-update; AppImage is
+  disabled). The app queries the engine directly and the banner links to
+  `UPDATE_DOWNLOAD_URL` (config.rs). The `.deb`/`.rpm` files are uploaded to
+  Keygen as unsigned "version beacons" so the check has something to find.
+
+The app checks silently ~8s after launch when licensed, and manually via
+**License → Check for updates**. Config: `KEYGEN_PACKAGE` in
+`client/src-tauri/src/license/config.rs` (empty string disables update checks
+entirely) and `plugins.updater.pubkey` in `tauri.conf.json`.
+
+### One-time setup
+
+1. Dashboard → **Packages** → new package under the product: key `cmmc`,
+   engine **tauri**. (Product `distributionStrategy` stays `LICENSED`, the
+   default.)
+2. Dashboard → **Tokens** → create a **product token** → repo secret
+   `KEYGEN_TOKEN`. Add repo variable `KEYGEN_PRODUCT_ID` (the product's id).
+3. Generate the updater signing keypair once:
+   `npm run tauri signer generate -- -w ~/.tauri/cmmc-updater.key`
+   - Public key → `plugins.updater.pubkey` in `tauri.conf.json` (currently an
+     empty placeholder — updates won't verify until this is set).
+   - Private key → repo secret `TAURI_SIGNING_PRIVATE_KEY`; its password →
+     `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+   - **Back up the private key.** Losing it permanently strands existing
+     installs (they'd reject anything signed with a new key) — recovery means
+     asking every user to manually reinstall.
+
+| CI credential | Kind | Purpose |
+| --- | --- | --- |
+| `KEYGEN_TOKEN` | secret | product token; `keygen-upload` job no-ops without it |
+| `KEYGEN_PRODUCT_ID` | variable | keygen CLI product scope |
+| `TAURI_SIGNING_PRIVATE_KEY` | secret | signs updater artifacts; also switches `createUpdaterArtifacts` on |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | secret | password for the key above |
+
+### How releases flow
+
+Tag push → desktop jobs build (with updater artifacts when the signing key is
+set) → `keygen-upload` creates Keygen release `<tag minus v>`, uploads the
+artifacts **with their signatures** (Keygen does not read `.sig` files
+automatically), publishes it → only then does `publish-release` make the
+GitHub release public.
+
+**Important:** the engine resolves the *client's current version* as a Keygen
+release — a version that was never uploaded gets `204 No Content` (silently
+"no update") forever. If a shipped tag ever misses its Keygen upload, backfill
+a bare release so that cohort can update again:
+
+```bash
+KEYGEN_TOKEN=... KEYGEN_ACCOUNT_ID=... KEYGEN_PRODUCT_ID=... \
+  keygen new --version <shipped-version> --channel stable --package cmmc
+keygen publish --release <shipped-version> --package cmmc
+```
+
+The app version comes from `client/package.json` (`tauri.conf.json` points its
+`version` at it); CI overrides it with the release tag. A dev build's version
+usually has no published Keygen release yet → checks return "up to date".
+That's expected.
+
 ## Threat model notes
 
 - This repo is open source: anyone can build an ungated binary. The gate

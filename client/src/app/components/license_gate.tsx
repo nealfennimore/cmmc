@@ -12,6 +12,7 @@ import { ActivationForm } from "./license_activation";
 import { LicenseSettingsModal } from "./license_settings";
 import { InfoModal } from "./modal";
 import { Button } from "./ui";
+import { UpdateBanner } from "./update_banner";
 
 const BLOCKING_COPY: Record<
     string,
@@ -117,7 +118,7 @@ function TrialBanner({ info }: { info: LicenseInfo }) {
 
     return (
         <>
-            <div className="fixed bottom-0 start-0 z-40 flex w-full items-center justify-center gap-3 border-t border-slate-800 bg-slate-900 px-4 py-2 text-sm text-slate-300">
+            <div className="relative flex w-full items-center justify-center gap-3 border-t border-slate-800 bg-slate-900 px-4 py-2 text-sm text-slate-300">
                 <span>
                     Trial license — {days} {days === 1 ? "day" : "days"}{" "}
                     remaining.
@@ -161,7 +162,12 @@ export function LicenseGate({ children }: { children: React.ReactNode }) {
             {info && info.state in BLOCKING_COPY && (
                 <BlockingOverlay info={info} />
             )}
-            {info && showsTrialBanner(info) && <TrialBanner info={info} />}
+            {/* Banner stack: update notice and trial countdown are rows here
+                so they never overlap each other at the bottom edge. */}
+            <div className="fixed bottom-0 start-0 z-40 flex w-full flex-col">
+                <UpdateBanner />
+                {info && showsTrialBanner(info) && <TrialBanner info={info} />}
+            </div>
             <LicenseSettingsModal />
         </>
     );

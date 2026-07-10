@@ -6,6 +6,8 @@
 // any outside click or keypress, which would tear the modal down mid-use.
 
 import { useLicense } from "@/app/context/license";
+import { useUpdate } from "@/app/context/update";
+import { openExternal } from "@/app/utils/tauri";
 import { useState } from "react";
 import {
     ActivationForm,
@@ -40,6 +42,72 @@ function DetailRow({ label, value }: { label: string; value: string }) {
         <div className="flex items-center justify-between gap-4">
             <span className="text-muted-foreground">{label}</span>
             <span className="font-medium text-foreground">{value}</span>
+        </div>
+    );
+}
+
+// "Updates" block inside the License modal: current version, manual check,
+// and install/download actions mirroring the update banner.
+function UpdatesSection() {
+    const { result, phase, error, check, install, restart } = useUpdate();
+    const currentVersion =
+        result?.currentVersion ?? process.env.NEXT_PUBLIC_APP_VERSION ?? "—";
+
+    return (
+        <div className="flex flex-col gap-2 border-t border-border pt-3 text-sm">
+            <DetailRow label="App version" value={currentVersion} />
+
+            {result?.available && (
+                <p>
+                    Version {result.version} is available.
+                    {result.notes ? ` ${result.notes}` : ""}
+                </p>
+            )}
+            {result && !result.available && <p>You&apos;re up to date.</p>}
+            {error && (
+                <p role="alert" className="text-red-600">
+                    {error}
+                </p>
+            )}
+
+            <div className="flex gap-2">
+                {result?.available &&
+                    (phase === "installed" ? (
+                        <Button size="sm" onClick={restart}>
+                            Restart now
+                        </Button>
+                    ) : result.platformSupportsInstall ? (
+                        <Button
+                            size="sm"
+                            onClick={install}
+                            disabled={phase === "downloading"}
+                        >
+                            {phase === "downloading"
+                                ? "Downloading…"
+                                : "Install and restart"}
+                        </Button>
+                    ) : (
+                        <Button
+                            size="sm"
+                            onClick={() =>
+                                result.downloadUrl &&
+                                openExternal(result.downloadUrl)
+                            }
+                        >
+                            Download
+                        </Button>
+                    ))}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={check}
+                    disabled={phase !== "idle"}
+                >
+                    {phase === "checking"
+                        ? "Checking…"
+                        : "Check for updates"}
+                </Button>
+            </div>
         </div>
     );
 }
@@ -237,6 +305,10 @@ export const LicenseSettingsModal = () => {
                     </div>
                 ) : (
                     <ActivationForm />
+                )}
+
+                {["licensed", "stale"].includes(info.state) && (
+                    <UpdatesSection />
                 )}
             </div>
         </InfoModal>

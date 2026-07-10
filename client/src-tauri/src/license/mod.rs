@@ -41,14 +41,14 @@ pub struct LicenseError {
 }
 
 impl LicenseError {
-    fn new(code: &str, message: impl Into<String>) -> Self {
+    pub(crate) fn new(code: &str, message: impl Into<String>) -> Self {
         Self {
             code: code.into(),
             message: message.into(),
         }
     }
 
-    fn io(message: impl Into<String>) -> Self {
+    pub(crate) fn io(message: impl Into<String>) -> Self {
         Self::new("IO", message)
     }
 }
@@ -112,8 +112,8 @@ fn checkout_ttl(license_expiry: Option<OffsetDateTime>, now: OffsetDateTime) -> 
 }
 
 /// Derive the current LicenseInfo from disk. Fast and fully offline; the
-/// frontend calls this on every launch.
-fn current_status(app: &tauri::AppHandle) -> Result<LicenseInfo, LicenseError> {
+/// frontend calls this on every launch (and the update module gates on it).
+pub(crate) fn current_status(app: &tauri::AppHandle) -> Result<LicenseInfo, LicenseError> {
     if !config::enabled() {
         return Ok(LicenseInfo::disabled());
     }

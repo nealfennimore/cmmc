@@ -13,6 +13,7 @@
     # (see rust-overlay below), so the channel mainly supplies the system libs.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flake-utils.url = "github:numtide/flake-utils";
+    agentbox.url = "github:nealfennimore/agent-sandbox";
     # Rust is pinned independently of nixpkgs: Tauri's transitive deps (zvariant,
     # darling, time, plist, ...) keep raising their MSRV, so the channel's rustc
     # is perpetually too old. The overlay lets us name an exact Rust version and
@@ -23,12 +24,13 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, agentbox }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
           overlays = [ rust-overlay.overlays.default ];
+          config.allowUnfree = true;
         };
         inherit (pkgs) lib;
         isLinux = pkgs.stdenv.isLinux;
@@ -91,6 +93,18 @@
           export XDG_DATA_DIRS="$GSETTINGS_SCHEMAS_PATH"
           export GIO_MODULE_DIR="${pkgs.glib-networking}/lib/gio/modules/"
         '';
+
+        claude = agentbox.lib.${system}.mkClaudeSandbox {
+          extraPackages = [
+            pkgs.ripgrep
+            pkgs.jq
+            pkgs.curl
+          ] ++ buildTools;
+          allowedDomains = agentbox.lib.${system}.agentDomains // {
+            "crates.io" = "*";
+            "keygen.sh" = "*";
+          };
+        };
       in
       {
         # `nix build` / `nix run` — the installable desktop app. Linux-only:
@@ -184,6 +198,7 @@
               ++ lib.optionals isLinux linuxLibs
               ++ [ (pkgs.python312.withPackages (pp: [ pp.jupyter ])) ];
             nativeBuildInputs = lib.optionals isLinux linuxNativeTools;
+            packages = [claude];
             shellHook = lib.optionalString isLinux linuxEnv + ''
               [[ ! -d .venv ]] && python -m venv .venv
               source .venv/bin/activate
