@@ -19,6 +19,115 @@ declare global {
 export const isTauri = (): boolean =>
     typeof window !== "undefined" && !!window.__TAURI_INTERNALS__;
 
+export type LicenseState =
+    | "disabled"
+    | "unlicensed"
+    | "licensed"
+    | "stale"
+    | "licenseExpired"
+    | "invalid";
+
+/** Summary of the desktop license, as computed by the Rust side. */
+export interface LicenseInfo {
+    state: LicenseState;
+    /** For an activated trial license, days until it expires. */
+    trialDaysRemaining: number | null;
+    /** True when the activated key is a Keygen trial license. */
+    licenseIsTrial: boolean;
+    keyMasked: string | null;
+    machineFileExpiry: string | null;
+    licenseExpiry: string | null;
+    activatedAt: string | null;
+}
+
+export interface LicenseError {
+    code: string;
+    message: string;
+}
+
+// Tauri command failures reject with the serialized Rust LicenseError; anything
+// else (bridge failures, panics) is folded into a generic error shape.
+const toLicenseError = (error: unknown): LicenseError => {
+    if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        "message" in error
+    ) {
+        return error as LicenseError;
+    }
+    return { code: "API_ERROR", message: String(error) };
+};
+
+/** Current license state, or `null` in the browser build. Offline and fast. */
+export const licenseStatus = async (): Promise<LicenseInfo | null> => {
+    const internals =
+        typeof window !== "undefined" ? window.__TAURI_INTERNALS__ : undefined;
+    if (!internals?.invoke) {
+        return null;
+    }
+    try {
+        return await internals.invoke<LicenseInfo>("license_status");
+    } catch (error) {
+        console.error("Failed to read license status", error);
+        return null;
+    }
+};
+
+/**
+ * Activate a license key (one-time, needs network). Resolves the new license
+ * state or throws a {@link LicenseError}. No-ops (`null`) in the browser.
+ */
+export const licenseActivate = async (
+    key: string,
+): Promise<LicenseInfo | null> => {
+    const internals =
+        typeof window !== "undefined" ? window.__TAURI_INTERNALS__ : undefined;
+    if (!internals?.invoke) {
+        return null;
+    }
+    try {
+        return await internals.invoke<LicenseInfo>("license_activate", { key });
+    } catch (error) {
+        throw toLicenseError(error);
+    }
+};
+
+/**
+ * Best-effort machine-file refresh; silently keeps the current state when
+ * offline. Returns `null` in the browser build.
+ */
+export const licenseRefresh = async (): Promise<LicenseInfo | null> => {
+    const internals =
+        typeof window !== "undefined" ? window.__TAURI_INTERNALS__ : undefined;
+    if (!internals?.invoke) {
+        return null;
+    }
+    try {
+        return await internals.invoke<LicenseInfo>("license_refresh");
+    } catch (error) {
+        console.error("Failed to refresh license", error);
+        return null;
+    }
+};
+
+/**
+ * Release this device's seat on the license (needs network). Resolves the new
+ * state or throws a {@link LicenseError}. No-ops (`null`) in the browser.
+ */
+export const licenseDeactivate = async (): Promise<LicenseInfo | null> => {
+    const internals =
+        typeof window !== "undefined" ? window.__TAURI_INTERNALS__ : undefined;
+    if (!internals?.invoke) {
+        return null;
+    }
+    try {
+        return await internals.invoke<LicenseInfo>("license_deactivate");
+    } catch (error) {
+        throw toLicenseError(error);
+    }
+};
+
 /**
  * Open a URL in the user's default browser via tauri-plugin-opener. Returns
  * `true` if Tauri handled it, `false` otherwise (e.g. in the browser build) so

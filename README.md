@@ -122,6 +122,7 @@ Notes:
 - **Storage is per-app.** The desktop app keeps its own IndexedDB store, separate from the browser/PWA. Use **Export / Import Database** to move data between them.
 - **Routing.** When building under Tauri, `next.config.ts` switches to `trailingSlash` so routes resolve as `…/index.html` under Tauri's asset protocol; the web build keeps its clean URLs.
 - **Distribution.** Tagged releases are built and signed by GitHub Actions ([`deploy.yml`](.github/workflows/deploy.yml)) and attached to the [Releases](https://github.com/nealfennimore/cmmc/releases) page.
+- **Licensing (optional).** The desktop build supports [keygen.sh](https://keygen.sh) licensing with node-locked activation, offline verification, and server-enforced trial license keys. It is disabled by default (forks build ungated); see [`docs/licensing.md`](docs/licensing.md) for setup. The web app is never gated.
 
 ## Resources
 

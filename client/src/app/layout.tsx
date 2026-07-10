@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
 import { ExternalLinkHandler } from "./components/external_link_handler";
+import { LicenseGate } from "./components/license_gate";
+import { LicenseProvider } from "./context/license";
 import "./globals.css";
 import { SITE_URL, social } from "./seo";
 
@@ -55,7 +57,9 @@ export default function RootLayout({
                 className={`${geistSans.variable} ${geistMono.variable} ${dmSerifDisplay.variable} antialiased`}
             >
                 <ExternalLinkHandler />
-                {children}
+                <LicenseProvider>
+                    <LicenseGate>{children}</LicenseGate>
+                </LicenseProvider>
             </body>
         </html>
     );

@@ -1,6 +1,8 @@
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
+mod license;
+
 // Open a URL in the user's default browser. Invoked from the frontend; runs
 // Rust-side so it isn't subject to the opener plugin's JS capability scope.
 #[tauri::command]
@@ -89,7 +91,11 @@ pub fn run() {
             open_external,
             open_evidence,
             save_file,
-            save_files
+            save_files,
+            license::license_status,
+            license::license_activate,
+            license::license_refresh,
+            license::license_deactivate
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

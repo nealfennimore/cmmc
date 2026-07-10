@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 /tmp/extract_buttons.py)",
+      "Bash(npx tsc *)",
+      "WebFetch(domain:getcmmc.consulting)",
+      "WebFetch(domain:raw.githubusercontent.com)"
+    ]
+  }
+}
