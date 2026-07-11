@@ -20,7 +20,8 @@ import {
     useRef,
     useState,
 } from "react";
-import { confirm } from "../confirm";
+import { createPortal } from "react-dom";
+import { confirm, ModalShell } from "../confirm";
 import { badgeClasses, Button, buttonClasses, Heading, Input } from "../ui";
 
 const deriveEvidence = async ({
@@ -71,8 +72,11 @@ const replaceEvidence = async ({
 }): Promise<void> => {
     const newEvidence = await deriveEvidence({ name, type, data });
 
-    // Identical content hashes to the same id; there is nothing to replace.
+    // Identical content hashes to the same id; only the name can change.
     if (newEvidence.id === oldArtifact.id) {
+        if (newEvidence.filename !== oldArtifact.filename) {
+            await IDB.evidence.put(newEvidence);
+        }
         return;
     }
 
@@ -272,159 +276,268 @@ export const Files = ({
     );
 };
 
-const NameChange = ({ artifact }: { artifact: IDBEvidenceV2 }) => {
-    const suffixIdx =
-        artifact.type !== "url" ? artifact.filename.lastIndexOf(".") : -1;
-    const nameWithoutSuffix =
-        artifact.type !== "url"
-            ? artifact.filename.slice(0, suffixIdx)
-            : artifact.filename;
-
-    const input = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        input.current?.focus();
-        input.current?.select();
-    }, [input?.current]);
-
-    return (
-        <label className="me-2 flex items-center gap-1">
-            <Input
-                type="text"
-                className="h-7 w-36 text-xs"
-                id={`name.${artifact.id}`}
-                name={`name.${artifact.id}`}
-                placeholder={nameWithoutSuffix}
-                defaultValue={nameWithoutSuffix}
-                ref={input}
-            />
-            <Button
-                type="submit"
-                size="sm"
-                className="h-7 px-2"
-                aria-label="Save name"
-            >
-                <svg
-                    className="w-4 h-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="m18 10-4-4M2.5 21.5l3.384-.376c.414-.046.62-.069.814-.131a2 2 0 0 0 .485-.234c.17-.111.317-.259.61-.553L21 7a2.828 2.828 0 1 0-4-4L3.794 16.206c-.294.294-.442.442-.553.611a2 2 0 0 0-.234.485c-.062.193-.085.4-.131.814z"
-                    />
-                </svg>
-            </Button>
-        </label>
-    );
+// "report.pdf" -> ["report", ".pdf"]; names without a real extension (no dot,
+// or only a leading dot) keep the whole name editable.
+const splitSuffix = (filename: string): [string, string] => {
+    const idx = filename.lastIndexOf(".");
+    return idx > 0
+        ? [filename.slice(0, idx), filename.slice(idx)]
+        : [filename, ""];
 };
 
-const ReplaceControl = ({
+// Modal editor for a single evidence artifact: rename it, switch its type
+// between file and URL, and swap the underlying content, all in one place.
+// Rendered through a portal so the fixed overlay (and its inputs) escapes the
+// surrounding evidence <form> — otherwise Enter and button clicks inside the
+// modal would trigger the form's add-URL action.
+const EditEvidenceModal = ({
     artifact,
     requirementId,
     setEvidence,
+    onDelete,
+    onClose,
 }: {
     artifact: IDBEvidenceV2;
     requirementId: string;
     setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
+    /** Resolves true when the artifact was deleted, false on an aborted prompt. */
+    onDelete: () => Promise<boolean>;
+    onClose: () => void;
 }) => {
+    const isUrl = artifact.type === "url";
+    const currentUrl = isUrl ? new TextDecoder().decode(artifact.data) : "";
+    const [currentBase, currentSuffix] = isUrl
+        ? [artifact.filename, ""]
+        : splitSuffix(artifact.filename);
+
+    const [kind, setKind] = useState<"file" | "url">(isUrl ? "url" : "file");
+    const [name, setName] = useState(currentBase);
+    // Once the user edits the name, stop auto-filling it from a picked file.
+    const [nameDirty, setNameDirty] = useState(false);
+    const [url, setUrl] = useState(currentUrl);
+    const [file, setFile] = useState<File | null>(null);
     const [busy, setBusy] = useState(false);
-    const urlInput = useRef<HTMLInputElement>(null);
+    const nameInput = useRef<HTMLInputElement>(null);
 
-    const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) {
+    // The file extension is not editable: it is shown as an adornment on the
+    // name input and re-appended on save, following the picked replacement
+    // file when there is one.
+    const suffix =
+        kind !== "file" ? "" : file ? splitSuffix(file.name)[1] : currentSuffix;
+
+    let urlValid = false;
+    try {
+        new URL(url.trim());
+        urlValid = true;
+    } catch {}
+
+    const canSave =
+        !busy &&
+        !!name.trim() &&
+        (kind === "url"
+            ? urlValid
+            : // A file artifact can keep its current content, but converting
+              // a URL to a file needs an upload.
+              !!file || !isUrl);
+
+    const onPickFile = (e: ChangeEvent<HTMLInputElement>) => {
+        const picked = e.target.files?.[0];
+        if (!picked) {
+            return;
+        }
+        setFile(picked);
+        if (!nameDirty) {
+            setName(splitSuffix(picked.name)[0]);
+        }
+    };
+
+    const onSave = async (finish: (action: () => void) => void) => {
+        if (!canSave) {
             return;
         }
         setBusy(true);
-        const data = await toBuffer(file);
-        await replaceEvidence({
-            oldArtifact: artifact,
-            name: file.name,
-            type: file.type,
-            data,
-            requirementId,
-        });
+        const filename = name.trim() + suffix;
+        if (kind === "url") {
+            await replaceEvidence({
+                oldArtifact: artifact,
+                name: filename,
+                type: "url",
+                data: new TextEncoder().encode(url.trim()).buffer,
+                requirementId,
+            });
+        } else if (file) {
+            await replaceEvidence({
+                oldArtifact: artifact,
+                name: filename,
+                type: file.type,
+                data: await toBuffer(file),
+                requirementId,
+            });
+        } else if (filename !== artifact.filename) {
+            await IDB.evidence.put({ ...artifact, filename });
+        }
         await fetchEvidence(requirementId, setEvidence);
-        setBusy(false);
+        finish(onClose);
     };
 
-    const onUrl = async () => {
-        const href = urlInput.current?.value.trim();
-        if (!href) {
-            return;
-        }
-        let url: URL;
-        try {
-            url = new URL(href);
-        } catch {
-            return;
-        }
+    const onDeleteClick = async (finish: (action: () => void) => void) => {
         setBusy(true);
-        const data = new TextEncoder().encode(href);
-        await replaceEvidence({
-            oldArtifact: artifact,
-            name: url.host || url.href,
-            type: "url",
-            data: data.buffer,
-            requirementId,
-        });
-        await fetchEvidence(requirementId, setEvidence);
+        // Stay open when the shared-evidence prompt is dismissed.
+        if (await onDelete()) {
+            finish(onClose);
+            return;
+        }
         setBusy(false);
     };
 
-    if (artifact.type === "url") {
-        return (
-            <span className="flex items-center gap-1">
-                <Input
-                    ref={urlInput}
-                    type="url"
-                    className="h-7 w-36 text-xs"
-                    placeholder="Replace with URL"
-                    disabled={busy}
-                    // Use a plain handler instead of the form's submit so the
-                    // add-URL action (which keys off a "url" field) is not
-                    // triggered when replacing.
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                            e.preventDefault();
-                            onUrl();
-                        }
-                    }}
-                />
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-2"
-                    disabled={busy}
-                    onClick={onUrl}
-                >
-                    Replace
-                </Button>
-            </span>
-        );
-    }
-
-    return (
-        <label
-            className={`${buttonClasses({
-                variant: "outline",
-                size: "sm",
-            })} h-7 cursor-pointer px-2`}
+    return createPortal(
+        <ModalShell
+            ariaLabel="Edit evidence"
+            onDismiss={onClose}
+            initialFocusRef={nameInput}
         >
-            Replace file
-            <input
-                type="file"
-                className="hidden"
-                disabled={busy}
-                onChange={onFile}
-            />
-        </label>
+            {(finish) => (
+                <>
+                    <div className="px-6 py-5">
+                        <h2 className="pr-8 text-lg font-semibold tracking-tight">
+                            Edit evidence
+                        </h2>
+                        <div className="mt-4 flex flex-col gap-4 text-sm">
+                            <label className="flex flex-col gap-1 font-medium">
+                                Name
+                                <span className="relative block">
+                                    <Input
+                                        ref={nameInput}
+                                        type="text"
+                                        value={name}
+                                        disabled={busy}
+                                        style={
+                                            suffix
+                                                ? {
+                                                      paddingRight: `${suffix.length + 2}ch`,
+                                                  }
+                                                : undefined
+                                        }
+                                        onChange={(e) => {
+                                            setName(e.target.value);
+                                            setNameDirty(true);
+                                        }}
+                                    />
+                                    {suffix && (
+                                        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted-foreground">
+                                            {suffix}
+                                        </span>
+                                    )}
+                                </span>
+                            </label>
+
+                            <div className="flex flex-col gap-1 font-medium">
+                                Type
+                                <div className="flex gap-2">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={
+                                            kind === "file"
+                                                ? "primary"
+                                                : "outline"
+                                        }
+                                        disabled={busy}
+                                        onClick={() => setKind("file")}
+                                    >
+                                        File
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={
+                                            kind === "url"
+                                                ? "primary"
+                                                : "outline"
+                                        }
+                                        disabled={busy}
+                                        onClick={() => setKind("url")}
+                                    >
+                                        URL
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {kind === "url" ? (
+                                <label className="flex flex-col gap-1 font-medium">
+                                    URL
+                                    <Input
+                                        type="url"
+                                        value={url}
+                                        placeholder="https://"
+                                        disabled={busy}
+                                        onChange={(e) => setUrl(e.target.value)}
+                                    />
+                                </label>
+                            ) : (
+                                <div className="flex flex-col gap-1 font-medium">
+                                    File
+                                    <label
+                                        className={`${buttonClasses({
+                                            variant: "outline",
+                                            size: "sm",
+                                        })} cursor-pointer`}
+                                    >
+                                        {file
+                                            ? file.name
+                                            : isUrl
+                                              ? "Choose a file"
+                                              : "Replace current file"}
+                                        <input
+                                            type="file"
+                                            className="hidden"
+                                            disabled={busy}
+                                            onChange={onPickFile}
+                                        />
+                                    </label>
+                                    {!file && (
+                                        <span className="text-xs font-normal text-muted-foreground">
+                                            {isUrl
+                                                ? "Choose a file to convert this link into a stored file."
+                                                : "Leave as is to keep the current file contents."}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 border-t border-border bg-secondary px-6 py-4">
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            disabled={busy}
+                            onClick={() => onDeleteClick(finish)}
+                        >
+                            Delete
+                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={busy}
+                                onClick={() => finish(onClose)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                disabled={!canSave}
+                                onClick={() => onSave(finish)}
+                            >
+                                {busy ? "Saving…" : "Save"}
+                            </Button>
+                        </div>
+                    </div>
+                </>
+            )}
+        </ModalShell>,
+        document.body,
     );
 };
 
@@ -432,48 +545,25 @@ const Badge = ({
     children,
     onDelete,
     artifact,
-    lastResetAt,
     requirementId,
     setEvidence,
     readOnly,
 }: {
     children: ReactNode;
-    onDelete: CallableFunction;
+    onDelete: () => Promise<boolean>;
     artifact: IDBEvidenceV2;
-    lastResetAt: null | number;
     requirementId: string;
     setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
     readOnly?: boolean;
 }) => {
-    const [isShowing, setShowing] = useState(false);
-    const [prevLastResetAt, setPrevLastResetAt] = useState(lastResetAt);
-
-    useEffect(() => {
-        if (lastResetAt !== prevLastResetAt) {
-            setShowing(false);
-            setPrevLastResetAt(lastResetAt);
-        }
-    }, [lastResetAt, prevLastResetAt]);
+    const [editing, setEditing] = useState(false);
 
     function onContextMenu(e: MouseEvent) {
         if (readOnly) {
             return;
         }
         e.preventDefault();
-        setShowing(!isShowing);
-    }
-
-    if (isShowing && !readOnly) {
-        return (
-            <span className="me-2 mb-2 flex flex-col gap-1">
-                <NameChange artifact={artifact} />
-                <ReplaceControl
-                    artifact={artifact}
-                    requirementId={requirementId}
-                    setEvidence={setEvidence}
-                />
-            </span>
-        );
+        setEditing(true);
     }
 
     // URL evidence stays blue (info); file evidence is a subtle gray (neutral)
@@ -488,26 +578,36 @@ const Badge = ({
             {children}
             {!readOnly && (
                 <button
-                    onClick={onDelete}
+                    type="button"
+                    onClick={() => setEditing(true)}
                     className="pl-2 transition-opacity hover:opacity-70"
-                    aria-label="Remove evidence"
+                    aria-label="Edit evidence"
                 >
                     <svg
-                        className="w-2 h-2"
+                        className="w-3 h-3"
                         aria-hidden="true"
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
-                        viewBox="0 0 14 14"
+                        viewBox="0 0 24 24"
                     >
                         <path
                             stroke="currentColor"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth="2"
-                            d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+                            d="m18 10-4-4M2.5 21.5l3.384-.376c.414-.046.62-.069.814-.131a2 2 0 0 0 .485-.234c.17-.111.317-.259.61-.553L21 7a2.828 2.828 0 1 0-4-4L3.794 16.206c-.294.294-.442.442-.553.611a2 2 0 0 0-.234.485c-.062.193-.085.4-.131.814z"
                         />
                     </svg>
                 </button>
+            )}
+            {editing && !readOnly && (
+                <EditEvidenceModal
+                    artifact={artifact}
+                    requirementId={requirementId}
+                    setEvidence={setEvidence}
+                    onDelete={onDelete}
+                    onClose={() => setEditing(false)}
+                />
             )}
         </span>
     );
@@ -569,18 +669,16 @@ export const EvidenceBadge = ({
     artifact,
     setEvidence,
     evidence,
-    lastResetAt,
     requirementId,
     readOnly,
 }: {
     artifact: IDBEvidenceV2;
     evidence: IDBEvidenceV2[];
     setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
-    lastResetAt: null | number;
     requirementId: string;
     readOnly?: boolean;
 }) => {
-    const onDelete = async () => {
+    const onDelete = async (): Promise<boolean> => {
         const evidenceRequirementRecords =
             await IDB.evidenceRequirements.getAll(
                 IDBKeyRange.only(artifact.id),
@@ -598,7 +696,7 @@ export const EvidenceBadge = ({
             });
             // Closing the dialog (X / Escape / backdrop) aborts the delete.
             if (shouldDeleteAll === null) {
-                return;
+                return false;
             }
             if (shouldDeleteAll) {
                 for (const record of evidenceRequirementRecords) {
@@ -615,18 +713,27 @@ export const EvidenceBadge = ({
                 ]);
             }
         } else {
+            const shouldDelete = await confirm({
+                title: "Delete evidence",
+                message: `Delete "${artifact.filename}"? This cannot be undone.`,
+                confirmLabel: "Delete",
+                variant: "destructive",
+            });
+            if (!shouldDelete) {
+                return false;
+            }
             await IDB.evidence.delete(IDBKeyRange.only(artifact.id));
             await IDB.evidenceRequirements.delete([artifact.id, requirementId]);
         }
 
         setEvidence(evidence.filter((e) => e.id !== artifact.id));
+        return true;
     };
 
     return (
         <Badge
             onDelete={onDelete}
             artifact={artifact}
-            lastResetAt={lastResetAt}
             requirementId={requirementId}
             setEvidence={setEvidence}
             readOnly={readOnly}
@@ -642,13 +749,11 @@ export const EvidenceBadge = ({
 export const EvidenceBadges = ({
     evidence,
     setEvidence,
-    lastResetAt,
     requirementId,
     readOnly,
 }: {
     evidence: IDBEvidenceV2[];
     setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
-    lastResetAt: null | number;
     requirementId: string;
     readOnly?: boolean;
 }) => {
@@ -669,7 +774,6 @@ export const EvidenceBadges = ({
                 artifact={artifact}
                 evidence={evidence}
                 setEvidence={setEvidence}
-                lastResetAt={lastResetAt}
                 requirementId={requirementId}
                 readOnly={readOnly}
             />
@@ -778,7 +882,6 @@ export const Evidence = ({
 }) => {
     const [evidence, setEvidence] = useState<IDBEvidenceV2[]>([]);
     const [uploading, setUploading] = useState(false);
-    const [formLastReset, setFormLastReset] = useState<number | null>(null);
     const formRef = useRef<HTMLFormElement>(null);
     const { addNotification } = useNotification();
 
@@ -792,54 +895,26 @@ export const Evidence = ({
         );
     }, [evidence]);
 
+    // Renaming/replacing existing evidence lives in EditEvidenceModal; the
+    // form action only adds new URL evidence.
     const action = async (prevState, formData: FormData) => {
-        let triggerReset = false;
-
-        if (formData.get("url")) {
-            const href = formData.get("url") as string;
-            const url = new URL(href);
-            const data = new TextEncoder().encode(href);
-            const evidence: IDBEvidenceV2 = await deriveEvidence({
-                name: url.host || url.href,
-                type: "url",
-                data: data.buffer,
-            });
-            await IDB.evidenceRequirements.put({
-                evidence_id: evidence.id,
-                requirement_id: requirementId,
-            });
-            await IDB.evidence.put(evidence);
-            triggerReset = true;
-        } else {
-            for (const key of formData.keys()) {
-                if (key.startsWith("name.")) {
-                    const id = key.slice(5);
-                    const artifact = evidenceById[id] as IDBEvidenceV2;
-                    let suffix = "";
-                    if (artifact.type !== "url") {
-                        const suffixIdx = artifact.filename.lastIndexOf(".");
-                        suffix = artifact.filename.slice(suffixIdx);
-                    }
-                    const value = formData.get(key);
-                    if (!value) {
-                        continue;
-                    }
-                    await IDB.evidence.put({
-                        ...artifact,
-                        filename: `${value}${suffix}`,
-                    });
-                    await IDB.evidenceRequirements.put({
-                        evidence_id: artifact.id,
-                        requirement_id: requirementId,
-                    });
-                    triggerReset = true;
-                }
-            }
+        const href = formData.get("url") as string;
+        if (!href) {
+            return;
         }
-
-        if (triggerReset) {
-            formRef.current?.reset();
-        }
+        const url = new URL(href);
+        const data = new TextEncoder().encode(href);
+        const evidence: IDBEvidenceV2 = await deriveEvidence({
+            name: url.host || url.href,
+            type: "url",
+            data: data.buffer,
+        });
+        await IDB.evidenceRequirements.put({
+            evidence_id: evidence.id,
+            requirement_id: requirementId,
+        });
+        await IDB.evidence.put(evidence);
+        formRef.current?.reset();
     };
 
     const [_, formAction, isPending] = useActionState(action, null);
@@ -870,19 +945,6 @@ export const Evidence = ({
             document.removeEventListener("paste", handlerWithNotifcation);
         };
     }, [requirementId, setEvidence, setUploading, locked]);
-
-    useEffect(() => {
-        const setTimestamp = (e: Event) => {
-            setFormLastReset(e.timeStamp);
-        };
-        const node = formRef?.current;
-
-        node?.addEventListener("reset", setTimestamp);
-
-        return () => {
-            node?.removeEventListener("reset", setTimestamp);
-        };
-    }, [formRef]);
 
     const evidenceOptions = useMemo(async () => {
         const evidence = await IDB.evidence.getAll();
@@ -964,7 +1026,6 @@ export const Evidence = ({
                     <EvidenceBadges
                         evidence={evidence}
                         setEvidence={setEvidence}
-                        lastResetAt={formLastReset}
                         requirementId={requirementId}
                         readOnly={locked}
                     />

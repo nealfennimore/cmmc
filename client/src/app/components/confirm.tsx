@@ -73,7 +73,7 @@ function WarningIcon() {
  * callback that plays the exit animation and then runs the given action, so
  * every dismissal path (buttons, Escape, backdrop) animates out consistently.
  */
-function ModalShell({
+export function ModalShell({
     ariaLabel,
     onDismiss,
     initialFocusRef,
