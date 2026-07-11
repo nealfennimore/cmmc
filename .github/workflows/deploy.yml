@@ -188,6 +188,9 @@ jobs:
     # here, both to gate the setup step and to build signCommand.
     env:
       AZURE_ENDPOINT: ${{ secrets.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
+      # Non-empty => also produce Tauri updater artifacts (signed .sig files)
+      # for auto-updates via Keygen. Empty (forks) => plain installers only.
+      TAURI_SIGNING_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -251,17 +254,20 @@ jobs:
         run: |
           APP_VERSION="${GITHUB_REF_NAME#v}"
           echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          # Compose the config override with jq: version always; the Azure
+          # signCommand when signing is configured (%1 is the file path Tauri
+          # substitutes); createUpdaterArtifacts when the updater signing key
+          # is present (it fails the build without TAURI_SIGNING_PRIVATE_KEY,
+          # so forks must not enable it).
+          OVERRIDE="{\"version\":\"$APP_VERSION\"}"
           if [ -n "$AZURE_ENDPOINT" ]; then
-            # Sign Windows binaries/installers during the bundle step. Only the
-            # endpoint is a CLI arg; the account, certificate profile and Azure
-            # credentials are read from the environment by artifact-signing-cli
-            # (see the tauri-action step). %1 is the file path Tauri substitutes;
-            # it is %%1 here to survive printf.
-            printf '{ "version": "%s", "bundle": { "windows": { "signCommand": "artifact-signing-cli -e %s -d CMMC %%1" } } }\n' \
-              "$APP_VERSION" "$AZURE_ENDPOINT" > client/version-override.json
-          else
-            echo "{\"version\":\"$APP_VERSION\"}" > client/version-override.json
+            OVERRIDE=$(jq -c --arg cmd "artifact-signing-cli -e $AZURE_ENDPOINT -d CMMC %1" \
+              '.bundle.windows.signCommand = $cmd' <<< "$OVERRIDE")
           fi
+          if [ -n "$TAURI_SIGNING_KEY" ]; then
+            OVERRIDE=$(jq -c '.bundle.createUpdaterArtifacts = true' <<< "$OVERRIDE")
+          fi
+          echo "$OVERRIDE" > client/version-override.json
 
       - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # v0
         env:
@@ -274,6 +280,10 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           AZURE_ARTIFACT_SIGNING_ACCOUNT: ${{ secrets.AZURE_ARTIFACT_SIGNING_ACCOUNT }}
           AZURE_ARTIFACT_SIGNING_CERTIFICATE_PROFILE: ${{ secrets.AZURE_ARTIFACT_SIGNING_CERTIFICATE_PROFILE }}
+          # Signs the updater artifacts when createUpdaterArtifacts is on
+          # (no-ops when the secrets are unset).
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: client
           tauriScript: "npm tauri:win"
@@ -282,6 +292,8 @@ jobs:
           # Upload to the release create-release already made, rather than
           # creating/finalizing it here (which would race the other jobs).
           releaseId: ${{ needs.create-release.outputs.release_id }}
+          # Updates are served by Keygen's tauri engine, not a static manifest.
+          includeUpdaterJson: false
 
   # ---------------------------------------------------------------------------
   # macOS bundles (.app/.dmg) for Apple Silicon + Intel, built on a native
@@ -313,6 +325,9 @@ jobs:
     env:
       APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
       APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+      # Non-empty => also produce Tauri updater artifacts (.app.tar.gz + .sig)
+      # for auto-updates via Keygen. Empty (forks) => plain bundles only.
+      TAURI_SIGNING_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -351,7 +366,14 @@ jobs:
         run: |
           APP_VERSION="${GITHUB_REF_NAME#v}"
           echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
-          echo "{\"version\":\"$APP_VERSION\"}" > client/version-override.json
+          # createUpdaterArtifacts only when the updater signing key is present
+          # (it fails the build without TAURI_SIGNING_PRIVATE_KEY, so forks
+          # must not enable it).
+          if [ -n "$TAURI_SIGNING_KEY" ]; then
+            echo "{\"version\":\"$APP_VERSION\",\"bundle\":{\"createUpdaterArtifacts\":true}}" > client/version-override.json
+          else
+            echo "{\"version\":\"$APP_VERSION\"}" > client/version-override.json
+          fi
 
       # Import the Developer ID Application cert into a throwaway keychain and
       # publish the signing identity for tauri-action to pick up.
@@ -391,6 +413,10 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER_ID }}
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_KEY_PATH: ${{ env.APPLE_API_KEY_PATH }}
+          # Signs the updater artifacts when createUpdaterArtifacts is on
+          # (no-ops when the secrets are unset).
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: client
           tauriScript: "npm tauri:mac"
@@ -399,15 +425,99 @@ jobs:
           # Upload to the release create-release already made, rather than
           # creating/finalizing it here (which would race the other jobs).
           releaseId: ${{ needs.create-release.outputs.release_id }}
+          # Updates are served by Keygen's tauri engine, not a static manifest.
+          includeUpdaterJson: false
+
+  # ---------------------------------------------------------------------------
+  # Mirror the release into Keygen so the app's auto-updater (Keygen's tauri
+  # engine) can serve it: create a Keygen release for the tag, upload the
+  # updater artifacts (.app.tar.gz / -setup.exe with their .sig signatures,
+  # plus unsigned .deb/.rpm as version beacons for the Linux notify-only
+  # path), and publish. IMPORTANT: the engine looks up the CLIENT'S CURRENT
+  # version as a Keygen release — a shipped tag missing here silently stops
+  # that cohort's update checks (see docs/licensing.md for the backfill
+  # recipe). publish-release depends on this job so the GitHub release only
+  # goes public once Keygen can serve it. No-ops when KEYGEN_TOKEN is unset
+  # (forks, or before Keygen distribution is configured).
+  # ---------------------------------------------------------------------------
+  keygen-upload:
+    needs: [create-release, desktop-nix, desktop-windows, desktop-macos]
+    runs-on: ubuntu-latest
+    env:
+      KEYGEN_ACCOUNT_ID: 09191a95-7ae5-4152-ba46-6a8ce47a505d
+      KEYGEN_PRODUCT_ID: ${{ vars.KEYGEN_PRODUCT_ID }}
+      KEYGEN_TOKEN: ${{ secrets.KEYGEN_TOKEN }} # product token; empty => job no-ops
+      KEYGEN_PACKAGE: cmmc
+    steps:
+      - name: Install keygen CLI
+        if: env.KEYGEN_TOKEN != ''
+        run: curl -sSL https://raw.pkg.keygen.sh/keygen/cli/latest/install.sh | sh
+
+      # The release is still a draft; gh can download draft assets with the
+      # job token. Patterns tolerate absence (e.g. unsigned fork builds).
+      - name: Download release assets
+        if: env.KEYGEN_TOKEN != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir assets
+          for pattern in '*.app.tar.gz' '*.app.tar.gz.sig' '*-setup.exe' '*-setup.exe.sig' '*.deb' '*.rpm'; do
+            gh release download "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+              --dir assets --pattern "$pattern" || true
+          done
+          ls -la assets
+
+      - name: Create, upload and publish Keygen release
+        if: env.KEYGEN_TOKEN != ''
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          # Tolerate an existing release so re-runs don't fail outright.
+          keygen new --version "$VERSION" --channel stable --package "$KEYGEN_PACKAGE" \
+            --name "CMMC $VERSION" || echo "release $VERSION may already exist; continuing"
+
+          shopt -s nullglob
+          # macOS updater bundles, per arch. tauri-action names them with the
+          # target arch (aarch64 / x64 or x86_64).
+          for f in assets/*aarch64*.app.tar.gz; do
+            keygen upload "$f" --release "$VERSION" --package "$KEYGEN_PACKAGE" \
+              --platform darwin --arch aarch64 --filetype app.tar.gz --signature "$(cat "$f.sig")"
+          done
+          for f in assets/*x64*.app.tar.gz assets/*x86_64*.app.tar.gz; do
+            keygen upload "$f" --release "$VERSION" --package "$KEYGEN_PACKAGE" \
+              --platform darwin --arch x86_64 --filetype app.tar.gz --signature "$(cat "$f.sig")"
+          done
+          # Windows NSIS installer (the engine prefers .exe over .msi).
+          for f in assets/*-setup.exe; do
+            keygen upload "$f" --release "$VERSION" --package "$KEYGEN_PACKAGE" \
+              --platform windows --arch x86_64 --signature "$(cat "$f.sig")"
+          done
+          # Linux version beacons for the notify-only path — served but never
+          # installed by the updater, so no updater signature exists for them.
+          for f in assets/*.deb assets/*.rpm; do
+            keygen upload "$f" --release "$VERSION" --package "$KEYGEN_PACKAGE" \
+              --platform linux --arch x86_64
+          done
+
+          keygen publish --release "$VERSION" --package "$KEYGEN_PACKAGE"
 
   # ---------------------------------------------------------------------------
   # Publish the draft release once every desktop job has finished uploading its
   # assets. A single job owns finalization, so there's no concurrent "finalize"
   # to race. Idempotent: setting draft:false on an already-published release is a
-  # no-op update.
+  # no-op update. Also gated on keygen-upload so the GitHub release never goes
+  # public for a version the auto-updater can't serve.
   # ---------------------------------------------------------------------------
   publish-release:
-    needs: [create-release, desktop-nix, desktop-windows, desktop-macos]
+    needs:
+      [
+        create-release,
+        desktop-nix,
+        desktop-windows,
+        desktop-macos,
+        keygen-upload,
+      ]
     runs-on: ubuntu-latest
     steps:
       - name: Publish release

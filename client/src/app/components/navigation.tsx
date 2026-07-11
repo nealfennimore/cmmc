@@ -5,6 +5,7 @@ import { ClearDB } from "./clear_db";
 import { ExportEvidence, ViewEvidence } from "./export_evidence";
 import { ExportEvidenceMap } from "./export_evidence_map";
 import { Export, Import } from "./export_import";
+import { LicenseMenuItem } from "./license_settings";
 import { Markdown } from "./markdown";
 import { POAM } from "./poam";
 import { Tour, TourMenuItem } from "./tour";
@@ -162,6 +163,7 @@ export const Navigation = () => {
                                     <ClearDB />
                                 </div>
                                 <div className="py-1" role="none">
+                                    <LicenseMenuItem />
                                     <TourMenuItem />
                                     <a
                                         href="https://github.com/nealfennimore/cmmc"

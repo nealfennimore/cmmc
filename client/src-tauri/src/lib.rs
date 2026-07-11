@@ -1,6 +1,9 @@
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
+mod license;
+mod update;
+
 // Open a URL in the user's default browser. Invoked from the frontend; runs
 // Rust-side so it isn't subject to the opener plugin's JS capability scope.
 #[tauri::command]
@@ -82,14 +85,30 @@ async fn save_files(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_dialog::init());
+
+    // Self-update only where the updater supports in-place installs; Linux
+    // (.deb/.rpm, no AppImage) is notify-only and never loads the plugin.
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    let builder = builder
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(update::PendingUpdate::default());
+
+    builder
         .invoke_handler(tauri::generate_handler![
             open_external,
             open_evidence,
             save_file,
-            save_files
+            save_files,
+            license::license_status,
+            license::license_activate,
+            license::license_refresh,
+            license::license_deactivate,
+            update::update_check,
+            update::update_install,
+            update::update_restart
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
