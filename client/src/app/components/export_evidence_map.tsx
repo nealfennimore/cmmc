@@ -3,7 +3,6 @@ import { useManifestContext } from "@/app/context/manifest";
 import { Revision, toNum, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBEvidenceV2 } from "@/app/db";
 import { hashType, HashType, saveBlob, toFSName } from "@/app/utils/file";
-import { isUnlocked } from "@/app/utils/tier";
 import { useActionState } from "react";
 import { confirm } from "./confirm";
 import { menuItemClasses } from "./ui";
@@ -51,10 +50,6 @@ export const ExportEvidenceMap = () => {
                     if (!requirements[evidenceRequirement.requirement_id]) {
                         return acc;
                     }
-                    // Free tier: the map covers only unlocked requirements.
-                    if (!isUnlocked(evidenceRequirement.requirement_id)) {
-                        return acc;
-                    }
 
                     if (acc[evidenceRequirement.evidence_id]) {
                         acc[evidenceRequirement.evidence_id].push(
@@ -73,10 +68,6 @@ export const ExportEvidenceMap = () => {
             const requirementsMapping = evidenceRequirements.reduce(
                 (acc, evidenceRequirement) => {
                     if (!requirements[evidenceRequirement.requirement_id]) {
-                        return acc;
-                    }
-                    // Free tier: the map covers only unlocked requirements.
-                    if (!isUnlocked(evidenceRequirement.requirement_id)) {
                         return acc;
                     }
 

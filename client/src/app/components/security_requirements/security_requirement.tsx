@@ -35,6 +35,7 @@ export const SecurityRequirement = ({
     locked,
 }: {
     value: SecurityRequirementValue;
+    locked?: boolean;
 }) => {
     const revision = useRevisionContext();
     const discussion =

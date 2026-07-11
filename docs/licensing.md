@@ -20,9 +20,10 @@ job (`deploy.yml`) — desktop builds and local dev are always full-tier.
 - Locked requirements: listed with a 🔒 badge, detail pages show saved data
   **read-only** (grandfathering) with an upgrade banner; all writes and
   evidence attach/paste/delete are disabled.
-- Reports (SSP markdown, POA&M CSV, evidence map, evidence download) include
-  only unlocked requirements on the free tier. **Database export/import is
-  never restricted** — data is never trapped.
+- **Reports and exports are never gated**: the SSP markdown, POA&M CSV,
+  evidence map, evidence download, and database export/import are always
+  complete on both tiers — users can always get all of their information
+  out. The free tier gates interactive editing only.
 - The SPRS tile becomes "Level 1: X of N implemented" (N = 17 on Rev 2, 12 on
   Rev 3 — the derived set).
 - Preview locally with `npm run dev:free`.

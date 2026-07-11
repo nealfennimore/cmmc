@@ -45,8 +45,9 @@ export const UpgradeBanner = () => (
             <p>
                 The free web app covers the 17 CMMC Level 1 practices. This
                 requirement is part of the full NIST 800-171 set — get the
-                desktop app for all 110 requirements, SPRS scoring, and full
-                reports. Previously saved data is shown read-only below.
+                desktop app to work on all 110 requirements with SPRS scoring.
+                Previously saved data is shown read-only below, and your data
+                always remains exportable in full.
             </p>
             <a
                 href={MARKETING_URL}

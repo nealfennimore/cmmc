@@ -4,7 +4,6 @@ import { useManifestContext } from "@/app/context/manifest";
 import { toNum, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBSecurityRequirement } from "@/app/db";
 import { saveBlob } from "@/app/utils/file";
-import { isUnlocked } from "@/app/utils/tier";
 import { useActionState } from "react";
 import { menuItemClasses } from "./ui";
 
@@ -36,10 +35,6 @@ export const POAM = () => {
         const body = [];
 
         for (const secReq of manifest.securityRequirements.elements) {
-            // Free tier: the POA&M covers only the unlocked (Level 1) set.
-            if (!isUnlocked(secReq.requirement)) {
-                continue;
-            }
             const element = storedSecRequirements[secReq.subSubRequirement];
             if (!element || element.status !== Status.NOT_IMPLEMENTED) {
                 continue;
