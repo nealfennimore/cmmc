@@ -1,7 +1,12 @@
 // Keygen.sh account configuration. These are identifiers, not secrets: the
 // account ID appears in every API URL and the Ed25519 verify key can only
-// check signatures, never create them. Licensing auto-disables when they are
-// left empty, so forks and contributors always get a working, ungated build.
+// check signatures, never create them.
+//
+// Licensing auto-disables when the constants are empty so that local
+// development, tests, and CI work without Keygen credentials. This is a
+// development affordance only: distributing builds with the license key
+// functionality removed, blanked, or otherwise circumvented is prohibited by
+// this project's license (Elastic License 2.0 — see LICENSE.md).
 //
 // Fill these in from the Keygen dashboard (Settings page): the account ID and
 // the hex-encoded Ed25519 verify key.

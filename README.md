@@ -133,7 +133,7 @@ Notes:
 
 ## License
 
-This project is licensed under the MIT License and has no affiliation with NIST.
+This project is source-available under the [Elastic License 2.0 (ELv2)](LICENSE.md): you're free to read, use, modify, and redistribute the code, but you may not offer it as a hosted service or remove/circumvent its license-key functionality. Versions up to and including 1.0.0 remain under the MIT License they were released with. This project has no affiliation with NIST.
 
 ## Need help with CMMC?
 

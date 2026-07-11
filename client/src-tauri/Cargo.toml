@@ -6,6 +6,7 @@ name = "cmmc"
 version = "1.0.0"
 description = "Offline CMMC / NIST 800-171 compliance application"
 authors = ["Neal Fennimore"]
+license = "Elastic-2.0"
 edition = "2021"
 rust-version = "1.77.2"
 

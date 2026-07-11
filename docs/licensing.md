@@ -185,8 +185,11 @@ That's expected.
 
 ## Threat model notes
 
-- This repo is open source: anyone can build an ungated binary. The gate
-  protects the *distributed installers*, not the source.
+- The repo is source-available under the Elastic License 2.0 (see
+  `LICENSE.md`), whose terms forbid removing or circumventing the license-key
+  functionality — so building an ungated binary from source is a license
+  violation, not just a technical exercise. (Versions ≤ 1.0.0 were MIT and
+  remain so; the ELv2 protection applies to code from the switch onward.)
 - The machine file is signature-verified before being trusted or persisted, so
   spoofing `api.keygen.sh` at activation time cannot mint a working license.
   Verifying Keygen's signed API responses as well would harden activation
