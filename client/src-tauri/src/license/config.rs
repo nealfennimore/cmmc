@@ -34,7 +34,7 @@ pub const KEYGEN_PACKAGE: &str = "cmmc";
 
 /// Linux is notify-only (no AppImage, so no in-place updates); point users at
 /// the download page instead.
-pub const UPDATE_DOWNLOAD_URL: &str = "https://getcmmc.consulting/";
+pub const UPDATE_DOWNLOAD_URL: &str = "https://getcmmc.consulting/releases";
 
 /// Licensing is compiled in but inert until the account constants are set.
 pub fn enabled() -> bool {
