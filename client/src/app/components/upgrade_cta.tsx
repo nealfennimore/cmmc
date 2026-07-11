@@ -7,7 +7,7 @@ import { IconInfo } from "./icon_info";
 import { Badge, buttonClasses } from "./ui";
 
 export const MARKETING_URL =
-    "https://getcmmc.consulting/?utm_source=cmmc-app&utm_medium=upgrade";
+    "https://getcmmc.consulting/download?utm_source=cmmc-app&utm_medium=upgrade";
 
 /** Small marker on locked requirement/family rows in list views. */
 export const LockedBadge = () => (
@@ -53,7 +53,10 @@ export const UpgradeBanner = () => (
                 href={MARKETING_URL}
                 target="_blank"
                 rel="noreferrer"
-                className={buttonClasses({ size: "sm", className: "self-start" })}
+                className={buttonClasses({
+                    size: "sm",
+                    className: "self-start",
+                })}
             >
                 Get the desktop app
             </a>

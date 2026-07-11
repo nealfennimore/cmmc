@@ -487,27 +487,27 @@ const Badge = ({
         >
             {children}
             {!readOnly && (
-            <button
-                onClick={onDelete}
-                className="pl-2 transition-opacity hover:opacity-70"
-                aria-label="Remove evidence"
-            >
-                <svg
-                    className="w-2 h-2"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 14 14"
+                <button
+                    onClick={onDelete}
+                    className="pl-2 transition-opacity hover:opacity-70"
+                    aria-label="Remove evidence"
                 >
-                    <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
-                    />
-                </svg>
-            </button>
+                    <svg
+                        className="w-2 h-2"
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 14 14"
+                    >
+                        <path
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+                        />
+                    </svg>
+                </button>
             )}
         </span>
     );
@@ -912,13 +912,14 @@ export const Evidence = ({
         };
     }, [requirementId]);
 
+    let className = "mb-4 mt-4 flex items-center";
+    if (!locked) {
+        className += "mb-0 mt-0 -translate-y-full";
+    }
+
     return (
         <>
-            <Heading
-                level={3}
-                as="h4"
-                className=" mb-0 flex -translate-y-full items-center"
-            >
+            <Heading level={3} as="h4" className={className}>
                 Evidence
             </Heading>
             <form
