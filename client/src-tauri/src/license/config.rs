@@ -14,10 +14,15 @@ pub const KEYGEN_API_URL: &str = "https://api.keygen.sh";
 pub const KEYGEN_ACCOUNT_ID: &str = "09191a95-7ae5-4152-ba46-6a8ce47a505d";
 pub const KEYGEN_VERIFY_KEY_HEX: &str = "d26d5fbac4be5ba25e9eb1217e824686b77edc75da658e2e5325f5de2c4aa0e3";
 
-/// Maximum TTL requested for machine-file checkouts (90 days); the actual
-/// request is capped at the license's remaining lifetime (see checkout_ttl in
-/// mod.rs). The app works fully offline until the checked-out file expires.
-pub const CHECKOUT_TTL_SECS: i64 = 90 * 24 * 60 * 60;
+/// Maximum TTL requested for online machine-file checkouts (30 days); the
+/// actual request is capped at the license's remaining lifetime (see
+/// checkout_ttl in mod.rs). This bounds how long a copied license file keeps
+/// working offline on another machine, so keep it comfortably below the point
+/// where seat-sharing becomes attractive — but above REFRESH_AFTER_DAYS so an
+/// occasionally-online user never hits the gate. (Air-gapped devices are not
+/// affected: they import files checked out out-of-band with their own, longer
+/// TTL — see docs/licensing.md.)
+pub const CHECKOUT_TTL_SECS: i64 = 30 * 24 * 60 * 60;
 
 /// Re-checkout the machine file in the background once it is this old, so
 /// online users never approach the TTL cliff.

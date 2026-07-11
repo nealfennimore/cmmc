@@ -1,13 +1,14 @@
 "use client";
-// Desktop license gate. The app content always renders (the static web build
-// must stay untouched); blocking license states drop an opaque overlay on top,
-// and an activated Keygen trial license shows a slim countdown banner.
-// Enforcement itself happens in Rust — this component only reflects the state
-// it reports.
+// Desktop license gate. In a blocking license state the app is NOT rendered at
+// all — the gate returns only the activation overlay, so the app's data and
+// functionality never exist in the DOM behind it (removing the overlay reveals
+// nothing). The web build never blocks (its state is always "disabled"), so it
+// renders children unchanged. Enforcement itself happens in Rust — this
+// component only reflects the state it reports.
 
 import { useLicense } from "@/app/context/license";
 import type { LicenseInfo } from "@/app/utils/tauri";
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useState } from "react";
 import { ActivationForm, AirGappedImport } from "./license_activation";
 import { LicenseSettingsModal } from "./license_settings";
 import { InfoModal } from "./modal";
@@ -48,22 +49,7 @@ const BLOCKING_COPY: Record<
 function BlockingOverlay({ info }: { info: LicenseInfo }) {
     const { refresh } = useLicense();
     const [retrying, setRetrying] = useState(false);
-    const overlayRef = useRef<HTMLDivElement>(null);
     const copy = BLOCKING_COPY[info.state];
-
-    // Keep keyboard focus out of the (fully rendered) app behind the overlay.
-    // The overlay is a direct child of <body>, so make its siblings inert
-    // rather than wrapping the app in a div — globals.css relies on
-    // `body > div.main-wrapper`.
-    useEffect(() => {
-        const overlay = overlayRef.current;
-        const siblings = Array.from(document.body.children).filter(
-            (element) => element !== overlay && !element.hasAttribute("inert"),
-        );
-        siblings.forEach((element) => element.setAttribute("inert", ""));
-        return () =>
-            siblings.forEach((element) => element.removeAttribute("inert"));
-    }, []);
 
     const retry = async () => {
         setRetrying(true);
@@ -74,9 +60,10 @@ function BlockingOverlay({ info }: { info: LicenseInfo }) {
         }
     };
 
+    // The app tree is not rendered while this is up, so no focus-trap /
+    // sibling-inert bookkeeping is needed — the overlay is the whole document.
     return (
         <div
-            ref={overlayRef}
             role="dialog"
             aria-modal="true"
             aria-label={copy.title(info)}
@@ -166,12 +153,20 @@ const showsTrialBanner = (info: LicenseInfo): boolean =>
 export function LicenseGate({ children }: { children: React.ReactNode }) {
     const { info } = useLicense();
 
+    // Blocking state → render ONLY the overlay; the app tree stays unmounted so
+    // nothing sensitive is reachable behind the gate. `info` is null during SSR
+    // and the first client paint (and always in the web build until it resolves
+    // to "disabled"), where it is never a blocking state — so children render
+    // normally and static-export hydration is unaffected. On desktop there is a
+    // sub-second window on launch, before the offline status read resolves,
+    // where children render; once a blocking state is known they unmount.
+    if (info && info.state in BLOCKING_COPY) {
+        return <BlockingOverlay info={info} />;
+    }
+
     return (
         <>
             {children}
-            {info && info.state in BLOCKING_COPY && (
-                <BlockingOverlay info={info} />
-            )}
             {/* Banner stack: update notice and trial countdown are rows here
                 so they never overlap each other at the bottom edge. */}
             <div className="fixed bottom-0 start-0 z-40 flex w-full flex-col">

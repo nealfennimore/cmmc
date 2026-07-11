@@ -41,12 +41,14 @@ filled in, every build (including forks) runs ungated. To turn it on, populate
   once. The app validates it against the Keygen API, registers this machine
   (node-locked, fingerprint = SHA-256 of the OS machine id salted with the app
   identifier), and checks out a **machine file** — a certificate signed with
-  the account's Ed25519 key, valid for up to 90 days but never longer than
-  the license itself (a 30-day trial gets a ≤30-day certificate; an annual
-  license in its final months gets correspondingly shorter ones). Every
-  subsequent launch verifies that file locally; no network needed. When
-  online and the file is older than 7 days, the app silently checks out a
-  fresh one, so it never approaches the expiry cliff.
+  the account's Ed25519 key, valid for up to 30 days but never longer than
+  the license itself (a shorter trial gets a correspondingly shorter
+  certificate; an annual license in its final month too). Every subsequent
+  launch verifies that file locally; no network needed. When online and the
+  file is older than 7 days, the app silently checks out a fresh one, so it
+  never approaches the expiry cliff. The 30-day ceiling also bounds how long a
+  copied license file can keep working on another machine; air-gapped devices,
+  which can't refresh, trade that off with a longer manual TTL (below).
 - **No local trial — the app gates immediately.** A fresh install shows a
   blocking activation screen until a key is entered. There is deliberately no
   client-side trial clock: anything tracked only in local files can be reset

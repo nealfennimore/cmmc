@@ -446,9 +446,10 @@ mod tests {
 
     #[test]
     fn checkout_ttl_is_capped_at_the_license_expiry() {
-        // 30-day trial license: the certificate must not outlive it.
-        let expiry = datetime!(2026-07-31 00:00 UTC);
-        assert_eq!(checkout_ttl(Some(expiry), NOW), 30 * 24 * 60 * 60);
+        // Short trial license: the certificate must not outlive it, and the
+        // cap is below the default TTL so this is a genuine cap.
+        let expiry = datetime!(2026-07-15 00:00 UTC);
+        assert_eq!(checkout_ttl(Some(expiry), NOW), 14 * 24 * 60 * 60);
     }
 
     #[test]
