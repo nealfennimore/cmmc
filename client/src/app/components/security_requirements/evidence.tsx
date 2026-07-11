@@ -68,7 +68,9 @@ const replaceEvidence = async ({
     name?: string;
     type: string;
     data: ArrayBuffer;
-    requirementId: string;
+    /** Without a requirement context, shared evidence is replaced everywhere
+     *  with no scope prompt. */
+    requirementId?: string;
 }): Promise<void> => {
     const newEvidence = await deriveEvidence({ name, type, data });
 
@@ -88,7 +90,7 @@ const replaceEvidence = async ({
     // When the artifact is shared across requirements, let the user keep the
     // replacement scoped to this one (mirrors the delete flow's prompt).
     let scoped = links;
-    if (links.length > 1) {
+    if (links.length > 1 && requirementId) {
         const replaceEverywhere = await confirm({
             title: "Replace shared evidence",
             message:
@@ -287,19 +289,22 @@ const splitSuffix = (filename: string): [string, string] => {
 
 // Modal editor for a single evidence artifact: rename it, switch its type
 // between file and URL, and swap the underlying content, all in one place.
-// Rendered through a portal so the fixed overlay (and its inputs) escapes the
-// surrounding evidence <form> — otherwise Enter and button clicks inside the
-// modal would trigger the form's add-URL action.
-const EditEvidenceModal = ({
+// Rendered through a portal so the fixed overlay (and its inputs) escapes any
+// surrounding <form> — otherwise Enter and button clicks inside the modal
+// would trigger the form's submit action.
+export const EditEvidenceModal = ({
     artifact,
     requirementId,
-    setEvidence,
+    onChanged,
     onDelete,
     onClose,
 }: {
     artifact: IDBEvidenceV2;
-    requirementId: string;
-    setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
+    /** When set, replacing shared evidence prompts for scope (this requirement
+     *  vs everywhere); without it, changes apply everywhere. */
+    requirementId?: string;
+    /** Called after a save mutates the store so the host can refresh. */
+    onChanged: () => void | Promise<void>;
     /** Resolves true when the artifact was deleted, false on an aborted prompt. */
     onDelete: () => Promise<boolean>;
     onClose: () => void;
@@ -376,7 +381,7 @@ const EditEvidenceModal = ({
         } else if (filename !== artifact.filename) {
             await IDB.evidence.put({ ...artifact, filename });
         }
-        await fetchEvidence(requirementId, setEvidence);
+        await onChanged();
         finish(onClose);
     };
 
@@ -604,7 +609,7 @@ const Badge = ({
                 <EditEvidenceModal
                     artifact={artifact}
                     requirementId={requirementId}
-                    setEvidence={setEvidence}
+                    onChanged={() => fetchEvidence(requirementId, setEvidence)}
                     onDelete={onDelete}
                     onClose={() => setEditing(false)}
                 />
