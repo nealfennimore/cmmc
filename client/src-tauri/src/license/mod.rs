@@ -30,6 +30,10 @@ pub struct LicenseInfo {
     pub machine_file_expiry: Option<String>,
     pub license_expiry: Option<String>,
     pub activated_at: Option<String>,
+    /// This device's fingerprint (a salted hash, not sensitive). Shown in the
+    /// UI so air-gapped machines can be registered out-of-band; None only
+    /// while licensing is disabled.
+    pub fingerprint: Option<String>,
 }
 
 #[derive(Serialize, Debug)]
@@ -37,6 +41,7 @@ pub struct LicenseInfo {
 pub struct LicenseError {
     /// INVALID_KEY | EXPIRED | SUSPENDED | MACHINE_LIMIT | NETWORK
     /// | NOT_ACTIVATED | API_ERROR | SIGNATURE | IO
+    /// | WRONG_MACHINE | FILE_STALE | MALFORMED (file imports)
     pub code: String,
     pub message: String,
 }
@@ -80,6 +85,7 @@ impl LicenseInfo {
             machine_file_expiry: None,
             license_expiry: None,
             activated_at: None,
+            fingerprint: None,
         }
     }
 }
@@ -122,6 +128,9 @@ pub(crate) fn current_status(app: &tauri::AppHandle) -> Result<LicenseInfo, Lice
 
     let dir = store::license_dir(app).map_err(LicenseError::io)?;
     let now = OffsetDateTime::now_utc();
+    // Computed even while unlicensed: the activation gate shows it so an
+    // air-gapped device can be registered from a connected machine.
+    let device = fingerprint::fingerprint(&dir).map_err(LicenseError::io)?;
 
     // No local trial: without an activated license the app is gated
     // immediately. Evaluations run on Keygen-issued trial license keys, whose
@@ -130,6 +139,7 @@ pub(crate) fn current_status(app: &tauri::AppHandle) -> Result<LicenseInfo, Lice
     let Some(stored) = store::read_license(&dir) else {
         return Ok(LicenseInfo {
             state: "unlicensed".into(),
+            fingerprint: Some(device),
             ..LicenseInfo::disabled()
         });
     };
@@ -137,10 +147,9 @@ pub(crate) fn current_status(app: &tauri::AppHandle) -> Result<LicenseInfo, Lice
     let base = LicenseInfo {
         key_masked: Some(mask_key(&stored.key)),
         activated_at: Some(stored.activated_at.clone()),
+        fingerprint: Some(device.clone()),
         ..LicenseInfo::disabled()
     };
-
-    let device = fingerprint::fingerprint(&dir).map_err(LicenseError::io)?;
     let verified = store::read_certificate(&dir)
         .and_then(|cert| verify::parse_and_verify(&cert, config::KEYGEN_VERIFY_KEY_HEX).ok());
 
@@ -275,6 +284,96 @@ pub async fn license_activate(
     current_status(&app)
 }
 
+/// Validate an out-of-band machine file for this device and derive the
+/// activation record to persist — the same record an online activation
+/// writes, so everything downstream (status, refresh, updates) behaves
+/// identically afterwards. Pure, so the whole import decision is testable.
+fn import_record(
+    file: &verify::MachineFile,
+    device: &str,
+    now: OffsetDateTime,
+) -> Result<store::StoredLicense, LicenseError> {
+    match verify::check(file, device, now) {
+        verify::CheckResult::Valid => {}
+        verify::CheckResult::WrongMachine => {
+            return Err(LicenseError::new(
+                "WRONG_MACHINE",
+                "this license file was issued for a different device",
+            ))
+        }
+        verify::CheckResult::Stale => {
+            return Err(LicenseError::new(
+                "FILE_STALE",
+                "this license file has lapsed, or the system clock is far off",
+            ))
+        }
+        verify::CheckResult::LicenseExpired => {
+            return Err(LicenseError::new(
+                "EXPIRED",
+                "the license inside this file has expired",
+            ))
+        }
+    }
+
+    // Refresh, deactivation and update checks all need the key and ids, so
+    // a file checked out without `include=license` is not importable.
+    let (Some(license_id), Some(key)) =
+        (file.license_id.clone(), file.license_key.clone())
+    else {
+        return Err(LicenseError::new(
+            "MALFORMED",
+            "this file has no embedded license — check it out again with include=license,license.entitlements",
+        ));
+    };
+
+    Ok(store::StoredLicense {
+        key,
+        license_id,
+        machine_id: file.machine_id.clone(),
+        activated_at: rfc3339(now).unwrap_or_default(),
+    })
+}
+
+/// Air-gapped activation: import a machine file that was checked out on a
+/// connected machine (see docs/licensing.md). Fully offline — the file's
+/// Ed25519 signature and fingerprint binding give the same guarantees as an
+/// online checkout. Also the renewal path for devices that stay offline.
+#[tauri::command]
+pub async fn license_import(app: tauri::AppHandle) -> Result<LicenseInfo, LicenseError> {
+    use tauri_plugin_dialog::DialogExt;
+
+    if !config::enabled() {
+        return Ok(LicenseInfo::disabled());
+    }
+    let dir = store::license_dir(&app).map_err(LicenseError::io)?;
+    let device = fingerprint::fingerprint(&dir).map_err(LicenseError::io)?;
+
+    // Native picker on the Rust side (like lib.rs's save_file), so the
+    // webview never handles the file. async keeps the main thread free to
+    // pump the dialog.
+    let Some(path) = app
+        .dialog()
+        .file()
+        .add_filter("License file", &["lic"])
+        .add_filter("All files", &["*"])
+        .blocking_pick_file()
+    else {
+        // Cancelled — not an error, nothing changed.
+        return current_status(&app);
+    };
+    let path = path.into_path().map_err(|err| LicenseError::io(err.to_string()))?;
+    let certificate =
+        std::fs::read_to_string(&path).map_err(|err| LicenseError::io(err.to_string()))?;
+
+    let file = verify::parse_and_verify(&certificate, config::KEYGEN_VERIFY_KEY_HEX)
+        .map_err(|err| LicenseError::new("MALFORMED", err.to_string()))?;
+    let record = import_record(&file, &device, OffsetDateTime::now_utc())?;
+
+    store::write_certificate(&dir, &certificate).map_err(LicenseError::io)?;
+    store::write_license(&dir, &record).map_err(LicenseError::io)?;
+    current_status(&app)
+}
+
 /// Best-effort background refresh: re-checkout the machine file when it is
 /// aging (or already stale/broken) and the network allows. Never surfaces
 /// network failures — offline is a supported state, not an error.
@@ -365,5 +464,58 @@ mod tests {
         // request the 1-hour minimum rather than a negative TTL.
         let expiry = datetime!(2026-06-01 00:00 UTC);
         assert_eq!(checkout_ttl(Some(expiry), NOW), 3600);
+    }
+
+    const DEVICE: &str = "device-fp";
+
+    fn importable_file() -> verify::MachineFile {
+        verify::MachineFile {
+            fingerprint: DEVICE.into(),
+            issued: datetime!(2026-06-30 00:00 UTC),
+            expiry: datetime!(2027-06-30 00:00 UTC),
+            license_expiry: None,
+            license_is_trial: false,
+            machine_id: "machine-1".into(),
+            license_id: Some("license-1".into()),
+            license_key: Some("KEY-1".into()),
+        }
+    }
+
+    #[test]
+    fn import_reconstructs_the_activation_record() {
+        let record = import_record(&importable_file(), DEVICE, NOW).unwrap();
+        assert_eq!(record.key, "KEY-1");
+        assert_eq!(record.license_id, "license-1");
+        assert_eq!(record.machine_id, "machine-1");
+        assert!(!record.activated_at.is_empty());
+    }
+
+    #[test]
+    fn import_rejects_a_file_for_another_device() {
+        let error = import_record(&importable_file(), "other-device", NOW).unwrap_err();
+        assert_eq!(error.code, "WRONG_MACHINE");
+    }
+
+    #[test]
+    fn import_rejects_a_lapsed_file() {
+        let mut file = importable_file();
+        file.expiry = datetime!(2026-06-30 12:00 UTC);
+        assert_eq!(import_record(&file, DEVICE, NOW).unwrap_err().code, "FILE_STALE");
+    }
+
+    #[test]
+    fn import_rejects_an_expired_license() {
+        let mut file = importable_file();
+        file.license_expiry = Some(datetime!(2026-06-30 12:00 UTC));
+        assert_eq!(import_record(&file, DEVICE, NOW).unwrap_err().code, "EXPIRED");
+    }
+
+    #[test]
+    fn import_requires_the_embedded_license() {
+        // Checked out without include=license: no key to store, so refresh /
+        // deactivate / updates would all be broken — refuse the import.
+        let mut file = importable_file();
+        file.license_key = None;
+        assert_eq!(import_record(&file, DEVICE, NOW).unwrap_err().code, "MALFORMED");
     }
 }

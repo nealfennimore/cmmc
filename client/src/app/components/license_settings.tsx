@@ -12,6 +12,7 @@ import { ReactNode, useState } from "react";
 import { IconInfo } from "./icon_info";
 import {
     ActivationForm,
+    AirGappedImport,
     deactivationErrorMessage,
 } from "./license_activation";
 import { InfoModal } from "./modal";
@@ -350,6 +351,17 @@ export const LicenseSettingsModal = () => {
                                 <ActivationForm />
                             </div>
                         )}
+
+                        {/* Renewal path for devices that stay offline: import
+                            a freshly checked-out license file. */}
+                        <details className="mt-2 border-t border-border pt-3">
+                            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                                This device can&apos;t go online?
+                            </summary>
+                            <div className="mt-3">
+                                <AirGappedImport />
+                            </div>
+                        </details>
                     </div>
                 ) : (
                     <ActivationForm />

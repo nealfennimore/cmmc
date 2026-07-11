@@ -6,7 +6,7 @@ use tauri::Manager;
 /// Activation record persisted after a successful activation. The signed
 /// machine file (`machine.lic`) is what actually grants access; the key and
 /// ids here exist to talk to the Keygen API again (refresh, deactivate).
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct StoredLicense {
     pub key: String,
     pub license_id: String,

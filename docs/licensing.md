@@ -53,7 +53,8 @@ filled in, every build (including forks) runs ungated. To turn it on, populate
   by deleting them, so evaluations run on trial license keys instead (below),
   whose expiry is enforced server-side at activation and inside the signed
   machine file. The trade-off: first launch requires a key and a one-time
-  internet connection.
+  internet connection — except air-gapped devices, which import a machine
+  file checked out elsewhere (see below).
 - **Trial licenses.** The trial mechanism is a Keygen-issued, time-limited
   key. A trial license is an ordinary license whose metadata contains
   `{ "trial": true }` (set per-license, or via a trial policy's default
@@ -67,7 +68,8 @@ filled in, every build (including forks) runs ungated. To turn it on, populate
   the trial license's seat automatically.
 - **All enforcement lives in Rust** (`client/src-tauri/src/license/`). The
   webview only receives a status summary over IPC (`license_status`,
-  `license_activate`, `license_refresh`, `license_deactivate`) and renders UI
+  `license_activate`, `license_import`, `license_refresh`,
+  `license_deactivate`) and renders UI
   accordingly (`client/src/app/components/license_gate.tsx`, the License entry
   in the navigation menu, and `client/src/app/context/license.tsx`).
 
@@ -112,6 +114,67 @@ No CI changes are needed: the constants compile into the desktop binaries, the
 web build never compiles the Rust side, and the browser bundle's license UI is
 dormant without the Tauri IPC bridge.
 
+## Air-gapped devices (manual license files)
+
+A device that can never go online is licensed by importing a machine file
+that was checked out on a connected machine. The imported file goes through
+exactly the same Ed25519 verification and fingerprint binding as an online
+checkout — nothing about the trust model is relaxed.
+
+1. On the air-gapped device, open the activation screen → **"This device
+   can't go online?"** → copy the **device fingerprint**.
+2. On any machine with internet access (only the license key is needed —
+   no account tokens):
+
+   ```bash
+   ACCOUNT=<account-id> KEY=<license-key> FP=<device-fingerprint>
+
+   # Look up the license id
+   LICENSE_ID=$(curl -s -X POST "https://api.keygen.sh/v1/accounts/$ACCOUNT/licenses/actions/validate-key" \
+     -H 'Content-Type: application/vnd.api+json' -H 'Accept: application/vnd.api+json' \
+     -d "{\"meta\":{\"key\":\"$KEY\"}}" | jq -r '.data.id')
+
+   # Register the device (consumes a seat, like any activation).
+   # Skip this step when renewing — the machine is already registered.
+   curl -s -X POST "https://api.keygen.sh/v1/accounts/$ACCOUNT/machines" \
+     -H "Authorization: License $KEY" \
+     -H 'Content-Type: application/vnd.api+json' -H 'Accept: application/vnd.api+json' \
+     -d "{\"data\":{\"type\":\"machines\",\"attributes\":{\"fingerprint\":\"$FP\",\"platform\":\"offline\",\"name\":\"air-gapped\"},\"relationships\":{\"license\":{\"data\":{\"type\":\"licenses\",\"id\":\"$LICENSE_ID\"}}}}}" >/dev/null
+
+   # Check out the machine file (machines are addressable by fingerprint).
+   # ttl: validity in seconds — 31536000 = 1 year; Keygen's minimum is 1 hour.
+   # include=license is REQUIRED: the app rejects files without the embedded
+   # license (it needs the key and ids inside for refresh/deactivation).
+   curl -s -X POST "https://api.keygen.sh/v1/accounts/$ACCOUNT/machines/$FP/actions/check-out?ttl=31536000&include=license,license.entitlements" \
+     -H "Authorization: License $KEY" -H 'Accept: application/vnd.api+json' \
+     | jq -r '.data.attributes.certificate' > machine.lic
+   ```
+
+3. Move `machine.lic` to the device (USB etc.) and import it from the same
+   **"This device can't go online?"** panel. The app verifies the signature,
+   the fingerprint binding, and the validity window before trusting it.
+4. **Renewal:** before "Works offline until" passes, re-run just the check-out
+   step and import the fresh file — from the License modal, or from the gate
+   if the old file already lapsed. Nothing is lost when a file lapses;
+   the app simply gates until a fresh file is imported (or the device gets
+   online once).
+
+Notes:
+
+- **Pick the TTL to match your risk tolerance.** Revocations, suspensions and
+  seat changes only reach an air-gapped device when it imports a fresh file,
+  so a 1-year TTL means up to a year of exposure. (Online devices refresh
+  weekly.) The TTL is also capped by the license's own expiry.
+- **The device clock matters.** Files "issued in the future" beyond a 24-hour
+  tolerance are rejected (rollback protection), so a badly wrong clock on the
+  air-gapped device surfaces as a stale-file error at import.
+- **Freeing the seat** must be done from the Keygen dashboard (delete the
+  machine) — in-app deactivation needs the network.
+- If the device later does get connectivity, everything behaves like a normal
+  activation from then on (background refresh, updates, deactivation).
+
+
+
 ## Verifying end-to-end
 
 1. `cd client && npm run tauri:dev` (or `cargo tauri dev`) with the constants
@@ -126,7 +189,12 @@ dormant without the Tauri IPC bridge.
    builds with the `CMMC_FINGERPRINT_OVERRIDE` env var (debug builds only).
 6. Deactivate from the License menu → seat freed in the dashboard, app returns
    to the activation screen.
-7. Trial licenses: activate a key whose license metadata has
+7. Air-gapped import: from a fresh install, copy the fingerprint from the
+   gate's "This device can't go online?" panel, run the checkout steps above
+   on another machine, and import the resulting `machine.lic` → state becomes
+   Licensed without the app ever touching the network. Importing a file made
+   for a different fingerprint must fail with wrong-device copy.
+8. Trial licenses: activate a key whose license metadata has
    `{ "trial": true }` → banner shows "Trial license — N days remaining" and
    the License modal shows the upgrade form; activate a paid key from there →
    state flips to Licensed and the trial license's machine seat is freed in
@@ -134,8 +202,8 @@ dormant without the Tauri IPC bridge.
    `license/` dir and re-activating it fails with expired-license copy.
 
 Rust unit tests cover the certificate parsing/signature verification
-(including trial-license detection) and the API response-signature
-verification: `cd client/src-tauri && cargo test`.
+(including trial-license detection), the API response-signature verification,
+and the machine-file import validation: `cd client/src-tauri && cargo test`.
 
 ## Auto-updates (Keygen tauri engine)
 

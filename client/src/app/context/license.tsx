@@ -7,6 +7,7 @@ import {
     isTauri,
     licenseActivate,
     licenseDeactivate,
+    licenseImport,
     licenseRefresh,
     licenseStatus,
     type LicenseInfo,
@@ -27,6 +28,7 @@ const DISABLED: LicenseInfo = {
     machineFileExpiry: null,
     licenseExpiry: null,
     activatedAt: null,
+    fingerprint: null,
 };
 
 interface LicenseContextValue {
@@ -34,6 +36,11 @@ interface LicenseContextValue {
     info: LicenseInfo | null;
     /** Throws a `LicenseError` on failure. */
     activate: (key: string) => Promise<void>;
+    /**
+     * Air-gapped activation/renewal via a machine-file import (Rust opens
+     * the picker). Throws a `LicenseError` on failure.
+     */
+    importFile: () => Promise<void>;
     /** Throws a `LicenseError` on failure (e.g. offline). */
     deactivate: () => Promise<void>;
     refresh: () => Promise<void>;
@@ -51,6 +58,7 @@ interface LicenseContextValue {
 const LicenseContext = createContext<LicenseContextValue>({
     info: DISABLED,
     activate: async () => {},
+    importFile: async () => {},
     deactivate: async () => {},
     refresh: async () => {},
     settingsOpen: false,
@@ -100,6 +108,13 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
         }
     }, []);
 
+    const importFile = useCallback(async () => {
+        const next = await licenseImport();
+        if (next) {
+            setInfo(next);
+        }
+    }, []);
+
     const deactivate = useCallback(async () => {
         const next = await licenseDeactivate();
         if (next) {
@@ -122,6 +137,7 @@ export function LicenseProvider({ children }: { children: React.ReactNode }) {
             value={{
                 info,
                 activate,
+                importFile,
                 deactivate,
                 refresh,
                 settingsOpen,

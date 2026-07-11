@@ -8,7 +8,7 @@
 import { useLicense } from "@/app/context/license";
 import type { LicenseInfo } from "@/app/utils/tauri";
 import { ReactNode, useEffect, useRef, useState } from "react";
-import { ActivationForm } from "./license_activation";
+import { ActivationForm, AirGappedImport } from "./license_activation";
 import { LicenseSettingsModal } from "./license_settings";
 import { InfoModal } from "./modal";
 import { Button } from "./ui";
@@ -102,6 +102,16 @@ function BlockingOverlay({ info }: { info: LicenseInfo }) {
                         {retrying ? "Checking…" : "I'm back online — retry"}
                     </Button>
                 )}
+                {/* Air-gapped path on every blocking state: first activation
+                    (unlicensed), offline renewal (stale), and recovery. */}
+                <details className="mt-4 border-t border-border pt-3">
+                    <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+                        This device can&apos;t go online?
+                    </summary>
+                    <div className="mt-3">
+                        <AirGappedImport />
+                    </div>
+                </details>
             </div>
         </div>
     );
