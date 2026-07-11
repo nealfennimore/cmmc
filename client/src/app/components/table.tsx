@@ -1,7 +1,8 @@
 "use client";
 import { debounce } from "./security_requirements/utils";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Input } from "./ui";
 
 interface TableRowProps {
@@ -34,7 +35,9 @@ type PotentialSorter = null | Sorter;
 type PotentialFilter = null | Filter;
 type PotentialOrder = null | Order;
 type OrderPriorty = number | null;
-type PotentialSearch = null | string;
+// A column search is a single term (text input) or a set of terms (multi
+// select), matched with OR semantics within the column.
+type PotentialSearch = null | string | string[];
 
 interface SortableProps {
     text: string;
@@ -105,6 +108,145 @@ const Searchable = ({ text, colIndex }: { text: string; colIndex: number }) => {
             className="h-7 w-full min-w-24 px-2 text-xs font-normal normal-case"
             placeholder={`Filter ${text}`}
         />
+    );
+};
+
+// Enum-like columns filter via a dropdown of checkboxes over the distinct
+// values present in the rows (array values, e.g. requirement ids, are
+// flattened). Multiple checked values combine with OR. Each checked box
+// submits a `searches_N` form entry; processRows collects the repeats into
+// an array, so the panel must stay mounted (hidden) while closed.
+const SearchableSelect = ({
+    colIndex,
+    rows,
+}: {
+    colIndex: number;
+    rows: TableRowProps[];
+}) => {
+    const [open, setOpen] = useState(false);
+    const [selected, setSelected] = useState<string[]>([]);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const options = useMemo(() => {
+        const unique = new Set<string>();
+        for (const row of rows) {
+            const value = row.values[colIndex];
+            if (Array.isArray(value)) {
+                for (const entry of value) {
+                    unique.add(entry);
+                }
+            } else if (value) {
+                unique.add(value);
+            }
+        }
+        return [...unique].sort(defaultSort);
+    }, [rows, colIndex]);
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+        const onPointerDown = (e: MouseEvent) => {
+            if (!containerRef.current?.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", onPointerDown);
+        document.addEventListener("keydown", onKeyDown);
+        return () => {
+            document.removeEventListener("mousedown", onPointerDown);
+            document.removeEventListener("keydown", onKeyDown);
+        };
+    }, [open]);
+
+    // The table recomputes on bubbling change events. Clicking a checkbox
+    // bubbles natively, but the programmatic "Clear" does not, so emit a
+    // synthetic change once the checkboxes have re-rendered.
+    useEffect(() => {
+        containerRef.current?.dispatchEvent(
+            new Event("change", { bubbles: true }),
+        );
+    }, [selected]);
+
+    const toggle = (option: string) =>
+        setSelected((current) =>
+            current.includes(option)
+                ? current.filter((entry) => entry !== option)
+                : [...current, option],
+        );
+
+    const label =
+        selected.length === 0
+            ? "All"
+            : selected.length === 1
+              ? selected[0]
+              : `${selected.length} selected`;
+
+    return (
+        <div
+            ref={containerRef}
+            className="relative font-normal normal-case"
+        >
+            <button
+                type="button"
+                aria-expanded={open}
+                onClick={() => setOpen((showing) => !showing)}
+                className="flex h-7 w-full min-w-24 items-center justify-between gap-1 rounded-md border border-input bg-surface px-2 text-xs text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+                <span className="truncate">{label}</span>
+                <svg
+                    className="h-3 w-3 shrink-0"
+                    aria-hidden="true"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="m6 9 6 6 6-6"
+                    />
+                </svg>
+            </button>
+            <div
+                className={`absolute left-0 top-full z-20 mt-1 flex max-h-64 w-max min-w-full flex-col overflow-y-auto rounded-md border border-border bg-card p-1 shadow-md ${
+                    open ? "" : "hidden"
+                }`}
+            >
+                {selected.length > 0 && (
+                    <button
+                        type="button"
+                        onClick={() => setSelected([])}
+                        className="rounded px-2 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-secondary"
+                    >
+                        Clear selection
+                    </button>
+                )}
+                {options.map((option) => (
+                    <label
+                        key={option}
+                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs transition-colors hover:bg-secondary"
+                    >
+                        <input
+                            type="checkbox"
+                            name={`searches_${colIndex}`}
+                            value={option}
+                            checked={selected.includes(option)}
+                            onChange={() => toggle(option)}
+                            className="h-3.5 w-3.5 accent-primary"
+                        />
+                        {option}
+                    </label>
+                ))}
+            </div>
+        </div>
     );
 };
 
@@ -198,6 +340,9 @@ function TableRow({ columns, classNames, onClick }: TableRowProps) {
 interface THProps {
     text: string;
     className?: string;
+    /** "select" renders the column's filter as a dropdown of the distinct
+     *  values present in the rows instead of a free-text input. */
+    filterKind?: "text" | "select";
 }
 
 interface Props {
@@ -256,17 +401,41 @@ const processRows = ({
                 continue;
             }
             const idx = parseInt(index);
-            next[name as "orders" | "searches"][idx] = value as string;
+            if (name === "orders") {
+                next.orders[idx] = value as Order;
+                continue;
+            }
+            // Multi-select filters submit one entry per checked value;
+            // collect repeats into an array (matched with OR below).
+            const existing = next.searches[idx];
+            next.searches[idx] = existing
+                ? [
+                      ...(Array.isArray(existing) ? existing : [existing]),
+                      value as string,
+                  ]
+                : (value as string);
         }
     }
+
+    // A row passes a column when any of the column's search terms match (OR
+    // within a column); columns combine with AND.
+    const matches = (
+        filter: Filter,
+        search: string | string[],
+        value: string,
+    ) =>
+        Array.isArray(search)
+            ? search.some((term) => filter(term)(value))
+            : filter(search)(value);
 
     let nextRows = [...initialRows];
     for (const search of next.searches) {
         if (search && filters?.length) {
             nextRows = nextRows.filter((row) => {
                 return filters.every((filter, index) => {
-                    return filter && next.searches[index]
-                        ? filter(next.searches[index])(row.values[index])
+                    const columnSearch = next.searches[index];
+                    return filter && columnSearch?.length
+                        ? matches(filter, columnSearch, row.values[index])
                         : true;
                 });
             });
@@ -326,17 +495,18 @@ export function Table({
         });
         setRows(nextRows);
 
-        // Count filled-in filter inputs so the toggle can flag active filters
-        // even while the filter row is collapsed.
+        // Count columns with an active filter so the toggle can flag them
+        // even while the filter row is collapsed. Multi-select columns can
+        // submit several entries; a Set keeps it one per column.
         if (formRef?.current) {
             const formData = new FormData(formRef.current);
-            let count = 0;
+            const active = new Set<string>();
             for (const [key, value] of formData.entries()) {
                 if (key.startsWith("searches_") && value) {
-                    count++;
+                    active.add(key);
                 }
             }
-            setActiveFilters(count);
+            setActiveFilters(active.size);
         }
     };
 
@@ -407,12 +577,19 @@ export function Table({
                                     key={index}
                                     className={`px-6 pb-3 ${headerProps.className ?? ""}`}
                                 >
-                                    {filters?.[index] && (
-                                        <Searchable
-                                            text={headerProps.text}
-                                            colIndex={index}
-                                        />
-                                    )}
+                                    {filters?.[index] &&
+                                        (headerProps.filterKind ===
+                                        "select" ? (
+                                            <SearchableSelect
+                                                colIndex={index}
+                                                rows={initialRows}
+                                            />
+                                        ) : (
+                                            <Searchable
+                                                text={headerProps.text}
+                                                colIndex={index}
+                                            />
+                                        ))}
                                 </th>
                             ))}
                         </tr>

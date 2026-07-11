@@ -122,11 +122,13 @@ export const EvidenceTable = () => {
             {
                 text: "Type",
                 filterable: true,
+                filterKind: "select" as const,
                 className: "min-w-[195px] max-md:hidden",
             },
             {
                 text: "Requirements",
                 filterable: true,
+                filterKind: "select" as const,
                 className: "min-w-[250px] max-w-[250px]",
             },
             {
