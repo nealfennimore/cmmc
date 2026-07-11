@@ -38,6 +38,8 @@ export interface LicenseInfo {
     machineFileExpiry: string | null;
     licenseExpiry: string | null;
     activatedAt: string | null;
+    /** This device's fingerprint (a salted hash) — shown for air-gapped registration. */
+    fingerprint: string | null;
 }
 
 export interface LicenseError {
@@ -88,6 +90,25 @@ export const licenseActivate = async (
     }
     try {
         return await internals.invoke<LicenseInfo>("license_activate", { key });
+    } catch (error) {
+        throw toLicenseError(error);
+    }
+};
+
+/**
+ * Air-gapped activation: pick and import a machine file checked out on a
+ * connected machine (fully offline; Rust opens the file dialog and verifies
+ * the file). Resolves the new license state — unchanged if the picker was
+ * cancelled — or throws a {@link LicenseError}. No-ops (`null`) in the browser.
+ */
+export const licenseImport = async (): Promise<LicenseInfo | null> => {
+    const internals =
+        typeof window !== "undefined" ? window.__TAURI_INTERNALS__ : undefined;
+    if (!internals?.invoke) {
+        return null;
+    }
+    try {
+        return await internals.invoke<LicenseInfo>("license_import");
     } catch (error) {
         throw toLicenseError(error);
     }

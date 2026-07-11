@@ -53,6 +53,14 @@ pub struct MachineFile {
     /// `metadata: { "trial": true }` (set on the license or inherited from a
     /// trial policy's default metadata). See docs/licensing.md.
     pub license_is_trial: bool,
+    /// Keygen machine id (`data.id`). Together with the license id and key
+    /// below, this lets an out-of-band file import reconstruct the same
+    /// activation record an online activation would have written.
+    pub machine_id: String,
+    /// Present when the file was checked out with `include=license`.
+    pub license_id: Option<String>,
+    /// The license key itself, from the included license's attributes.
+    pub license_key: Option<String>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -82,6 +90,7 @@ struct Document {
 
 #[derive(Deserialize)]
 struct DocumentData {
+    id: String,
     attributes: MachineAttributes,
 }
 
@@ -94,6 +103,8 @@ struct MachineAttributes {
 struct Included {
     #[serde(rename = "type")]
     kind: String,
+    #[serde(default)]
+    id: Option<String>,
     #[serde(default)]
     attributes: serde_json::Value,
 }
@@ -152,23 +163,25 @@ pub fn parse_and_verify(certificate: &str, verify_key_hex: &str) -> Result<Machi
     let issued = parse_timestamp(&document.meta.issued, "meta.issued")?;
     let expiry = parse_timestamp(&document.meta.expiry, "meta.expiry")?;
 
-    let license = document
-        .included
-        .iter()
-        .find(|item| item.kind == "licenses")
-        .map(|license| &license.attributes);
+    let license = document.included.iter().find(|item| item.kind == "licenses");
+    let attributes = license.map(|license| &license.attributes);
 
-    let license_expiry = license
+    let license_expiry = attributes
         .and_then(|attributes| attributes.get("expiry"))
         .and_then(|expiry| expiry.as_str())
         .map(|expiry| parse_timestamp(expiry, "license expiry"))
         .transpose()?;
 
-    let license_is_trial = license
+    let license_is_trial = attributes
         .and_then(|attributes| attributes.get("metadata"))
         .and_then(|metadata| metadata.get("trial"))
         .and_then(|trial| trial.as_bool())
         .unwrap_or(false);
+
+    let license_key = attributes
+        .and_then(|attributes| attributes.get("key"))
+        .and_then(|key| key.as_str())
+        .map(str::to_string);
 
     Ok(MachineFile {
         fingerprint: document.data.attributes.fingerprint,
@@ -176,6 +189,9 @@ pub fn parse_and_verify(certificate: &str, verify_key_hex: &str) -> Result<Machi
         expiry,
         license_expiry,
         license_is_trial,
+        machine_id: document.data.id,
+        license_id: license.and_then(|license| license.id.clone()),
+        license_key,
     })
 }
 
@@ -271,6 +287,36 @@ mod tests {
         assert_eq!(file.expiry, datetime!(2026-09-29 00:00 UTC));
         assert_eq!(file.license_expiry, None);
         assert!(!file.license_is_trial);
+        assert_eq!(file.machine_id, "machine-1");
+        assert_eq!(file.license_id.as_deref(), Some("license-1"));
+        assert_eq!(file.license_key.as_deref(), Some("KEY-1"));
+        assert_eq!(check(&file, FINGERPRINT, NOW), CheckResult::Valid);
+    }
+
+    #[test]
+    fn decodes_a_certificate_without_an_included_license() {
+        // Checked out without `include=license`: still verifiable, but there
+        // is no embedded license to extract (imports reject such files).
+        let document = format!(
+            r#"{{
+                "data": {{
+                    "type": "machines",
+                    "id": "machine-1",
+                    "attributes": {{ "fingerprint": "{FINGERPRINT}" }}
+                }},
+                "meta": {{
+                    "issued": "2026-07-01T00:00:00Z",
+                    "expiry": "2026-09-29T00:00:00Z",
+                    "ttl": 7776000
+                }}
+            }}"#
+        );
+        let cert = certificate(&document);
+        let file = parse_and_verify(&cert, &verify_key_hex()).unwrap();
+
+        assert_eq!(file.license_id, None);
+        assert_eq!(file.license_key, None);
+        assert_eq!(file.license_expiry, None);
         assert_eq!(check(&file, FINGERPRINT, NOW), CheckResult::Valid);
     }
 
