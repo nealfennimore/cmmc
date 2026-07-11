@@ -2,6 +2,7 @@
 import { confirm } from "@/app/components/confirm";
 import { FileBadge, LinkBadge } from "@/app/components/evidence";
 import { EditEvidenceModal } from "@/app/components/security_requirements/evidence";
+import { Stats } from "@/app/components/stats";
 import {
     defaultFilter,
     defaultSort,
@@ -10,7 +11,6 @@ import {
 } from "@/app/components/table";
 import { toPath, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBEvidenceV2 } from "@/app/db";
-import { hashType } from "@/app/utils/file";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -51,7 +51,12 @@ const sorters = [defaultSort, defaultSort, nestedSort, defaultSort];
 
 const nestedFilter = (search: string) => (values: string[]) =>
     values.some((value) => value.includes(search));
-const filters = [defaultFilter, defaultFilter, nestedFilter, null];
+// The hash filter matches on the full id (row values), so pasting a complete
+// hash works even though the cell only displays a short prefix.
+const filters = [defaultFilter, defaultFilter, nestedFilter, defaultFilter];
+
+// Enough of a git-style prefix to visually tell artifacts apart.
+const HASH_DISPLAY_CHARS = 12;
 
 export const EvidenceTable = () => {
     const [evidenceWithRequirements, setEvidenceWithRequirements] = useState<
@@ -122,13 +127,31 @@ export const EvidenceTable = () => {
                 className: "min-w-[250px] max-w-[250px]",
             },
             {
-                text: "File Hash",
-                filterable: false,
+                text: "File Hash (SHA-256)",
+                filterable: true,
                 className: "max-lg:hidden",
             },
         ],
         [],
     );
+
+    // Total first, then one entry per artifact type (matching the raw types
+    // shown in the Type column), most common first.
+    const stats = useMemo(() => {
+        const byType = new Map<string, number>();
+        for (const artifact of evidenceWithRequirements) {
+            byType.set(artifact.type, (byType.get(artifact.type) ?? 0) + 1);
+        }
+        return [
+            {
+                label: "Total evidence",
+                value: evidenceWithRequirements.length,
+            },
+            ...[...byType.entries()]
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                .map(([type, count]) => ({ label: type, value: count })),
+        ];
+    }, [evidenceWithRequirements]);
 
     const tableBody = useMemo(
         () =>
@@ -182,12 +205,18 @@ export const EvidenceTable = () => {
                             {requirement}
                         </Link>
                     )),
+                    // Hovering the short hash reveals the full value in a
+                    // card-styled tooltip; as a child of the hovered element
+                    // it stays open when moused over, so it can be selected
+                    // and copied.
                     <div
                         key={artifact.id}
-                        className="truncate w-full"
-                        title={artifact.id}
+                        className="group relative w-fit cursor-help"
                     >
-                        {hashType(artifact.id)}:{artifact.id}
+                        {artifact.id.slice(0, HASH_DISPLAY_CHARS)}&hellip;
+                        <span className="invisible absolute bottom-full right-0 z-10 mb-1 w-max rounded-md border border-border bg-card px-3 py-2 font-mono text-xs text-card-foreground shadow-md group-hover:visible">
+                            {artifact.id}
+                        </span>
                     </div>,
                 ],
                 classNames: [
@@ -207,6 +236,7 @@ export const EvidenceTable = () => {
             className="w-full"
         >
             <section className="w-full flex flex-col">
+                <Stats stats={stats} />
                 <div className="relative overflow-x-auto rounded-lg border border-border shadow-sm">
                     <Table
                         sorters={sorters}
