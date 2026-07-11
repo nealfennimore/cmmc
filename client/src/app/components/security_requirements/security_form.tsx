@@ -48,11 +48,17 @@ export const SecurityForm = ({
     setStatuses,
     prev,
     next,
+    locked,
 }) => {
     const { partial_value } = useRequirementValue(requirement.id);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
     async function action(prevState, formData) {
+        // Free-tier locked requirements are read-only; this guard covers both
+        // explicit submits and the debounced auto-save below.
+        if (locked) {
+            return;
+        }
         const nextStatuses = await saveState(requirement.id, formData);
         setStatuses(nextStatuses);
         setInitialState(Object.fromEntries(formData.entries()));
@@ -81,6 +87,7 @@ export const SecurityForm = ({
             next={next}
             prev={prev}
             requirement={requirement}
+            locked={locked}
         >
             <>
                 {Object.entries(groupings)?.map(([key, grouping], idx) => (
@@ -91,7 +98,7 @@ export const SecurityForm = ({
                                 securityRequirement={securityRequirement}
                                 hasPartialValue={partial_value > 0}
                                 initialState={initialState}
-                                isPending={isPending || isHydrating}
+                                isPending={isPending || isHydrating || locked}
                                 idx={idx}
                             />
                         ))}

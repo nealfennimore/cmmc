@@ -1,6 +1,7 @@
 "use client";
 import { useManifestContext } from "@/app/context/manifest";
 import { toPath, useRevisionContext } from "@/app/context/revision";
+import { isLockedRequirement } from "@/app/utils/tier";
 import Link from "next/link";
 import { useMemo } from "react";
 import { useFamilyEvidence } from "../hooks/evidence";
@@ -12,6 +13,7 @@ import { IconInfo } from "./icon_info";
 import { Popover } from "./popover";
 import { StatusState } from "./status";
 import { Heading } from "./ui";
+import { LockedBadge } from "./upgrade_cta";
 
 export const Requirements = ({ familyId }: { familyId: string }) => {
     const manifest = useManifestContext();
@@ -77,6 +79,13 @@ export const Requirements = ({ familyId }: { familyId: string }) => {
                                     </span>{" "}
                                     {requirement.title}
                                 </span>
+                                {isLockedRequirement(
+                                    requirement.element_identifier,
+                                ) && (
+                                    <span className="ms-2">
+                                        <LockedBadge />
+                                    </span>
+                                )}
                                 <EvidenceState
                                     evidence={familyEvidence?.requirementEvidence(
                                         requirement.element_identifier,

@@ -31,6 +31,10 @@ jobs:
         working-directory: ./client
         run: |
           echo NEXT_PUBLIC_API_URL=https://app.getcmmc.consulting >> .env
+          # Web-only: limit the free web app to the CMMC Level 1 controls
+          # (locked-but-visible beyond that). Desktop builds omit this and
+          # stay full-tier — see client/src/app/utils/tier.ts.
+          echo NEXT_PUBLIC_TIER=free >> .env
           echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
 
       - name: Build (pinned Node from flake)

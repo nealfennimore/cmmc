@@ -2,6 +2,7 @@
 import { ElementWrapper } from "@/api/entities/Framework";
 import { useManifestContext } from "@/app/context/manifest";
 import { toPath, useRevisionContext } from "@/app/context/revision";
+import { isLockedRequirement } from "@/app/utils/tier";
 import { IDB } from "@/app/db";
 import { marked } from "marked";
 import { useRouter } from "next/navigation";
@@ -38,6 +39,8 @@ export const SecurityRequirements = ({
     )?.requirementEvidence(requirementId);
 
     const withdrawn = manifest.withdrawReason.byRequirements[requirementId];
+    // Free web tier: requirements beyond CMMC Level 1 render read-only.
+    const locked = isLockedRequirement(requirementId);
 
     const securityRequirements = useMemo(() => {
         return (
@@ -155,13 +158,15 @@ export const SecurityRequirements = ({
             }
         };
 
-        document.addEventListener("keydown", saveOnCtrlS);
+        if (!locked) {
+            document.addEventListener("keydown", saveOnCtrlS);
+        }
 
         return () => {
             window.removeEventListener("hashchange", handleHashChange);
             document.removeEventListener("keydown", saveOnCtrlS);
         };
-    }, [router]);
+    }, [router, locked]);
 
     if (withdrawn) {
         return (
@@ -180,6 +185,7 @@ export const SecurityRequirements = ({
                 value={value}
                 withdrawn={withdrawn}
                 evidence={evidence}
+                locked={locked}
             />
         );
     }
@@ -202,6 +208,7 @@ export const SecurityRequirements = ({
             statuses={statuses}
             value={value}
             evidence={evidence}
+            locked={locked}
         />
     );
 };

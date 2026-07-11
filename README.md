@@ -42,6 +42,8 @@ There are three ways to run the app. They each keep their own local data, so use
 
 Open [**app.getcmmc.consulting**](https://app.getcmmc.consulting/) in any modern browser. It works fully offline and can be **installed as a PWA** (use the install icon in the address bar) for an app-like experience.
 
+The free web app covers editing for the **17 CMMC Level 1 practices** (FAR 52.204-21) and their Revision 3 equivalents. The remaining NIST 800-171 requirements are visible but read-only — the desktop app unlocks editing for all 110 requirements plus SPRS scoring. Reports and exports (SSP, POA&M, evidence, database export/import) are always complete on both tiers, so your data is never trapped.
+
 ### Desktop — native, fully offline
 
 Signed installers are published on the [**Releases**](https://github.com/nealfennimore/cmmc/releases/latest) page. Grab the file for your platform:

@@ -1,5 +1,6 @@
 "use client";
 import { toPath, useRevisionContext } from "@/app/context/revision";
+import { isFreeTier } from "@/app/utils/tier";
 import { usePathname, useRouter } from "next/navigation";
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
 import { Button, menuItemClasses } from "./ui";
@@ -69,8 +70,10 @@ const STEPS: TourStep[] = [
     {
         page: "home",
         target: "sprs-score",
-        title: "Live SPRS score",
-        body: "Your estimated SPRS score (out of 110) updates as you record statuses. On Rev 3 it is estimated by mapping withdrawn Rev 2 control values into their Rev 3 replacements.",
+        title: isFreeTier() ? "Level 1 progress" : "Live SPRS score",
+        body: isFreeTier()
+            ? "Your CMMC Level 1 progress updates as you record statuses across the 17 Level 1 practices. Full SPRS scoring (out of 110) is available in the desktop app."
+            : "Your estimated SPRS score (out of 110) updates as you record statuses. On Rev 3 it is estimated by mapping withdrawn Rev 2 control values into their Rev 3 replacements.",
     },
     {
         page: "home",

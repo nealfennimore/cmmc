@@ -1,6 +1,7 @@
 "use client";
 import { useManifestContext } from "@/app/context/manifest";
 import { toNum, toPath, useRevisionContext } from "@/app/context/revision";
+import { isFreeTier, isUnlocked } from "@/app/utils/tier";
 import Link from "next/link";
 import { useGlobalEvidence } from "../hooks/evidence";
 import { useGlobalStatus } from "../hooks/status";
@@ -10,6 +11,7 @@ import { IconInfo } from "./icon_info";
 import { Popover } from "./popover";
 import { StatusState } from "./status";
 import { Heading } from "./ui";
+import { LockedBadge } from "./upgrade_cta";
 
 export const Families = () => {
     const revision = useRevisionContext();
@@ -62,6 +64,16 @@ export const Families = () => {
                                 </span>{" "}
                                 {family.title}
                             </span>
+                            {isFreeTier() &&
+                                !manifest.requirements.byFamily[
+                                    family.element_identifier
+                                ]?.some((requirement) =>
+                                    isUnlocked(requirement.element_identifier),
+                                ) && (
+                                    <span className="ms-2">
+                                        <LockedBadge />
+                                    </span>
+                                )}
                             <EvidenceState
                                 evidence={
                                     globalEvidence?.[family.element_identifier]

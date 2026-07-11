@@ -435,6 +435,7 @@ const Badge = ({
     lastResetAt,
     requirementId,
     setEvidence,
+    readOnly,
 }: {
     children: ReactNode;
     onDelete: CallableFunction;
@@ -442,6 +443,7 @@ const Badge = ({
     lastResetAt: null | number;
     requirementId: string;
     setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
+    readOnly?: boolean;
 }) => {
     const [isShowing, setShowing] = useState(false);
     const [prevLastResetAt, setPrevLastResetAt] = useState(lastResetAt);
@@ -454,11 +456,14 @@ const Badge = ({
     }, [lastResetAt, prevLastResetAt]);
 
     function onContextMenu(e: MouseEvent) {
+        if (readOnly) {
+            return;
+        }
         e.preventDefault();
         setShowing(!isShowing);
     }
 
-    if (isShowing) {
+    if (isShowing && !readOnly) {
         return (
             <span className="me-2 mb-2 flex flex-col gap-1">
                 <NameChange artifact={artifact} />
@@ -481,27 +486,29 @@ const Badge = ({
             onContextMenu={onContextMenu}
         >
             {children}
-            <button
-                onClick={onDelete}
-                className="pl-2 transition-opacity hover:opacity-70"
-                aria-label="Remove evidence"
-            >
-                <svg
-                    className="w-2 h-2"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 14 14"
+            {!readOnly && (
+                <button
+                    onClick={onDelete}
+                    className="pl-2 transition-opacity hover:opacity-70"
+                    aria-label="Remove evidence"
                 >
-                    <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
-                    />
-                </svg>
-            </button>
+                    <svg
+                        className="w-2 h-2"
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 14 14"
+                    >
+                        <path
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+                        />
+                    </svg>
+                </button>
+            )}
         </span>
     );
 };
@@ -564,12 +571,14 @@ export const EvidenceBadge = ({
     evidence,
     lastResetAt,
     requirementId,
+    readOnly,
 }: {
     artifact: IDBEvidenceV2;
     evidence: IDBEvidenceV2[];
     setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
     lastResetAt: null | number;
     requirementId: string;
+    readOnly?: boolean;
 }) => {
     const onDelete = async () => {
         const evidenceRequirementRecords =
@@ -620,6 +629,7 @@ export const EvidenceBadge = ({
             lastResetAt={lastResetAt}
             requirementId={requirementId}
             setEvidence={setEvidence}
+            readOnly={readOnly}
         >
             {artifact.type === "url" ? (
                 <LinkBadge artifact={artifact} />
@@ -634,11 +644,13 @@ export const EvidenceBadges = ({
     setEvidence,
     lastResetAt,
     requirementId,
+    readOnly,
 }: {
     evidence: IDBEvidenceV2[];
     setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
     lastResetAt: null | number;
     requirementId: string;
+    readOnly?: boolean;
 }) => {
     // Show URL evidence first, then files. Files are pushed onto their own
     // line via a full-width flex break so links and files read as two groups.
@@ -659,6 +671,7 @@ export const EvidenceBadges = ({
                 setEvidence={setEvidence}
                 lastResetAt={lastResetAt}
                 requirementId={requirementId}
+                readOnly={readOnly}
             />
         </Fragment>
     ));
@@ -756,7 +769,13 @@ function pasteImageFromClipboard(requirementId, setEvidence, setUploading) {
     };
 }
 
-export const Evidence = ({ requirementId }: { requirementId: string }) => {
+export const Evidence = ({
+    requirementId,
+    locked,
+}: {
+    requirementId: string;
+    locked?: boolean;
+}) => {
     const [evidence, setEvidence] = useState<IDBEvidenceV2[]>([]);
     const [uploading, setUploading] = useState(false);
     const [formLastReset, setFormLastReset] = useState<number | null>(null);
@@ -832,6 +851,10 @@ export const Evidence = ({ requirementId }: { requirementId: string }) => {
     }, [requirementId, uploading, isPending]);
 
     useEffect(() => {
+        // Free-tier locked requirements are read-only: no pasted evidence.
+        if (locked) {
+            return;
+        }
         const handler = pasteImageFromClipboard(
             requirementId,
             setEvidence,
@@ -846,7 +869,7 @@ export const Evidence = ({ requirementId }: { requirementId: string }) => {
         return () => {
             document.removeEventListener("paste", handlerWithNotifcation);
         };
-    }, [requirementId, setEvidence, setUploading]);
+    }, [requirementId, setEvidence, setUploading, locked]);
 
     useEffect(() => {
         const setTimestamp = (e: Event) => {
@@ -889,13 +912,14 @@ export const Evidence = ({ requirementId }: { requirementId: string }) => {
         };
     }, [requirementId]);
 
+    let className = "mb-4 mt-4 flex items-center";
+    if (!locked) {
+        className += "mb-0 mt-0 -translate-y-full";
+    }
+
     return (
         <>
-            <Heading
-                level={3}
-                as="h4"
-                className=" mb-0 flex -translate-y-full items-center"
-            >
+            <Heading level={3} as="h4" className={className}>
                 Evidence
             </Heading>
             <form
@@ -904,42 +928,45 @@ export const Evidence = ({ requirementId }: { requirementId: string }) => {
                 ref={formRef}
                 data-tour="evidence"
             >
-                <div className="basis-full mb-4 md:mb-0 md:basis-1/3 md:mr-4">
-                    <Files
-                        requirementId={requirementId}
-                        setUploading={setUploading}
-                        uploading={uploading}
-                    />
-                    <div className="relative w-full mt-4">
-                        <Input
-                            type="url"
-                            name="url"
-                            id="url"
-                            className="pe-12"
-                            placeholder={`Add URL to evidence`}
+                {!locked && (
+                    <div className="basis-full mb-4 md:mb-0 md:basis-1/3 md:mr-4">
+                        <Files
+                            requirementId={requirementId}
+                            setUploading={setUploading}
+                            uploading={uploading}
                         />
-                        <button
-                            type="submit"
-                            aria-label="Add URL evidence"
-                            className="absolute end-0 top-0 inline-flex h-full items-center rounded-e-md border-l border-input bg-secondary px-3 text-muted-foreground transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                            <IconLink />
-                        </button>
+                        <div className="relative w-full mt-4">
+                            <Input
+                                type="url"
+                                name="url"
+                                id="url"
+                                className="pe-12"
+                                placeholder={`Add URL to evidence`}
+                            />
+                            <button
+                                type="submit"
+                                aria-label="Add URL evidence"
+                                className="absolute end-0 top-0 inline-flex h-full items-center rounded-e-md border-l border-input bg-secondary px-3 text-muted-foreground transition-colors hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                <IconLink />
+                            </button>
+                        </div>
+                        <div className="relative w-full mt-4">
+                            <SearchDropdown
+                                placeholder={`Attach other requirement evidence to ${requirementId}`}
+                                options={evidenceOptions}
+                                onSelect={onEvidenceSelect}
+                            />
+                        </div>
                     </div>
-                    <div className="relative w-full mt-4">
-                        <SearchDropdown
-                            placeholder={`Attach other requirement evidence to ${requirementId}`}
-                            options={evidenceOptions}
-                            onSelect={onEvidenceSelect}
-                        />
-                    </div>
-                </div>
+                )}
                 <div className="flex flex-wrap shrink basis-full md:basis-2/3 content-center">
                     <EvidenceBadges
                         evidence={evidence}
                         setEvidence={setEvidence}
                         lastResetAt={formLastReset}
                         requirementId={requirementId}
+                        readOnly={locked}
                     />
                 </div>
             </form>

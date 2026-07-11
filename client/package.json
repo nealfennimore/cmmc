@@ -1,10 +1,11 @@
 {
     "name": "sp_800_171",
-    "version": "1.2.1",
+    "version": "1.3.1",
     "private": true,
     "license": "Elastic-2.0",
     "scripts": {
         "dev": "next dev",
+        "dev:free": "NEXT_PUBLIC_TIER=free next dev",
         "build": "next build",
         "postbuild": "node scripts/stamp-sw.mjs",
         "start": "next start",

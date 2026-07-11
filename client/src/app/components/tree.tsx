@@ -2,6 +2,7 @@
 import type { ElementWrapper, Manifest } from "@/api/entities/Framework";
 import { useManifestContext } from "@/app/context/manifest";
 import { toPath, useRevisionContext } from "@/app/context/revision";
+import { isLockedRequirement } from "@/app/utils/tier";
 import Link from "next/link";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
@@ -128,6 +129,11 @@ export const RequirementLeaf = ({
                 {requirement.element_identifier}:{" "}
                 {requirement.title || "Withdrawn"}
             </Link>
+            {isLockedRequirement(requirement.element_identifier) && (
+                <span className="ms-1 text-xs" title="Available in the desktop app">
+                    🔒
+                </span>
+            )}
             <EvidenceState evidence={evidence} size="xs" />
         </li>
     );

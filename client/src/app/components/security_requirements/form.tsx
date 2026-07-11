@@ -12,35 +12,41 @@ export const Form = ({
     next,
     prev,
     requirement,
+    locked,
 }) => {
     return (
         <>
             <ContentNavigation previous={prev} next={next} />
-            <div
-                className="sticky top-36 left-full flex flex-row-reverse items-center shrink-0 w-1/4 pb-4 z-10 -translate-y-full"
-                data-tour="save"
-            >
-                <Button
-                    type="submit"
-                    variant="success"
-                    className="w-24 shrink"
-                    disabled={isHydrating}
-                    tabIndex={30}
-                    form={requirement.element_identifier}
+            {!locked && (
+                <div
+                    className="sticky top-36 left-full flex flex-row-reverse items-center shrink-0 w-1/4 pb-4 z-10 -translate-y-full"
+                    data-tour="save"
                 >
-                    Save
-                </Button>
-                {lastSaved && (
-                    <span className="mr-2 hidden text-right text-sm text-muted-foreground md:block">
-                        Last saved: {lastSaved?.toLocaleTimeString()}
-                    </span>
-                )}
-            </div>
-            <Evidence requirementId={requirement.element_identifier} />
+                    <Button
+                        type="submit"
+                        variant="success"
+                        className="w-24 shrink"
+                        disabled={isHydrating}
+                        tabIndex={30}
+                        form={requirement.element_identifier}
+                    >
+                        Save
+                    </Button>
+                    {lastSaved && (
+                        <span className="mr-2 hidden text-right text-sm text-muted-foreground md:block">
+                            Last saved: {lastSaved?.toLocaleTimeString()}
+                        </span>
+                    )}
+                </div>
+            )}
+            <Evidence
+                requirementId={requirement.element_identifier}
+                locked={locked}
+            />
             <form
                 id={requirement.element_identifier}
                 action={formAction}
-                onChange={debouncedSave}
+                onChange={locked ? undefined : debouncedSave}
                 className="basis-full"
                 data-tour="requirement-form"
             >
