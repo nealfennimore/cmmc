@@ -65,6 +65,9 @@ export const EvidenceTable = () => {
     const [editing, setEditing] = useState<EvidenceWithRequirements | null>(
         null,
     );
+    // Set by clicking a type stat card; narrows the rows fed to the table
+    // (the table's own column filters then apply on top).
+    const [typeFilter, setTypeFilter] = useState<string | null>(null);
     const formRef = useRef<HTMLFormElement>(null);
 
     const refresh = async () =>
@@ -141,7 +144,8 @@ export const EvidenceTable = () => {
     );
 
     // Total first, then one entry per artifact type (matching the raw types
-    // shown in the Type column), most common first.
+    // shown in the Type column), most common first. Clicking a type card
+    // toggles the table down to that type; the total card clears it.
     const stats = useMemo(() => {
         const byType = new Map<string, number>();
         for (const artifact of evidenceWithRequirements) {
@@ -151,16 +155,35 @@ export const EvidenceTable = () => {
             {
                 label: "Total evidence",
                 value: evidenceWithRequirements.length,
+                onClick: () => setTypeFilter(null),
             },
             ...[...byType.entries()]
                 .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-                .map(([type, count]) => ({ label: type, value: count })),
+                .map(([type, count]) => ({
+                    label: type,
+                    value: count,
+                    onClick: () =>
+                        setTypeFilter((current) =>
+                            current === type ? null : type,
+                        ),
+                    active: typeFilter === type,
+                })),
         ];
-    }, [evidenceWithRequirements]);
+    }, [evidenceWithRequirements, typeFilter]);
+
+    const visibleEvidence = useMemo(
+        () =>
+            typeFilter
+                ? evidenceWithRequirements.filter(
+                      (artifact) => artifact.type === typeFilter,
+                  )
+                : evidenceWithRequirements,
+        [evidenceWithRequirements, typeFilter],
+    );
 
     const tableBody = useMemo(
         () =>
-            evidenceWithRequirements?.map((artifact) => ({
+            visibleEvidence?.map((artifact) => ({
                 values: [
                     artifact.filename,
                     artifact.type,
@@ -229,7 +252,7 @@ export const EvidenceTable = () => {
                     null,
                 ],
             })) ?? [],
-        [evidenceWithRequirements, path],
+        [visibleEvidence, path],
     );
 
     return (
