@@ -1,10 +1,12 @@
 // Thin client for the Keygen.sh JSON:API endpoints used by activation. All
 // requests authenticate with the license key itself (the policy must use the
 // LICENSE or MIXED authentication strategy), so no account tokens ever ship
-// with the app.
+// with the app. Every response body is verified against the account's
+// Keygen-Signature header before being parsed (see sig.rs).
 
-use super::config;
+use super::{config, sig};
 use serde_json::{json, Value};
+use time::OffsetDateTime;
 
 const JSONAPI: &str = "application/vnd.api+json";
 
@@ -14,6 +16,9 @@ pub enum ApiError {
     Network(String),
     /// Keygen answered with an error code (e.g. MACHINE_LIMIT_EXCEEDED).
     Api { code: String, message: String },
+    /// The response failed Keygen-Signature verification — it did not
+    /// provably come (unaltered and fresh) from Keygen.
+    Signature(String),
 }
 
 pub struct Validation {
@@ -38,15 +43,56 @@ fn client() -> reqwest::Client {
     reqwest::Client::new()
 }
 
-// Parse via text + serde_json rather than reqwest's `.json()`, so we don't
-// need reqwest's `json` feature at all.
-async fn json_body(response: reqwest::Response) -> Result<Value, ApiError> {
-    let text = response
-        .text()
+fn header_string(response: &reqwest::Response, name: &str) -> Option<String> {
+    response
+        .headers()
+        .get(name)
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_string)
+}
+
+// Verify the response's Keygen-Signature over the raw bytes, then parse them
+// as JSON. Success bodies must verify — they are what activation trusts.
+// Keygen does not sign certain error payloads (malformed requests, internal
+// errors), so a *missing* signature is tolerated on error statuses, where the
+// body only yields an error code and message; a present-but-invalid one is
+// still fatal.
+async fn verified_json_body(
+    method: &str,
+    response: reqwest::Response,
+) -> Result<(reqwest::StatusCode, Value), ApiError> {
+    let status = response.status();
+    let url = response.url().clone();
+    let date = header_string(&response, "date");
+    let digest = header_string(&response, "digest");
+    let signature = header_string(&response, "keygen-signature");
+    let bytes = response
+        .bytes()
         .await
         .map_err(|err| ApiError::Network(err.to_string()))?;
-    serde_json::from_str(&text)
-        .map_err(|err| ApiError::Network(format!("unexpected response body: {err}")))
+
+    let target = match url.query() {
+        Some(query) => format!("{}?{query}", url.path()),
+        None => url.path().to_string(),
+    };
+    let parts = sig::ResponseParts {
+        method,
+        target: &target,
+        host: url.host_str().unwrap_or_default(),
+        date: date.as_deref(),
+        digest: digest.as_deref(),
+        signature: signature.as_deref(),
+        body: &bytes,
+    };
+    match sig::verify_response(&parts, config::KEYGEN_VERIFY_KEY_HEX, OffsetDateTime::now_utc()) {
+        Ok(()) => {}
+        Err(sig::SigError::MissingSignature) if !status.is_success() => {}
+        Err(err) => return Err(ApiError::Signature(err.to_string())),
+    }
+
+    let body = serde_json::from_slice(&bytes)
+        .map_err(|err| ApiError::Network(format!("unexpected response body: {err}")))?;
+    Ok((status, body))
 }
 
 // Keygen errors arrive as `{ "errors": [{ "code", "title", "detail" }] }`.
@@ -81,7 +127,7 @@ pub async fn validate_key(key: &str, fingerprint: &str) -> Result<Validation, Ap
         .await
         .map_err(|err| ApiError::Network(err.to_string()))?;
 
-    let body = json_body(response).await?;
+    let (_, body) = verified_json_body("post", response).await?;
     let has_errors = body
         .get("errors")
         .and_then(Value::as_array)
@@ -142,8 +188,7 @@ pub async fn activate_machine(
         .await
         .map_err(|err| ApiError::Network(err.to_string()))?;
 
-    let status = response.status();
-    let body = json_body(response).await?;
+    let (status, body) = verified_json_body("post", response).await?;
 
     if status.is_success() {
         return body["data"]["id"]
@@ -174,8 +219,7 @@ async fn machine_id_for_fingerprint(key: &str, fingerprint: &str) -> Result<Stri
         .await
         .map_err(|err| ApiError::Network(err.to_string()))?;
 
-    let status = response.status();
-    let body = json_body(response).await?;
+    let (status, body) = verified_json_body("get", response).await?;
     if !status.is_success() {
         return Err(api_error(&body));
     }
@@ -205,8 +249,7 @@ pub async fn checkout_machine(
         .await
         .map_err(|err| ApiError::Network(err.to_string()))?;
 
-    let status = response.status();
-    let body = json_body(response).await?;
+    let (status, body) = verified_json_body("post", response).await?;
     if !status.is_success() {
         return Err(api_error(&body));
     }
@@ -234,6 +277,6 @@ pub async fn deactivate_machine(key: &str, machine_id: &str) -> Result<(), ApiEr
     if status.is_success() || status == reqwest::StatusCode::NOT_FOUND {
         return Ok(());
     }
-    let body = json_body(response).await?;
+    let (_, body) = verified_json_body("delete", response).await?;
     Err(api_error(&body))
 }

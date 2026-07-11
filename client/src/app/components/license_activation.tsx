@@ -15,6 +15,8 @@ const ACTIVATION_ERROR_COPY: Record<string, string> = {
         "Activation needs an internet connection (just this once). Check your connection and try again.",
     EXPIRED: "This license has expired. Renew it to keep using the app.",
     SUSPENDED: "This license has been suspended. Please contact support.",
+    SIGNATURE:
+        "The licensing server's response couldn't be verified. Check that your system clock is correct and that nothing on the network is intercepting HTTPS traffic, then try again.",
 };
 
 export const activationErrorMessage = (error: unknown): string => {

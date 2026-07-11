@@ -7,6 +7,7 @@
 pub mod api;
 pub mod config;
 pub mod fingerprint;
+pub mod sig;
 pub mod store;
 pub mod verify;
 
@@ -35,7 +36,7 @@ pub struct LicenseInfo {
 #[serde(rename_all = "camelCase")]
 pub struct LicenseError {
     /// INVALID_KEY | EXPIRED | SUSPENDED | MACHINE_LIMIT | NETWORK
-    /// | NOT_ACTIVATED | API_ERROR | IO
+    /// | NOT_ACTIVATED | API_ERROR | SIGNATURE | IO
     pub code: String,
     pub message: String,
 }
@@ -57,6 +58,7 @@ impl From<api::ApiError> for LicenseError {
     fn from(error: api::ApiError) -> Self {
         match error {
             api::ApiError::Network(message) => Self::new("NETWORK", message),
+            api::ApiError::Signature(message) => Self::new("SIGNATURE", message),
             api::ApiError::Api { code, message } => {
                 let code = match code.as_str() {
                     "MACHINE_LIMIT_EXCEEDED" => "MACHINE_LIMIT".to_string(),

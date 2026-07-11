@@ -133,8 +133,9 @@ dormant without the Tauri IPC bridge.
    the dashboard. After the trial key expires, deleting the app-data
    `license/` dir and re-activating it fails with expired-license copy.
 
-Rust unit tests cover the certificate parsing/signature verification,
-including trial-license detection: `cd client/src-tauri && cargo test`.
+Rust unit tests cover the certificate parsing/signature verification
+(including trial-license detection) and the API response-signature
+verification: `cd client/src-tauri && cargo test`.
 
 ## Auto-updates (Keygen tauri engine)
 
@@ -218,8 +219,18 @@ That's expected.
   remain so; the ELv2 protection applies to code from the switch onward.)
 - The machine file is signature-verified before being trusted or persisted, so
   spoofing `api.keygen.sh` at activation time cannot mint a working license.
-  Verifying Keygen's signed API responses as well would harden activation
-  further and is a possible follow-up.
+- Every Keygen API response consumed during activation is additionally
+  verified against the account's Ed25519 key using Keygen's [signed-response
+  scheme](https://keygen.sh/docs/api/signatures/) (`license/sig.rs`): the
+  `Keygen-Signature` header binds the response body (via its SHA-256 digest),
+  the exact endpoint including query string, and the response date, and
+  responses older than 5 minutes are rejected as replays. So a spoofed
+  `api.keygen.sh` can't alter or replay validation/activation responses
+  either. Two consequences: activation needs a roughly correct system clock
+  (±5 minutes), and since Keygen leaves a few error payloads unsigned
+  (malformed requests, internal errors), a *missing* signature is tolerated
+  only on error responses — which grant nothing — while an invalid one is
+  always fatal (surfaced as the `SIGNATURE` error code).
 - The license key is stored in plaintext in the app data dir. It grants
   nothing beyond what the (already-present) machine file grants, so OS
   keychain storage was skipped for simplicity.
