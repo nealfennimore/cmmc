@@ -94,12 +94,37 @@
           export GIO_MODULE_DIR="${pkgs.glib-networking}/lib/gio/modules/"
         '';
 
+        # pkg-config with the Tauri system libraries' search path baked in.
+        # The Claude sandbox launches without mkShell's setup hooks, so no
+        # PKG_CONFIG_PATH is ever exported there; this wrapper is built *with*
+        # those hooks, capturing the fully-resolved path — including
+        # propagated deps like atk that a hand-written list would miss — at
+        # build time. The baked store paths also keep the libraries (and
+        # their .so files, for linking and running tests) in the closure.
+        sandboxPkgConfig = pkgs.runCommand "sandbox-pkg-config"
+          {
+            nativeBuildInputs = [ pkgs.makeWrapper pkgs.pkg-config ];
+            buildInputs = linuxLibs;
+          } ''
+          test -n "$PKG_CONFIG_PATH" # hooks must have populated it
+          mkdir -p $out/bin
+          makeWrapper ${pkgs.pkg-config}/bin/pkg-config $out/bin/pkg-config \
+            --prefix PKG_CONFIG_PATH : "$PKG_CONFIG_PATH"
+        '';
+
         claude = agentbox.lib.${system}.mkClaudeSandbox {
           extraPackages = [
             pkgs.ripgrep
             pkgs.jq
             pkgs.curl
-          ] ++ buildTools;
+          ] ++ buildTools
+          # Let the sandbox compile and test the full src-tauri crate: a C
+          # toolchain (cc/ld; its wrapper also rpaths -L dirs so test
+          # binaries run) and the pre-wired pkg-config above.
+          ++ lib.optionals isLinux [
+            pkgs.stdenv.cc
+            sandboxPkgConfig
+          ];
           allowedDomains = agentbox.lib.${system}.agentDomains // {
             "crates.io" = "*";
             "keygen.sh" = "*";
