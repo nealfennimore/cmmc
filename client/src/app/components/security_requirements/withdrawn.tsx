@@ -8,6 +8,7 @@ import { IconInfo } from "../icon_info";
 import { Popover } from "../popover";
 import { StatusState } from "../status";
 import { Heading } from "../ui";
+import { UpgradeBanner } from "../upgrade_cta";
 import { SecurityForm } from "./security_form";
 
 const secReqReg = /\d{2}.\d{2}.\d{2},?/gm;
@@ -55,10 +56,13 @@ export const WithdrawnSecurityRequirement = ({
     withdrawn,
     groupings,
     evidence,
+    locked,
 }) => {
     return (
         <>
             <Breadcrumbs requirementId={requirementId} />
+
+            {locked && <UpgradeBanner />}
 
             <Heading
                 level={2}
@@ -204,6 +208,7 @@ export const WithdrawnSecurityRequirement = ({
                     prev={prev}
                     next={next}
                     groupings={groupings}
+                    locked={locked}
                 />
             </section>
         </>

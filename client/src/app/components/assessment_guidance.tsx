@@ -154,11 +154,13 @@ const ExamineList = ({
     items,
     checked,
     onToggle,
+    disabled,
 }: {
     requirementId: string;
     items: string[];
     checked?: Set<string>;
     onToggle: (item: string) => void;
+    disabled?: boolean;
 }) => {
     if (!items?.length) {
         return null;
@@ -180,8 +182,9 @@ const ExamineList = ({
                                 type="checkbox"
                                 id={id}
                                 checked={isChecked}
+                                disabled={disabled}
                                 onChange={() => onToggle(item)}
-                                className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-primary"
+                                className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-primary disabled:cursor-not-allowed"
                             />
                             <label
                                 htmlFor={id}
@@ -201,8 +204,10 @@ const ExamineList = ({
 
 export const AssessmentGuidance = ({
     requirementId,
+    locked,
 }: {
     requirementId: string;
+    locked?: boolean;
 }) => {
     const revision = useRevisionContext();
     const { checked, toggle } = useExamineEvidence(requirementId);
@@ -308,6 +313,7 @@ export const AssessmentGuidance = ({
                             items={examineItems}
                             checked={checked}
                             onToggle={toggle}
+                            disabled={locked}
                         />
                         <MethodList
                             method="Interview"

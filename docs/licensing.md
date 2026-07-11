@@ -1,9 +1,34 @@
 # Desktop licensing (keygen.sh)
 
 The desktop (Tauri) builds support software licensing through
-[keygen.sh](https://keygen.sh). The web app is never gated — licensing code
-no-ops entirely outside the Tauri shell, and the static export contains no
-license logic beyond the inert UI components.
+[keygen.sh](https://keygen.sh). The web app is never license-gated — licensing
+code no-ops entirely outside the Tauri shell, and the static export contains
+no license logic beyond the inert UI components.
+
+## Free web tier (CMMC Level 1)
+
+Separately from Keygen licensing, the public web build is limited at **build
+time** to the 17 CMMC Level 1 practices (FAR 52.204-21) plus their Rev 3
+equivalents; all other requirements render locked-but-visible with an upgrade
+CTA. This is controlled by `NEXT_PUBLIC_TIER=free`, set only in the web deploy
+job (`deploy.yml`) — desktop builds and local dev are always full-tier.
+
+- Source of truth: `client/src/app/utils/tier.ts` (the 17 Rev 2 IDs are
+  hardcoded — the vendored assessment-guide data misflags `03.01.02`, so no
+  data-driven rule is reliable; a dev-mode check warns on drift). The Rev 3
+  set is derived from `values.json`'s withdrawn-mapping.
+- Locked requirements: listed with a 🔒 badge, detail pages show saved data
+  **read-only** (grandfathering) with an upgrade banner; all writes and
+  evidence attach/paste/delete are disabled.
+- Reports (SSP markdown, POA&M CSV, evidence map, evidence download) include
+  only unlocked requirements on the free tier. **Database export/import is
+  never restricted** — data is never trapped.
+- The SPRS tile becomes "Level 1: X of N implemented" (N = 17 on Rev 2, 12 on
+  Rev 3 — the derived set).
+- Preview locally with `npm run dev:free`.
+- This is positioning/friction, not security: the gating is client-side in a
+  public static export. Circumventing it in distributed form is restricted by
+  the project license (ELv2), like the desktop license gate.
 
 Licensing is **disabled by default**: until the Keygen account constants are
 filled in, every build (including forks) runs ungated. To turn it on, populate

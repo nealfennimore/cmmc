@@ -2,6 +2,7 @@
 import { IDB, IDBEvidenceV2 } from "@/app/db";
 import { saveBlob, toFSName } from "@/app/utils/file";
 import { saveFilesToDirectory } from "@/app/utils/tauri";
+import { isFreeTier, isUnlocked } from "@/app/utils/tier";
 import Link from "next/link";
 import { useActionState } from "react";
 import { confirm } from "./confirm";
@@ -65,9 +66,25 @@ export const ExportEvidence = () => {
             })
         ) {
             const evidence = await IDB.evidence.getAll();
-            await exportEvidence(
-                evidence.filter((artifact) => artifact.type !== "url"),
+            let artifacts = evidence.filter(
+                (artifact) => artifact.type !== "url",
             );
+
+            // Free tier: only artifacts attached to at least one unlocked
+            // (Level 1) requirement. Full database export stays complete.
+            if (isFreeTier()) {
+                const links = await IDB.evidenceRequirements.getAll();
+                const unlockedEvidenceIds = new Set(
+                    links
+                        .filter((link) => isUnlocked(link.requirement_id))
+                        .map((link) => link.evidence_id),
+                );
+                artifacts = artifacts.filter((artifact) =>
+                    unlockedEvidenceIds.has(artifact.id),
+                );
+            }
+
+            await exportEvidence(artifacts);
         }
     };
 

@@ -5,6 +5,7 @@ import { useManifestContext } from "@/app/context/manifest";
 import { toNum, toPath, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBSecurityRequirement } from "@/app/db";
 import { embeddable, saveBlob, snippetable, toFSName } from "@/app/utils/file";
+import { isFreeTier, isUnlocked } from "@/app/utils/tier";
 import { useActionState } from "react";
 import { confirmOptions } from "./confirm";
 import { menuItemClasses } from "./ui";
@@ -63,14 +64,25 @@ export const Markdown = () => {
             {} as Record<string, IDBSecurityRequirement>,
         );
 
-        const payload = ["# NIST SP 800-171 Rev 3 Report"];
+        const payload = [
+            isFreeTier()
+                ? "# NIST SP 800-171 CMMC Level 1 Report"
+                : "# NIST SP 800-171 Rev 3 Report",
+        ];
 
         for (const family of manifest.families.elements) {
+            // Free tier: report covers only the unlocked (Level 1)
+            // requirements; families with none are omitted entirely.
+            const requirements = manifest.requirements.byFamily[
+                family.id
+            ].filter((requirement) => isUnlocked(requirement.id));
+            if (!requirements.length) {
+                continue;
+            }
+
             payload.push(`## ${family.element_identifier}: ${family.title}`);
 
-            for (const requirement of manifest.requirements.byFamily[
-                family.id
-            ]) {
+            for (const requirement of requirements) {
                 payload.push(
                     `### ${requirement.element_identifier}: ${requirement.title}`,
                 );

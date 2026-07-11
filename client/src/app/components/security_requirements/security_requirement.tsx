@@ -11,6 +11,7 @@ import { IconInfo } from "../icon_info";
 import { Popover } from "../popover";
 import { StatusState } from "../status";
 import { Heading } from "../ui";
+import { UpgradeBanner } from "../upgrade_cta";
 import { SecurityForm } from "./security_form";
 
 const re = new RegExp(/\d{1,2}\.\d{1,2}\.\d{1,2}/, "gm");
@@ -31,6 +32,7 @@ export const SecurityRequirement = ({
     statuses,
     value,
     evidence,
+    locked,
 }: {
     value: SecurityRequirementValue;
 }) => {
@@ -40,6 +42,8 @@ export const SecurityRequirement = ({
     return (
         <>
             <Breadcrumbs requirementId={requirementId} />
+
+            {locked && <UpgradeBanner />}
             <Heading
                 level={2}
                 as="h3"
@@ -227,7 +231,7 @@ export const SecurityRequirement = ({
                     ]}
                 />
             </aside>
-            <AssessmentGuidance requirementId={requirementId} />
+            <AssessmentGuidance requirementId={requirementId} locked={locked} />
             <section className="w-full flex flex-col">
                 <SecurityForm
                     requirement={requirement}
@@ -238,6 +242,7 @@ export const SecurityRequirement = ({
                     setStatuses={setStatuses}
                     prev={prev}
                     next={next}
+                    locked={locked}
                 />
             </section>
         </>
