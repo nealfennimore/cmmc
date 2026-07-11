@@ -47,13 +47,13 @@ async function fetchEvidence(): Promise<EvidenceWithRequirements[]> {
 }
 
 const nestedSort = (a?: string[], b?: string[]) => defaultSort(a?.[0], b?.[0]);
-const sorters = [defaultSort, defaultSort, nestedSort, defaultSort];
+const sorters = [defaultSort, defaultSort, nestedSort, defaultSort, null];
 
 const nestedFilter = (search: string) => (values: string[]) =>
     values.some((value) => value.includes(search));
 // The hash filter matches on the full id (row values), so pasting a complete
 // hash works even though the cell only displays a short prefix.
-const filters = [defaultFilter, defaultFilter, nestedFilter, defaultFilter];
+const filters = [defaultFilter, defaultFilter, nestedFilter, defaultFilter, null];
 
 // Enough of a git-style prefix to visually tell artifacts apart.
 const HASH_DISPLAY_CHARS = 12;
@@ -131,6 +131,11 @@ export const EvidenceTable = () => {
                 filterable: true,
                 className: "max-lg:hidden",
             },
+            {
+                text: "",
+                filterable: false,
+                className: "w-10",
+            },
         ],
         [],
     );
@@ -161,40 +166,14 @@ export const EvidenceTable = () => {
                     artifact.type,
                     artifact.requirements,
                     artifact.id,
+                    "",
                 ],
                 columns: [
-                    <span
-                        key={artifact.id}
-                        className="flex items-center gap-1"
-                    >
-                        {artifact.type === "url" ? (
-                            <LinkBadge artifact={artifact} hideIcon />
-                        ) : (
-                            <FileBadge artifact={artifact} hideIcon />
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => setEditing(artifact)}
-                            className="text-muted-foreground transition-colors hover:text-foreground"
-                            aria-label="Edit evidence"
-                        >
-                            <svg
-                                className="w-3 h-3"
-                                aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke="currentColor"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="m18 10-4-4M2.5 21.5l3.384-.376c.414-.046.62-.069.814-.131a2 2 0 0 0 .485-.234c.17-.111.317-.259.61-.553L21 7a2.828 2.828 0 1 0-4-4L3.794 16.206c-.294.294-.442.442-.553.611a2 2 0 0 0-.234.485c-.062.193-.085.4-.131.814z"
-                                />
-                            </svg>
-                        </button>
-                    </span>,
+                    artifact.type === "url" ? (
+                        <LinkBadge artifact={artifact} hideIcon />
+                    ) : (
+                        <FileBadge artifact={artifact} hideIcon />
+                    ),
                     artifact.type,
                     artifact.requirements.map((requirement) => (
                         <Link
@@ -218,12 +197,36 @@ export const EvidenceTable = () => {
                             {artifact.id}
                         </span>
                     </div>,
+                    <button
+                        key={artifact.id}
+                        type="button"
+                        onClick={() => setEditing(artifact)}
+                        className="text-muted-foreground transition-colors hover:text-foreground"
+                        aria-label="Edit evidence"
+                    >
+                        <svg
+                            className="w-4 h-4"
+                            aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="m18 10-4-4M2.5 21.5l3.384-.376c.414-.046.62-.069.814-.131a2 2 0 0 0 .485-.234c.17-.111.317-.259.61-.553L21 7a2.828 2.828 0 1 0-4-4L3.794 16.206c-.294.294-.442.442-.553.611a2 2 0 0 0-.234.485c-.062.193-.085.4-.131.814z"
+                            />
+                        </svg>
+                    </button>,
                 ],
                 classNames: [
                     null,
                     "max-md:hidden",
                     "flex flex-wrap",
                     "max-lg:hidden md:max-w-48 xl:max-w-full",
+                    null,
                 ],
             })) ?? [],
         [evidenceWithRequirements, path],

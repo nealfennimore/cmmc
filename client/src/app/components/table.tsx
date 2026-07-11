@@ -97,30 +97,34 @@ const Sortable = ({ text, colIndex, orders, setOrders }: SortableProps) => {
     );
 };
 
-interface SearchableProps {
-    text: string;
-    setRows: React.Dispatch<React.SetStateAction<TableRowProps[]>>;
-    initialRows: TableRowProps[];
-    rows: TableRowProps[];
-    colIndex: number;
-    filter: Filter;
-    filters: PotentialFilter[];
-    searches: PotentialSearch[];
-    setSearches: React.Dispatch<React.SetStateAction<PotentialSearch[]>>;
-}
-
-const Searchable = ({ text, colIndex }: SearchableProps) => {
+const Searchable = ({ text, colIndex }: { text: string; colIndex: number }) => {
     return (
-        <span className="ml-4">
-            <Input
-                name={`searches_${colIndex}`}
-                type="text"
-                className="h-7 px-2 text-xs"
-                placeholder={`Filter ${text}`}
-            />
-        </span>
+        <Input
+            name={`searches_${colIndex}`}
+            type="text"
+            className="h-7 w-full min-w-24 px-2 text-xs font-normal normal-case"
+            placeholder={`Filter ${text}`}
+        />
     );
 };
+
+const IconFunnel = () => (
+    <svg
+        className="h-3.5 w-3.5"
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+    >
+        <path
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M4 5h16l-6 7v5.5L10 20v-8L4 5Z"
+        />
+    </svg>
+);
 
 interface TableHeaderProps {
     text: string;
@@ -166,14 +170,6 @@ function TableHeader({
                     <span className="text-xs font-medium uppercase text-muted-foreground">
                         {text}
                     </span>
-                )}
-                {filter && (
-                    <Searchable
-                        text={text ?? ""}
-                        filter={filter}
-                        filters={filters as PotentialFilter[]}
-                        {...restProps}
-                    />
                 )}
             </div>
         </th>
@@ -316,6 +312,8 @@ export function Table({
         initialOrders ||
             (new Array(filters?.length).fill(Order.NONE) as PotentialOrder[]),
     );
+    const [showFilters, setShowFilters] = useState(false);
+    const [activeFilters, setActiveFilters] = useState(0);
 
     const handleChange = () => {
         const nextRows = processRows({
@@ -327,6 +325,19 @@ export function Table({
             filters,
         });
         setRows(nextRows);
+
+        // Count filled-in filter inputs so the toggle can flag active filters
+        // even while the filter row is collapsed.
+        if (formRef?.current) {
+            const formData = new FormData(formRef.current);
+            let count = 0;
+            for (const [key, value] of formData.entries()) {
+                if (key.startsWith("searches_") && value) {
+                    count++;
+                }
+            }
+            setActiveFilters(count);
+        }
     };
 
     const debouncedHandleChange = debounce(handleChange, 500);
@@ -340,37 +351,79 @@ export function Table({
         sorters,
     ]);
 
+    const hasFilters = !!filters?.some(Boolean);
+
     return (
-        <table
-            className="w-full text-left text-sm text-foreground rtl:text-right"
-            onChange={debouncedHandleChange}
-        >
-            <thead className="border-b border-border bg-secondary text-xs uppercase text-muted-foreground">
-                <tr>
-                    {tableHeaders.map((headerProps, index) => (
-                        <TableHeader
-                            key={index}
-                            {...headerProps}
-                            colIndex={index}
-                            initialRows={initialRows}
-                            rows={rows}
-                            setRows={setRows}
-                            sorter={sorters?.[index]}
-                            filter={filters?.[index]}
-                            filters={filters}
-                            searches={searches}
-                            setSearches={setSearches}
-                            orders={orders}
-                            setOrders={setOrders}
-                        />
+        <>
+            {hasFilters && (
+                <div className="flex items-center justify-end border-b border-border bg-secondary px-4 py-2">
+                    <button
+                        type="button"
+                        aria-expanded={showFilters}
+                        onClick={() => setShowFilters((showing) => !showing)}
+                        className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium uppercase text-muted-foreground transition-colors hover:bg-slate-200 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                        <IconFunnel />
+                        Filters
+                        {activeFilters > 0 && (
+                            <span className="rounded-full bg-primary px-1.5 text-[10px] leading-4 text-primary-foreground">
+                                {activeFilters}
+                            </span>
+                        )}
+                    </button>
+                </div>
+            )}
+            <table
+                className="w-full text-left text-sm text-foreground rtl:text-right"
+                onChange={debouncedHandleChange}
+            >
+                <thead className="border-b border-border bg-secondary text-xs uppercase text-muted-foreground">
+                    <tr>
+                        {tableHeaders.map((headerProps, index) => (
+                            <TableHeader
+                                key={index}
+                                {...headerProps}
+                                colIndex={index}
+                                initialRows={initialRows}
+                                rows={rows}
+                                setRows={setRows}
+                                sorter={sorters?.[index]}
+                                filter={filters?.[index]}
+                                filters={filters}
+                                searches={searches}
+                                setSearches={setSearches}
+                                orders={orders}
+                                setOrders={setOrders}
+                            />
+                        ))}
+                    </tr>
+                    {/* The filter row stays mounted while collapsed so typed
+                        filters persist (and keep applying); the toggle's count
+                        badge flags them while hidden. */}
+                    {hasFilters && (
+                        <tr className={showFilters ? "" : "hidden"}>
+                            {tableHeaders.map((headerProps, index) => (
+                                <th
+                                    key={index}
+                                    className={`px-6 pb-3 ${headerProps.className ?? ""}`}
+                                >
+                                    {filters?.[index] && (
+                                        <Searchable
+                                            text={headerProps.text}
+                                            colIndex={index}
+                                        />
+                                    )}
+                                </th>
+                            ))}
+                        </tr>
+                    )}
+                </thead>
+                <tbody>
+                    {rows.map((rowProps, index) => (
+                        <TableRow key={index} {...rowProps} />
                     ))}
-                </tr>
-            </thead>
-            <tbody>
-                {rows.map((rowProps, index) => (
-                    <TableRow key={index} {...rowProps} />
-                ))}
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </>
     );
 }
