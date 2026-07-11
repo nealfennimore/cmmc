@@ -8,12 +8,14 @@
 import { useLicense } from "@/app/context/license";
 import { useUpdate } from "@/app/context/update";
 import { openExternal } from "@/app/utils/tauri";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
+import { IconInfo } from "./icon_info";
 import {
     ActivationForm,
     deactivationErrorMessage,
 } from "./license_activation";
 import { InfoModal } from "./modal";
+import { Popover } from "./popover";
 import { Badge, Button, menuItemClasses } from "./ui";
 import type { BadgeVariant } from "./ui";
 
@@ -37,10 +39,35 @@ const earlierDate = (a: string | null, b: string | null): string | null => {
     return new Date(a) <= new Date(b) ? a : b;
 };
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({
+    label,
+    value,
+    infoId,
+    info,
+}: {
+    label: string;
+    value: string;
+    /** Optional popover explaining the row; both must be set together. */
+    infoId?: string;
+    info?: ReactNode;
+}) {
     return (
         <div className="flex items-center justify-between gap-4">
-            <span className="text-muted-foreground">{label}</span>
+            <span className="text-muted-foreground">
+                {label}
+                {infoId && info && (
+                    <>
+                        <button
+                            className="ms-1 align-middle"
+                            popoverTarget={infoId}
+                            aria-label={`About "${label}"`}
+                        >
+                            <IconInfo className="fill-muted-foreground" />
+                        </button>
+                        <Popover id={infoId}>{info}</Popover>
+                    </>
+                )}
+            </span>
             <span className="font-medium text-foreground">{value}</span>
         </div>
     );
@@ -227,6 +254,27 @@ export const LicenseSettingsModal = () => {
                                     info.licenseExpiry,
                                 ),
                             )}
+                            infoId="offline-until-popover"
+                            info={
+                                <>
+                                    <IconInfo />
+                                    <p className="my-2">
+                                        Activation stored a signed offline pass
+                                        on this device, and the app runs from
+                                        it with no connection needed until this
+                                        date. Whenever the app is online, it
+                                        quietly renews the pass, pushing the
+                                        date out again (up to 90 days at a
+                                        time) — no action needed on your part.
+                                    </p>
+                                    <p>
+                                        If this device stays offline past this
+                                        date, the app pauses until it can
+                                        reconnect once to renew. Your license
+                                        and compliance data are unaffected.
+                                    </p>
+                                </>
+                            }
                         />
 
                         {info.licenseIsTrial && info.state === "licensed" && (

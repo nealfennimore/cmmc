@@ -153,6 +153,7 @@ export const Navigation = () => {
                                 <div className="py-1" role="none">
                                     <Export />
                                     <Import />
+                                    <ClearDB />
                                 </div>
                                 <div className="py-1" role="none">
                                     <ViewEvidence path={path} />
@@ -160,11 +161,10 @@ export const Navigation = () => {
                                     <ExportEvidenceMap />
                                 </div>
                                 <div className="py-1" role="none">
-                                    <ClearDB />
-                                </div>
-                                <div className="py-1" role="none">
                                     <LicenseMenuItem />
                                     <TourMenuItem />
+                                </div>
+                                <div className="py-1" role="none">
                                     <a
                                         href="https://github.com/nealfennimore/cmmc"
                                         className={menuItemClasses(
