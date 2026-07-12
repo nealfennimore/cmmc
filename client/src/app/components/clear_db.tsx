@@ -2,33 +2,36 @@
 import { IDB } from "@/app/db";
 import { useActionState } from "react";
 import { confirm } from "./confirm";
+import { showLoader } from "./loader";
 import { menuItemClasses } from "./ui";
 
 export const ClearDB = () => {
-    const action = async (prevState, formData: FormData) => {
-        return await new Promise(async (resolve) => {
-            try {
-                const confirmed = await confirm({
-                    title: "Reset database",
-                    message:
-                        "This clears all locally stored requirements and evidence. This cannot be undone.",
-                    confirmLabel: "Reset database",
-                    variant: "destructive",
-                });
-                if (!confirmed) {
-                    return;
-                }
-
-                await IDB.securityRequirements.clear();
-                await IDB.requirements.clear();
-                await IDB.evidence.clear();
-                await IDB.examineEvidence.clear();
-
-                resolve(null);
-            } finally {
-                window.location.reload();
-            }
+    const action = async () => {
+        const confirmed = await confirm({
+            title: "Reset database",
+            message:
+                "This clears all locally stored requirements and evidence. This cannot be undone.",
+            confirmLabel: "Reset database",
+            variant: "destructive",
         });
+        if (!confirmed) {
+            return;
+        }
+
+        // showLoader (not withLoader) so the overlay stays up through the
+        // reload — hiding it first would flash the not-yet-cleared views.
+        const hideLoader = showLoader("Resetting database…");
+        try {
+            await IDB.securityRequirements.clear();
+            await IDB.requirements.clear();
+            await IDB.evidenceRequirements.clear();
+            await IDB.evidence.clear();
+            await IDB.examineEvidence.clear();
+        } catch (error) {
+            hideLoader();
+            throw error;
+        }
+        window.location.reload();
     };
 
     const [_, formAction, isPending] = useActionState(action, null);

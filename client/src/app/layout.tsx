@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import Script from "next/script";
 import { ExternalLinkHandler } from "./components/external_link_handler";
 import { LicenseGate } from "./components/license_gate";
+import { LoaderHost } from "./components/loader";
 import { LicenseProvider } from "./context/license";
 import { UpdateProvider } from "./context/update";
 import "./globals.css";
@@ -63,6 +64,7 @@ export default function RootLayout({
                         <LicenseGate>{children}</LicenseGate>
                     </UpdateProvider>
                 </LicenseProvider>
+                <LoaderHost />
             </body>
         </html>
     );

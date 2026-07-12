@@ -5,6 +5,7 @@ import { IDB, IDBEvidenceV2 } from "@/app/db";
 import { hashType, HashType, saveBlob, toFSName } from "@/app/utils/file";
 import { useActionState } from "react";
 import { confirm } from "./confirm";
+import { withLoader } from "./loader";
 import { menuItemClasses } from "./ui";
 
 interface ArtifactMapping extends Omit<IDBEvidenceV2, "data" | "filename"> {
@@ -40,80 +41,88 @@ export const ExportEvidenceMap = () => {
                 confirmLabel: "Download",
             })
         ) {
-            const requirements = manifest.requirements.byId;
-            const evidence = await IDB.evidence.getAll();
-            const evidenceRequirements =
-                await IDB.evidenceRequirements.getAll();
+            await withLoader("Exporting evidence map…", async () => {
+                const requirements = manifest.requirements.byId;
+                const evidence = await IDB.evidence.getAll();
+                const evidenceRequirements =
+                    await IDB.evidenceRequirements.getAll();
 
-            const evidenceRequirementsMapping = evidenceRequirements.reduce(
-                (acc, evidenceRequirement) => {
-                    if (!requirements[evidenceRequirement.requirement_id]) {
-                        return acc;
-                    }
+                const evidenceRequirementsMapping =
+                    evidenceRequirements.reduce(
+                        (acc, evidenceRequirement) => {
+                            if (
+                                !requirements[
+                                    evidenceRequirement.requirement_id
+                                ]
+                            ) {
+                                return acc;
+                            }
 
-                    if (acc[evidenceRequirement.evidence_id]) {
-                        acc[evidenceRequirement.evidence_id].push(
-                            evidenceRequirement.requirement_id,
-                        );
-                    } else {
-                        acc[evidenceRequirement.evidence_id] = [
-                            evidenceRequirement.requirement_id,
-                        ];
-                    }
-                    return acc;
-                },
-                {} as Record<string, string[]>,
-            );
+                            if (acc[evidenceRequirement.evidence_id]) {
+                                acc[evidenceRequirement.evidence_id].push(
+                                    evidenceRequirement.requirement_id,
+                                );
+                            } else {
+                                acc[evidenceRequirement.evidence_id] = [
+                                    evidenceRequirement.requirement_id,
+                                ];
+                            }
+                            return acc;
+                        },
+                        {} as Record<string, string[]>,
+                    );
 
-            const requirementsMapping = evidenceRequirements.reduce(
-                (acc, evidenceRequirement) => {
-                    if (!requirements[evidenceRequirement.requirement_id]) {
-                        return acc;
-                    }
-
-                    if (acc[evidenceRequirement.requirement_id]) {
-                        acc[evidenceRequirement.requirement_id].push(
-                            evidenceRequirement.evidence_id,
-                        );
-                    } else {
-                        acc[evidenceRequirement.requirement_id] = [
-                            evidenceRequirement.evidence_id,
-                        ];
-                    }
-                    return acc;
-                },
-                {} as Record<string, string[]>,
-            );
-
-            const artifactMapping = evidence.reduce(
-                (acc, artifact) => {
-                    if (evidenceRequirementsMapping[artifact.id]) {
-                        const item = {
-                            id: artifact.id,
-                            name: artifact.filename,
-                            filename: toFSName(artifact),
-                            type: artifact.type,
-                            requirements:
-                                evidenceRequirementsMapping[artifact.id],
-                            hashType: hashType(artifact.id),
-                        } as ArtifactMapping;
-                        if (artifact.type === "url") {
-                            item.url = new TextDecoder().decode(artifact.data);
+                const requirementsMapping = evidenceRequirements.reduce(
+                    (acc, evidenceRequirement) => {
+                        if (!requirements[evidenceRequirement.requirement_id]) {
+                            return acc;
                         }
-                        acc[artifact.id] = item;
-                    }
-                    return acc;
-                },
-                {} as Record<string, ArtifactMapping>,
-            );
 
-            const evidenceMapping: EvidenceMapping = {
-                artifacts: artifactMapping,
-                byRequirements: requirementsMapping,
-            };
+                        if (acc[evidenceRequirement.requirement_id]) {
+                            acc[evidenceRequirement.requirement_id].push(
+                                evidenceRequirement.evidence_id,
+                            );
+                        } else {
+                            acc[evidenceRequirement.requirement_id] = [
+                                evidenceRequirement.evidence_id,
+                            ];
+                        }
+                        return acc;
+                    },
+                    {} as Record<string, string[]>,
+                );
 
+                const artifactMapping = evidence.reduce(
+                    (acc, artifact) => {
+                        if (evidenceRequirementsMapping[artifact.id]) {
+                            const item = {
+                                id: artifact.id,
+                                name: artifact.filename,
+                                filename: toFSName(artifact),
+                                type: artifact.type,
+                                requirements:
+                                    evidenceRequirementsMapping[artifact.id],
+                                hashType: hashType(artifact.id),
+                            } as ArtifactMapping;
+                            if (artifact.type === "url") {
+                                item.url = new TextDecoder().decode(
+                                    artifact.data,
+                                );
+                            }
+                            acc[artifact.id] = item;
+                        }
+                        return acc;
+                    },
+                    {} as Record<string, ArtifactMapping>,
+                );
 
-            await download(evidenceMapping, revision);
+                const evidenceMapping: EvidenceMapping = {
+                    artifacts: artifactMapping,
+                    byRequirements: requirementsMapping,
+                };
+
+                await download(evidenceMapping, revision);
+            });
         }
     };
 

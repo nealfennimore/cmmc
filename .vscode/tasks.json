@@ -15,7 +15,7 @@
                 "env": {
                     "NEXT_PUBLIC_API_URL": "http://localhost:3000",
                     "NEXT_PUBLIC_FRAMEWORK_VERSION": "1",
-                    "NEXT_PUBLIC_CSP": " default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'self' 'unsafe-inline'; img-src 'self' blob:;"
+                    "NEXT_PUBLIC_CSP": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src 'self' data:;"
                 }
             }
         },
@@ -33,7 +33,7 @@
                 "env": {
                     "NEXT_PUBLIC_API_URL": "http://localhost:3000",
                     "NEXT_PUBLIC_FRAMEWORK_VERSION": "1",
-                    "NEXT_PUBLIC_CSP": " default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'self' 'unsafe-inline'; img-src 'self' blob:;"
+                    "NEXT_PUBLIC_CSP": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src 'self' data:;"
                 }
             }
         },
@@ -51,7 +51,7 @@
                 "env": {
                     "NEXT_PUBLIC_API_URL": "http://localhost:3000",
                     "NEXT_PUBLIC_FRAMEWORK_VERSION": "1",
-                    "NEXT_PUBLIC_CSP": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'self' 'unsafe-inline'; img-src 'self' blob:;"
+                    "NEXT_PUBLIC_CSP": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'self' 'unsafe-inline'; img-src 'self' blob:; connect-src 'self' data:;"
                 }
             }
         }

@@ -7,6 +7,7 @@ import { IDB, IDBSecurityRequirement } from "@/app/db";
 import { embeddable, saveBlob, snippetable, toFSName } from "@/app/utils/file";
 import { useActionState } from "react";
 import { confirmOptions } from "./confirm";
+import { withLoader } from "./loader";
 import { menuItemClasses } from "./ui";
 
 const toStatus = (status?: Status) => {
@@ -27,29 +28,7 @@ export const Markdown = () => {
     const revision = useRevisionContext();
     const path = toPath(revision);
 
-    const onClick = async () => {
-        const choices = await confirmOptions({
-            title: "Generate markdown report",
-            message: "Choose what to include in the generated markdown file.",
-            options: [
-                {
-                    key: "includeLinks",
-                    label: "Include evidence links",
-                    description:
-                        "Add links to evidence in the generated file.",
-                    default: true,
-                },
-                {
-                    key: "embedArtifacts",
-                    label: "Embed evidence files",
-                    description:
-                        "Embed evidence files directly into the generated file.",
-                },
-            ],
-            confirmLabel: "Generate",
-        });
-        if (!choices) return;
-
+    const buildReport = async (choices: Record<string, boolean>) => {
         const shouldIncludeLinks = choices.includeLinks;
         const shouldEmbedArtifacts = choices.embedArtifacts;
 
@@ -204,6 +183,32 @@ export const Markdown = () => {
             blob,
         );
         return payload;
+    };
+
+    const onClick = async () => {
+        const choices = await confirmOptions({
+            title: "Generate markdown report",
+            message: "Choose what to include in the generated markdown file.",
+            options: [
+                {
+                    key: "includeLinks",
+                    label: "Include evidence links",
+                    description:
+                        "Add links to evidence in the generated file.",
+                    default: true,
+                },
+                {
+                    key: "embedArtifacts",
+                    label: "Embed evidence files",
+                    description:
+                        "Embed evidence files directly into the generated file.",
+                },
+            ],
+            confirmLabel: "Generate",
+        });
+        if (!choices) return;
+
+        return withLoader("Generating report…", () => buildReport(choices));
     };
 
     const [_, formAction, isPending] = useActionState(onClick, null);

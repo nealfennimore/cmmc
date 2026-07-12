@@ -5,13 +5,14 @@ import { toNum, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBSecurityRequirement } from "@/app/db";
 import { saveBlob } from "@/app/utils/file";
 import { useActionState } from "react";
+import { withLoader } from "./loader";
 import { menuItemClasses } from "./ui";
 
 export const POAM = () => {
     const manifest = useManifestContext();
     const revision = useRevisionContext();
 
-    const onClick = async () => {
+    const buildPoam = async () => {
         const idbSecurityRequirements = await IDB.securityRequirements.getAll();
         const storedSecRequirements = idbSecurityRequirements.reduce(
             (acc, cur) => {
@@ -68,6 +69,8 @@ export const POAM = () => {
         );
         return payload;
     };
+
+    const onClick = () => withLoader("Generating POAM…", buildPoam);
 
     const [_, formAction, isPending] = useActionState(onClick, null);
     return (

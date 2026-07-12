@@ -5,6 +5,7 @@ import { saveFilesToDirectory } from "@/app/utils/tauri";
 import Link from "next/link";
 import { useActionState } from "react";
 import { confirm } from "./confirm";
+import { withLoader } from "./loader";
 import { menuItemClasses } from "./ui";
 
 const toFile = (artifact: IDBEvidenceV2) =>
@@ -31,15 +32,18 @@ const exportEvidence = async (artifacts: IDBEvidenceV2[]) => {
     );
 };
 
-// Downloads every stored (non-URL) evidence file. Shared by the navigation
-// menu and the license gate's data export, which runs outside the app's
-// providers — so this must stay context-free.
-export const exportAllEvidenceFiles = async () => {
-    const evidence = await IDB.evidence.getAll();
-    await exportEvidence(
-        evidence.filter((artifact) => artifact.type !== "url"),
-    );
-};
+// Downloads every stored (non-URL) evidence file, behind the full-page loader
+// (which also spans the desktop shell's folder picker — the batch write after
+// picking is part of the task). Shared by the navigation menu and the license
+// gate's data export, which runs outside the app's providers — so this must
+// stay context-free.
+export const exportAllEvidenceFiles = () =>
+    withLoader("Downloading evidence files…", async () => {
+        const evidence = await IDB.evidence.getAll();
+        await exportEvidence(
+            evidence.filter((artifact) => artifact.type !== "url"),
+        );
+    });
 
 export const ViewEvidence = ({ path }) => (
     <Link
