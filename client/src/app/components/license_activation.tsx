@@ -44,7 +44,7 @@ const IMPORT_ERROR_COPY: Record<string, string> = {
     EXPIRED:
         "The license inside that file has expired. Renew the license, check out a fresh file, and try again.",
     MALFORMED:
-        "That doesn't look like a license file for this app. Re-run the checkout following the air-gapped steps in the documentation.",
+        "That doesn't look like a license file for this app. Re-run the checkout following the steps at getcmmc.consulting/offline-activation.",
 };
 
 export const importErrorMessage = (error: unknown): string => {
@@ -105,8 +105,10 @@ export function ActivationForm({ onActivated }: { onActivated?: () => void }) {
 /**
  * Air-gapped activation/renewal, shared by the blocking gate and the license
  * settings modal: shows this device's fingerprint (needed to check out a
- * license file on a connected machine) and imports the resulting file. See
- * docs/licensing.md § Air-gapped devices for the checkout steps.
+ * license file on a connected machine) and imports the resulting file. Users
+ * are pointed at https://getcmmc.consulting/offline-activation/ for the
+ * checkout steps (docs/licensing.md § Air-gapped devices is the dev-side
+ * reference).
  */
 export function AirGappedImport({ onImported }: { onImported?: () => void }) {
     const { info, importFile } = useLicense();
@@ -143,9 +145,17 @@ export function AirGappedImport({ onImported }: { onImported?: () => void }) {
             <p>
                 A device that can never go online is licensed with a license
                 file instead: copy this device&apos;s fingerprint, check out a
-                file for it on a connected machine (see the air-gapped section
-                of the licensing docs), bring the file over, and import it
-                here. Renew the same way before the file lapses.
+                file for it on a connected machine (see{" "}
+                <a
+                    href="https://getcmmc.consulting/offline-activation/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline underline-offset-2 hover:no-underline"
+                >
+                    getcmmc.consulting/offline-activation
+                </a>
+                ), bring the file over, and import it here. Renew the same way
+                before the file lapses.
             </p>
             <div className="flex items-center gap-2">
                 <code
