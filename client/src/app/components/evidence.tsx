@@ -119,7 +119,7 @@ const PreviewCard = ({
                 onExpand();
             }}
             title="Click to expand"
-            className="absolute bottom-full left-0 z-10 mb-1 flex w-max max-w-72 cursor-zoom-in flex-col gap-1 rounded-md border border-border bg-card p-2 text-left shadow-md"
+            className="absolute bottom-[calc(100%-10px)] left-0 z-10 mb-2 flex w-max max-w-72 cursor-zoom-in flex-col gap-1 rounded-md border border-border bg-card p-2 text-left shadow-md"
         >
             {isImg ? (
                 imageSrc && (
@@ -177,14 +177,14 @@ const ExpandedPreview = ({
             <ModalShell
                 ariaLabel={artifact.filename}
                 onDismiss={onClose}
-                panelClassName="max-w-3xl"
+                panelClassName="max-w-7xl"
             >
                 {() => (
                     <div className="px-6 py-5">
                         <h2 className="truncate pr-8 text-lg font-semibold tracking-tight">
                             {artifact.filename}
                         </h2>
-                        <div className="mt-3 flex max-h-[65vh] justify-center overflow-auto">
+                        <div className="mt-3 flex max-h-[80vh] justify-center overflow-auto">
                             {isImg ? (
                                 imageSrc && (
                                     // eslint-disable-next-line @next/next/no-img-element
