@@ -3,7 +3,7 @@ name = "cmmc"
 # Not the shipped app version: tauri.conf.json reads it from client/package.json,
 # and CI overrides it with the release tag. Kept in sync automatically by the
 # npm "version" hook (client/scripts/sync-tauri-version.mjs) on each release.
-version = "1.6.0"
+version = "1.6.1"
 description = "Offline CMMC / NIST 800-171 compliance application"
 authors = ["Neal Fennimore"]
 license = "Elastic-2.0"
