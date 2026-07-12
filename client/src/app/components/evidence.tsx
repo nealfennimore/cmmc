@@ -1,6 +1,7 @@
 "use client";
 import { viewFile } from "@/app/components/security_requirements/utils";
 import { IDBEvidenceV2 } from "@/app/db";
+import { openExternal, openFileInSystemViewer } from "@/app/utils/tauri";
 import { toSizeClass } from "./status";
 
 interface EvidenceStateProps {
@@ -76,15 +77,29 @@ const IconExternal = () => (
 export const FileBadge = ({
     artifact,
     hideIcon,
+    className = "text-primary hover:underline",
 }: {
     artifact: IDBEvidenceV2;
     hideIcon?: boolean;
+    className?: string;
 }) => {
     return (
         <button
-            className="flex items-center pr-2 text-primary hover:underline"
+            className={`flex items-center pr-2 ${className}`}
             title={`${artifact.data.byteLength} bytes | ${artifact.type}`}
-            onClick={() => viewFile(artifact)}
+            onClick={async () => {
+                // In the desktop shell, open via the OS default app; the blob
+                // URL in viewFile is the browser fallback.
+                if (
+                    await openFileInSystemViewer(
+                        artifact.filename,
+                        artifact.data,
+                    )
+                ) {
+                    return;
+                }
+                viewFile(artifact);
+            }}
         >
             {!hideIcon && <IconFileDownload />}
             <span>{artifact.filename}</span>
@@ -94,13 +109,20 @@ export const FileBadge = ({
 export const LinkBadge = ({
     artifact,
     hideIcon,
+    className = "text-primary hover:underline",
 }: {
     artifact: IDBEvidenceV2;
     hideIcon?: boolean;
+    className?: string;
 }) => {
     const url = new TextDecoder().decode(artifact.data);
 
     const onClick = async () => {
+        // In the desktop shell this opens the system browser; the detached
+        // anchor below is the browser fallback.
+        if (await openExternal(url)) {
+            return;
+        }
         Object.assign(document.createElement("a"), {
             target: "_blank",
             rel: "noopener noreferrer",
@@ -110,7 +132,7 @@ export const LinkBadge = ({
 
     return (
         <button
-            className="flex items-center pr-2 text-primary hover:underline"
+            className={`flex items-center pr-2 ${className}`}
             title={`${url}`}
             onClick={onClick}
         >
