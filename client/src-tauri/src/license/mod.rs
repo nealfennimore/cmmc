@@ -30,6 +30,9 @@ pub struct LicenseInfo {
     pub machine_file_expiry: Option<String>,
     pub license_expiry: Option<String>,
     pub activated_at: Option<String>,
+    /// "online" (key activation) or "offline" (machine-file import); None
+    /// for activation records that predate this field.
+    pub activation_method: Option<String>,
     /// This device's fingerprint (a salted hash, not sensitive). Shown in the
     /// UI so air-gapped machines can be registered out-of-band; None only
     /// while licensing is disabled.
@@ -85,6 +88,7 @@ impl LicenseInfo {
             machine_file_expiry: None,
             license_expiry: None,
             activated_at: None,
+            activation_method: None,
             fingerprint: None,
         }
     }
@@ -147,6 +151,7 @@ pub(crate) fn current_status(app: &tauri::AppHandle) -> Result<LicenseInfo, Lice
     let base = LicenseInfo {
         key_masked: Some(mask_key(&stored.key)),
         activated_at: Some(stored.activated_at.clone()),
+        activation_method: stored.activation_method.clone(),
         fingerprint: Some(device.clone()),
         ..LicenseInfo::disabled()
     };
@@ -191,6 +196,17 @@ pub(crate) fn current_status(app: &tauri::AppHandle) -> Result<LicenseInfo, Lice
 #[tauri::command]
 pub fn license_status(app: tauri::AppHandle) -> Result<LicenseInfo, LicenseError> {
     current_status(&app)
+}
+
+/// Full license key for click-to-copy in the settings UI — only the masked
+/// form travels in LicenseInfo. Returns None while unlicensed/disabled.
+#[tauri::command]
+pub fn license_key_reveal(app: tauri::AppHandle) -> Result<Option<String>, LicenseError> {
+    if !config::enabled() {
+        return Ok(None);
+    }
+    let dir = store::license_dir(&app).map_err(LicenseError::io)?;
+    Ok(store::read_license(&dir).map(|stored| stored.key))
 }
 
 /// One-time online activation: validate the key, register this machine, and
@@ -277,6 +293,7 @@ pub async fn license_activate(
             license_id,
             machine_id,
             activated_at: rfc3339(now).unwrap_or_default(),
+            activation_method: Some("online".into()),
         },
     )
     .map_err(LicenseError::io)?;
@@ -331,6 +348,7 @@ fn import_record(
         license_id,
         machine_id: file.machine_id.clone(),
         activated_at: rfc3339(now).unwrap_or_default(),
+        activation_method: Some("offline".into()),
     })
 }
 

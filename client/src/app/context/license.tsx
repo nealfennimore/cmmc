@@ -28,6 +28,7 @@ const DISABLED: LicenseInfo = {
     machineFileExpiry: null,
     licenseExpiry: null,
     activatedAt: null,
+    activationMethod: null,
     fingerprint: null,
 };
 

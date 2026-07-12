@@ -7,7 +7,7 @@
 
 import { useLicense } from "@/app/context/license";
 import { useUpdate } from "@/app/context/update";
-import { openExternal } from "@/app/utils/tauri";
+import { licenseKeyReveal, openExternal } from "@/app/utils/tauri";
 import { ReactNode, useState } from "react";
 import { IconInfo } from "./icon_info";
 import {
@@ -70,6 +70,40 @@ function DetailRow({
                 )}
             </span>
             <span className="font-medium text-foreground">{value}</span>
+        </div>
+    );
+}
+
+// License key row: masked at rest, click to copy the full key (fetched
+// on demand from Rust — only the masked form lives in LicenseInfo).
+function CopyableKeyRow({ masked }: { masked: string }) {
+    const [copied, setCopied] = useState(false);
+
+    const copy = async () => {
+        const key = await licenseKeyReveal();
+        if (!key) {
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(key);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // Clipboard unavailable — leave the masked key as is.
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-between gap-4">
+            <span className="text-muted-foreground">License key</span>
+            <button
+                type="button"
+                onClick={copy}
+                title="Copy license key"
+                className="font-medium text-foreground transition-colors hover:text-primary"
+            >
+                {copied ? "Copied" : masked}
+            </button>
         </div>
     );
 }
@@ -225,14 +259,21 @@ export const LicenseSettingsModal = () => {
 
                 {licensed ? (
                     <div className="flex flex-col gap-2 text-sm">
-                        <DetailRow
-                            label="License key"
-                            value={info.keyMasked ?? "—"}
-                        />
+                        <CopyableKeyRow masked={info.keyMasked ?? "—"} />
                         <DetailRow
                             label="Activated"
                             value={formatDate(info.activatedAt)}
                         />
+                        {info.activationMethod && (
+                            <DetailRow
+                                label="Activation method"
+                                value={
+                                    info.activationMethod === "offline"
+                                        ? "Offline (license file)"
+                                        : "Online"
+                                }
+                            />
+                        )}
                         <DetailRow
                             label={
                                 info.licenseIsTrial

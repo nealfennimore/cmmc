@@ -40,6 +40,9 @@ export interface LicenseInfo {
     machineFileExpiry: string | null;
     licenseExpiry: string | null;
     activatedAt: string | null;
+    /** "online" (key activation) or "offline" (machine-file import); null
+     *  for activation records that predate this field. */
+    activationMethod: "online" | "offline" | null;
     /** This device's fingerprint (a salted hash) — shown for air-gapped registration. */
     fingerprint: string | null;
 }
@@ -148,6 +151,25 @@ export const licenseDeactivate = async (): Promise<LicenseInfo | null> => {
         return await internals.invoke<LicenseInfo>("license_deactivate");
     } catch (error) {
         throw toLicenseError(error);
+    }
+};
+
+/**
+ * Full license key for click-to-copy — only the masked form is part of
+ * {@link LicenseInfo}. Resolves `null` in the browser build or while
+ * unlicensed.
+ */
+export const licenseKeyReveal = async (): Promise<string | null> => {
+    const internals =
+        typeof window !== "undefined" ? window.__TAURI_INTERNALS__ : undefined;
+    if (!internals?.invoke) {
+        return null;
+    }
+    try {
+        return await internals.invoke<string | null>("license_key_reveal");
+    } catch (error) {
+        console.error("Failed to read license key", error);
+        return null;
     }
 };
 

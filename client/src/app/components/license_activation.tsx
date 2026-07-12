@@ -31,14 +31,14 @@ export const activationErrorMessage = (error: unknown): string => {
 export const deactivationErrorMessage = (error: unknown): string => {
     const { code, message } = (error ?? {}) as Partial<LicenseError>;
     if (code === "NETWORK") {
-        return "Deactivation needs an internet connection so the seat can be freed on the license. Check your connection and try again. For a permanently offline device, remove this machine from your licensing dashboard instead.";
+        return "Deactivation needs an internet connection so the seat can be freed on the license. Check your connection and try again. For a permanently offline device, contact support@getcmmc.consulting to release this machine instead.";
     }
     return message || "Deactivation failed unexpectedly. Please try again.";
 };
 
 const IMPORT_ERROR_COPY: Record<string, string> = {
     WRONG_MACHINE:
-        "That license file was issued for a different device. Check out a file for this device's fingerprint (shown above) and try again.",
+        "That license file was issued for a different device, and an offline license is bound to one device at a time. Contact support@getcmmc.consulting with this device's fingerprint (shown above) to move the license here.",
     FILE_STALE:
         "That license file has lapsed — or this device's clock is far off. Check the clock, or check out a fresh file and try again.",
     EXPIRED:
@@ -156,6 +156,14 @@ export function AirGappedImport({ onImported }: { onImported?: () => void }) {
                 </a>
                 ), bring the file over, and import it here. Renew the same way
                 before the file lapses.
+            </p>
+            <p>
+                An offline license is bound to one device at a time. To move it
+                to a new device, contact{" "}
+                <span className="select-all font-medium text-foreground">
+                    support@getcmmc.consulting
+                </span>{" "}
+                with the new device&apos;s fingerprint.
             </p>
             <div className="flex items-center gap-2">
                 <code

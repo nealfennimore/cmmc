@@ -140,6 +140,7 @@ pub fn run() {
             save_file,
             save_files,
             license::license_status,
+            license::license_key_reveal,
             license::license_activate,
             license::license_import,
             license::license_refresh,

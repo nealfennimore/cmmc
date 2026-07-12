@@ -12,6 +12,10 @@ pub struct StoredLicense {
     pub license_id: String,
     pub machine_id: String,
     pub activated_at: String,
+    /// "online" (key activation) or "offline" (machine-file import).
+    /// Optional so records written before this field existed still parse.
+    #[serde(default)]
+    pub activation_method: Option<String>,
 }
 
 const LICENSE_FILE: &str = "license.json";
