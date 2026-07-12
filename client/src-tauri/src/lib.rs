@@ -1,5 +1,6 @@
 use base64::Engine as _;
 use tauri_plugin_dialog::DialogExt;
+#[cfg(not(target_os = "linux"))]
 use tauri_plugin_opener::OpenerExt;
 
 mod license;
@@ -13,10 +14,102 @@ fn decode_base64(data: &str) -> Result<Vec<u8>, String> {
         .map_err(|err| err.to_string())
 }
 
+// Launch the XDG opener directly instead of going through the opener plugin.
+// Two Linux-specific problems with the plugin path:
+//  - The Nix wrapper points library/module env vars at the app's own
+//    (webkit-pinned) GTK stack. Spawned children inherit them, so the helper
+//    and the viewer it launches load mismatched libraries and die before
+//    showing anything — scrub those vars from the child environment.
+//  - The plugin's detached spawn reports success the moment xdg-open starts,
+//    so those failures never surfaced. Waiting on the exit status gives the
+//    frontend a real error (and its in-app fallback) instead of a silent no-op.
+// Handler and content-type lookup walk $XDG_DATA_DIRS for .desktop entries
+// and the shared-mime-info database, and the inherited value is only as good
+// as the launching environment — `nix run` from a shell that had clobbered
+// the variable left gio typing every file as application/octet-stream with
+// no handler. Append the standard host locations whenever they're missing:
+// order preserved, nothing removed, harmless where a dir doesn't exist. This
+// lives here rather than in the Nix wrapper because the wrapper is a
+// compiled binary with no launch-time scripting (no --run).
+#[cfg(target_os = "linux")]
+fn augmented_xdg_data_dirs() -> String {
+    let current = std::env::var("XDG_DATA_DIRS").unwrap_or_default();
+    let mut dirs: Vec<String> = current
+        .split(':')
+        .filter(|dir| !dir.is_empty())
+        .map(String::from)
+        .collect();
+
+    let mut standard = Vec::new();
+    if let Ok(home) = std::env::var("HOME") {
+        standard.push(format!("{home}/.local/share/flatpak/exports/share"));
+        standard.push(format!("{home}/.nix-profile/share"));
+    }
+    if let Ok(user) = std::env::var("USER") {
+        standard.push(format!("/etc/profiles/per-user/{user}/share"));
+    }
+    standard.extend(
+        [
+            "/var/lib/flatpak/exports/share",
+            "/var/lib/snapd/desktop",
+            "/nix/var/nix/profiles/default/share",
+            "/run/current-system/sw/share",
+            "/usr/local/share",
+            "/usr/share",
+        ]
+        .map(String::from),
+    );
+
+    for dir in standard {
+        if !dirs.contains(&dir) {
+            dirs.push(dir);
+        }
+    }
+    dirs.join(":")
+}
+
+#[cfg(target_os = "linux")]
+fn open_with_system_handler(target: &std::ffi::OsStr) -> Result<(), String> {
+    // Wrapper-set vars pointing at the app's own (webkit-pinned) GTK stack;
+    // the launched viewer must load the host's libraries, not ours.
+    const WRAPPER_VARS: &[&str] = &[
+        "LD_LIBRARY_PATH",
+        "GIO_MODULE_DIR",
+        "GIO_EXTRA_MODULES",
+        "GDK_PIXBUF_MODULE_FILE",
+        "GI_TYPELIB_PATH",
+        "GSETTINGS_SCHEMA_DIR",
+    ];
+    let data_dirs = augmented_xdg_data_dirs();
+    let mut errors = Vec::new();
+    for (program, args) in [("xdg-open", &[][..]), ("gio", &["open"][..])] {
+        let mut command = std::process::Command::new(program);
+        command.args(args).arg(target);
+        command.env("XDG_DATA_DIRS", &data_dirs);
+        for var in WRAPPER_VARS {
+            command.env_remove(var);
+        }
+        match command.status() {
+            Ok(status) if status.success() => return Ok(()),
+            Ok(status) => errors.push(format!("{program}: exited with {status}")),
+            Err(err) => errors.push(format!("{program}: {err}")),
+        }
+    }
+    Err(errors.join("; "))
+}
+
 // Open a URL in the user's default browser. Invoked from the frontend; runs
 // Rust-side so it isn't subject to the opener plugin's JS capability scope.
+// async so the Linux path can wait on the opener without holding up the main
+// thread.
 #[tauri::command]
-fn open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
+async fn open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        let _ = &app;
+        return open_with_system_handler(std::ffi::OsStr::new(&url));
+    }
+    #[cfg(not(target_os = "linux"))]
     app.opener()
         .open_url(url, None::<&str>)
         .map_err(|err| err.to_string())
@@ -24,9 +117,14 @@ fn open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
 
 // Write an evidence artifact to a temp file and open it in the OS default
 // application. The webview can't open the blob URLs the web build uses, so the
-// desktop app round-trips the bytes through disk instead.
+// desktop app round-trips the bytes through disk instead. async so the Linux
+// path can wait on the opener without holding up the main thread.
 #[tauri::command]
-fn open_evidence(app: tauri::AppHandle, filename: String, data_b64: String) -> Result<(), String> {
+async fn open_evidence(
+    app: tauri::AppHandle,
+    filename: String,
+    data_b64: String,
+) -> Result<(), String> {
     let data = decode_base64(&data_b64)?;
     let safe_name = std::path::Path::new(&filename)
         .file_name()
@@ -39,6 +137,12 @@ fn open_evidence(app: tauri::AppHandle, filename: String, data_b64: String) -> R
     path.push(safe_name);
     std::fs::write(&path, &data).map_err(|err| err.to_string())?;
 
+    #[cfg(target_os = "linux")]
+    {
+        let _ = &app;
+        return open_with_system_handler(path.as_os_str());
+    }
+    #[cfg(not(target_os = "linux"))]
     app.opener()
         .open_path(path.to_string_lossy().to_string(), None::<&str>)
         .map_err(|err| err.to_string())

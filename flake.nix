@@ -87,10 +87,17 @@
 
         # WebKitGTK on NixOS: avoid GPU-compositing crashes and make TLS modules
         # resolvable so the Tauri webview can render and reach the network.
+        # XDG_DATA_DIRS is *prefixed*, not replaced: children the app spawns
+        # (xdg-open/gio via tauri-plugin-opener) resolve .desktop handlers
+        # through it, and clobbering it blinded them to every installed app —
+        # evidence files and URLs silently failed to open. Prefixing keeps our
+        # schemas first for glib while the host's application database stays
+        # visible. If the EGL_BAD_PARAMETER abort ever returns, suspect this
+        # first — but the GIO module pinning below is what actually fixed it.
         linuxEnv = ''
           export WEBKIT_DISABLE_COMPOSITING_MODE=1
           export WEBKIT_DISABLE_DMABUF_RENDERER=1
-          export XDG_DATA_DIRS="$GSETTINGS_SCHEMAS_PATH"
+          export XDG_DATA_DIRS="$GSETTINGS_SCHEMAS_PATH''${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"
           export GIO_MODULE_DIR="${pkgs.glib-networking}/lib/gio/modules/"
         '';
 
@@ -183,18 +190,24 @@
             # embedded frontend a second time for nothing.
             doCheck = false;
 
-            # Mirror linuxEnv (the dev shell's known-good WebKitGTK setup)
-            # exactly. Notably XDG_DATA_DIRS is *replaced*, not prefixed, and
-            # host GIO modules are dropped: the host session's newer-glib
+            # Mirror linuxEnv (the dev shell's known-good WebKitGTK setup).
+            # Host GIO modules are dropped: the host session's newer-glib
             # modules (gvfs etc.) don't load against this app's older glib, and
-            # a host-polluted environment is what the EGL_BAD_PARAMETER abort
-            # traced back to. These come after wrapGAppsHook's own args, so the
-            # --set/--unset win over its --prefix defaults.
+            # that pollution is what the EGL_BAD_PARAMETER abort traced back
+            # to. XDG_DATA_DIRS is left to wrapGAppsHook's own --prefix
+            # handling (schemas first, host dirs kept): children the app
+            # spawns (xdg-open/gio via tauri-plugin-opener) need the host's
+            # .desktop database to open evidence files and URLs, and the old
+            # --set override blinded them to it. (Launch-time env repair can't
+            # live here: the hook emits a compiled binary wrapper that has no
+            # --run support — the opener in src-tauri appends any missing
+            # standard host data dirs instead.) These come after
+            # wrapGAppsHook's own args, so the --set/--unset win over its
+            # --prefix defaults.
             preFixup = ''
               gappsWrapperArgs+=(
                 --set WEBKIT_DISABLE_COMPOSITING_MODE 1
                 --set WEBKIT_DISABLE_DMABUF_RENDERER 1
-                --set XDG_DATA_DIRS "$GSETTINGS_SCHEMAS_PATH"
                 --set GIO_MODULE_DIR "${pkgs.glib-networking}/lib/gio/modules/"
                 --unset GIO_EXTRA_MODULES
               )
