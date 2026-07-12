@@ -11,6 +11,7 @@ import {
     IDBSecurityRequirement,
     resetEvidenceIdMigration,
 } from "@/app/db";
+import { fromBase64, toBase64 } from "@/app/utils/base64";
 import { saveBlob } from "@/app/utils/file";
 import { useActionState, useRef } from "react";
 import { confirm } from "./confirm";
@@ -22,10 +23,22 @@ type PortableIDBEvidence = Omit<IDBEvidence, "data"> & {
 type PortableIDBEvidenceV2 = Omit<IDBEvidenceV2, "data"> & {
     data: Array<number>;
 };
+// v6 exports carry evidence bytes as base64 — byte-per-JSON-number arrays
+// made 100MB+ exports stall (and ~4x larger on disk).
+type PortableIDBEvidenceV3 = Omit<IDBEvidenceV2, "data"> & {
+    data: string;
+};
+
+// Export payload version. Followed the IDB schema version (v5) historically;
+// v6 decoupled it when evidence data switched from number arrays to base64.
+const EXPORT_VERSION = 6;
 
 interface ImportExportPayload {
     securityRequirements: IDBSecurityRequirement[];
-    evidence?: PortableIDBEvidence[] | PortableIDBEvidenceV2[];
+    evidence?:
+        | PortableIDBEvidence[]
+        | PortableIDBEvidenceV2[]
+        | PortableIDBEvidenceV3[];
     evidenceRequirements?: IDBEvidenceRequirement[];
     examineEvidence?: IDBExamineEvidence[];
     version: number;
@@ -58,10 +71,14 @@ export const exportDatabase = async (filenamePrefix: string) => {
     const idbEvidence = await IDB.evidence.getAll();
     const idbEvidenceRequirements = await IDB.evidenceRequirements.getAll();
     const idbExamineEvidence = await IDB.examineEvidence.getAll();
-    const evidence = idbEvidence.map((artifact) => ({
-        ...artifact,
-        data: [...new Uint8Array(artifact.data)],
-    }));
+    // Encode via the engine-native base64 path; a JS spread over the bytes
+    // stalls for minutes on large evidence sets.
+    const evidence: PortableIDBEvidenceV3[] = await Promise.all(
+        idbEvidence.map(async (artifact) => ({
+            ...artifact,
+            data: await toBase64(artifact.data),
+        })),
+    );
     const validSecurityRequirements = idbSecurityRequirements.filter(
         (secReq) => !!(secReq.status || secReq.description),
     );
@@ -71,7 +88,7 @@ export const exportDatabase = async (filenamePrefix: string) => {
         evidence,
         evidenceRequirements: idbEvidenceRequirements,
         examineEvidence: idbExamineEvidence,
-        version: IDB.version,
+        version: EXPORT_VERSION,
     };
 
     // Create a Blob object with the text data
@@ -136,7 +153,9 @@ export const Import = () => {
                         // v3 reshaped evidence into separate evidence +
                         // evidence_requirements stores. v4 -> v5 only added the
                         // examine_evidence store, so v4 exports import as-is
-                        // (just without any examine checklist data).
+                        // (just without any examine checklist data). v6 only
+                        // changed evidence bytes to base64, handled per
+                        // artifact below.
                         if (payload.version === 3) {
                             const evidenceV1 = payload.evidence as
                                 | PortableIDBEvidence[]
@@ -169,7 +188,8 @@ export const Import = () => {
                             }
                         } else if (
                             payload.version !== 4 &&
-                            payload.version !== IDB.version
+                            payload.version !== 5 &&
+                            payload.version !== EXPORT_VERSION
                         ) {
                             throw new Error("Database version mismatch");
                         }
@@ -214,7 +234,11 @@ export const Import = () => {
                         for (const artifact of payload?.evidence || []) {
                             const _artifact = {
                                 ...artifact,
-                                data: new Uint8Array(artifact.data).buffer,
+                                // v6 exports carry base64; v3-v5 number arrays.
+                                data:
+                                    typeof artifact.data === "string"
+                                        ? await fromBase64(artifact.data)
+                                        : new Uint8Array(artifact.data).buffer,
                             };
                             await IDB.evidence.put(_artifact);
                         }

@@ -2,6 +2,8 @@
 // build, so nothing here pulls in a Tauri dependency — we talk to the plugin
 // through the IPC bridge Tauri injects at runtime.
 
+import { toBase64 } from "./base64";
+
 interface TauriInternals {
     invoke<T = unknown>(
         cmd: string,
@@ -243,8 +245,10 @@ export const saveFile = async (
         return false;
     }
     try {
-        const data = Array.from(new Uint8Array(await blob.arrayBuffer()));
-        await internals.invoke("save_file", { filename, data });
+        // Bytes cross the IPC bridge as one base64 string: a JSON number
+        // array costs serde a parse per byte and stalls on 100MB+ exports.
+        const dataB64 = await toBase64(blob);
+        await internals.invoke("save_file", { filename, dataB64 });
     } catch (error) {
         console.error("Failed to save file via Tauri", error);
     }
@@ -267,7 +271,7 @@ export const saveFilesToDirectory = async (
         const payload = await Promise.all(
             files.map(async ({ filename, blob }) => ({
                 filename,
-                data: Array.from(new Uint8Array(await blob.arrayBuffer())),
+                dataB64: await toBase64(blob),
             })),
         );
         await internals.invoke("save_files", { files: payload });
@@ -294,7 +298,7 @@ export const openFileInSystemViewer = async (
     try {
         await internals.invoke("open_evidence", {
             filename,
-            data: Array.from(new Uint8Array(data)),
+            dataB64: await toBase64(data),
         });
         return true;
     } catch (error) {
