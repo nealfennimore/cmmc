@@ -50,42 +50,44 @@ const toJSON = (payload: ImportExportPayload) => {
     return json.replace(/"__ARRAY_(\d+)__"/g, (_, i) => arrays[i]);
 };
 
+// Builds the full-database payload and saves it as JSON. Shared by the
+// navigation menu export and the license gate's data export, which runs
+// outside the app's providers — so this must stay context-free.
+export const exportDatabase = async (filenamePrefix: string) => {
+    const idbSecurityRequirements = await IDB.securityRequirements.getAll();
+    const idbEvidence = await IDB.evidence.getAll();
+    const idbEvidenceRequirements = await IDB.evidenceRequirements.getAll();
+    const idbExamineEvidence = await IDB.examineEvidence.getAll();
+    const evidence = idbEvidence.map((artifact) => ({
+        ...artifact,
+        data: [...new Uint8Array(artifact.data)],
+    }));
+    const validSecurityRequirements = idbSecurityRequirements.filter(
+        (secReq) => !!(secReq.status || secReq.description),
+    );
+
+    const payload: ImportExportPayload = {
+        securityRequirements: validSecurityRequirements,
+        evidence,
+        evidenceRequirements: idbEvidenceRequirements,
+        examineEvidence: idbExamineEvidence,
+        version: IDB.version,
+    };
+
+    // Create a Blob object with the text data
+    const blob = new Blob([toJSON(payload)], {
+        type: "application/json",
+    });
+
+    const timestamp = Math.floor(new Date().getTime() / 1000);
+
+    await saveBlob(`${filenamePrefix}-export-${timestamp}.json`, blob);
+    return payload;
+};
+
 export const Export = () => {
     const revision = useRevisionContext();
-    const action = async () => {
-        const idbSecurityRequirements = await IDB.securityRequirements.getAll();
-        const idbEvidence = await IDB.evidence.getAll();
-        const idbEvidenceRequirements = await IDB.evidenceRequirements.getAll();
-        const idbExamineEvidence = await IDB.examineEvidence.getAll();
-        const evidence = idbEvidence.map((artifact) => ({
-            ...artifact,
-            data: [...new Uint8Array(artifact.data)],
-        }));
-        const validSecurityRequirements = idbSecurityRequirements.filter(
-            (secReq) => !!(secReq.status || secReq.description),
-        );
-
-        const payload: ImportExportPayload = {
-            securityRequirements: validSecurityRequirements,
-            evidence,
-            evidenceRequirements: idbEvidenceRequirements,
-            examineEvidence: idbExamineEvidence,
-            version: IDB.version,
-        };
-
-        // Create a Blob object with the text data
-        const blob = new Blob([toJSON(payload)], {
-            type: "application/json",
-        });
-
-        const timestamp = Math.floor(new Date().getTime() / 1000);
-
-        await saveBlob(
-            `cmmc-800-171-rev-${toNum(revision)}-export-${timestamp}.json`,
-            blob,
-        );
-        return payload;
-    };
+    const action = () => exportDatabase(`cmmc-800-171-rev-${toNum(revision)}`);
 
     const [_, formAction, isPending] = useActionState(action, null);
     return (
