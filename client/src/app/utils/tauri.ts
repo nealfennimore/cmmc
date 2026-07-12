@@ -2,6 +2,8 @@
 // build, so nothing here pulls in a Tauri dependency — we talk to the plugin
 // through the IPC bridge Tauri injects at runtime.
 
+import { toBase64 } from "./base64";
+
 interface TauriInternals {
     invoke<T = unknown>(
         cmd: string,
@@ -230,6 +232,25 @@ export const openExternal = async (url: string): Promise<boolean> => {
 };
 
 /**
+ * Pick a JSON file via a native open dialog and return its text. Returns
+ * `false` in the browser build (fall back to an <input type=file>), `null`
+ * when the user cancels, and the file contents otherwise.
+ */
+export const openJsonFile = async (): Promise<string | null | false> => {
+    const internals =
+        typeof window !== "undefined" ? window.__TAURI_INTERNALS__ : undefined;
+    if (!internals?.invoke) {
+        return false;
+    }
+    try {
+        return await internals.invoke<string | null>("open_json_file");
+    } catch (error) {
+        console.error("Failed to open file via Tauri", error);
+        return null;
+    }
+};
+
+/**
  * Save a single file via a native save dialog. Returns `true` when running in
  * Tauri (so callers skip the browser download), `false` in the browser build.
  */
@@ -243,8 +264,10 @@ export const saveFile = async (
         return false;
     }
     try {
-        const data = Array.from(new Uint8Array(await blob.arrayBuffer()));
-        await internals.invoke("save_file", { filename, data });
+        // Bytes cross the IPC bridge as one base64 string: a JSON number
+        // array costs serde a parse per byte and stalls on 100MB+ exports.
+        const dataB64 = await toBase64(blob);
+        await internals.invoke("save_file", { filename, dataB64 });
     } catch (error) {
         console.error("Failed to save file via Tauri", error);
     }
@@ -267,7 +290,7 @@ export const saveFilesToDirectory = async (
         const payload = await Promise.all(
             files.map(async ({ filename, blob }) => ({
                 filename,
-                data: Array.from(new Uint8Array(await blob.arrayBuffer())),
+                dataB64: await toBase64(blob),
             })),
         );
         await internals.invoke("save_files", { files: payload });
@@ -294,7 +317,7 @@ export const openFileInSystemViewer = async (
     try {
         await internals.invoke("open_evidence", {
             filename,
-            data: Array.from(new Uint8Array(data)),
+            dataB64: await toBase64(data),
         });
         return true;
     } catch (error) {
