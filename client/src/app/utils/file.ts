@@ -106,6 +106,7 @@ const isText = (type: string) => {
         case "text/css":
         case "text/html":
         case "text/xml":
+        case "text/md":
             return true;
         default:
             return false;
