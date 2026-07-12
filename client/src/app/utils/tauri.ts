@@ -232,6 +232,25 @@ export const openExternal = async (url: string): Promise<boolean> => {
 };
 
 /**
+ * Pick a JSON file via a native open dialog and return its text. Returns
+ * `false` in the browser build (fall back to an <input type=file>), `null`
+ * when the user cancels, and the file contents otherwise.
+ */
+export const openJsonFile = async (): Promise<string | null | false> => {
+    const internals =
+        typeof window !== "undefined" ? window.__TAURI_INTERNALS__ : undefined;
+    if (!internals?.invoke) {
+        return false;
+    }
+    try {
+        return await internals.invoke<string | null>("open_json_file");
+    } catch (error) {
+        console.error("Failed to open file via Tauri", error);
+        return null;
+    }
+};
+
+/**
  * Save a single file via a native save dialog. Returns `true` when running in
  * Tauri (so callers skip the browser download), `false` in the browser build.
  */

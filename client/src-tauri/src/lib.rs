@@ -65,6 +65,29 @@ async fn save_file(
     }
 }
 
+// Prompt for a JSON file and return its contents (database import). The
+// webview's <input type=file> is unreliable in the desktop shell — WebView2
+// derives its dialog filter from the accept MIME type via the registry, and
+// when .json has no mapping there the dialog hides *.json entirely — so
+// import uses the native dialog like the save paths do. Returns None when
+// the user cancels.
+#[tauri::command]
+async fn open_json_file(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    match app
+        .dialog()
+        .file()
+        .add_filter("JSON", &["json"])
+        .blocking_pick_file()
+    {
+        Some(path) => {
+            let path = path.into_path().map_err(|err| err.to_string())?;
+            let text = std::fs::read_to_string(&path).map_err(|err| err.to_string())?;
+            Ok(Some(text))
+        }
+        None => Ok(None),
+    }
+}
+
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct OutgoingFile {
@@ -113,6 +136,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             open_external,
             open_evidence,
+            open_json_file,
             save_file,
             save_files,
             license::license_status,

@@ -11,8 +11,10 @@ import {
     IDBSecurityRequirement,
     resetEvidenceIdMigration,
 } from "@/app/db";
+import { useNotification } from "@/app/context/notification";
 import { fromBase64, toBase64 } from "@/app/utils/base64";
 import { saveBlob } from "@/app/utils/file";
+import { openJsonFile } from "@/app/utils/tauri";
 import { useActionState, useRef } from "react";
 import { confirm } from "./confirm";
 import { menuItemClasses } from "./ui";
@@ -119,141 +121,142 @@ export const Export = () => {
     );
 };
 
+// Parses an exported JSON payload and replaces the database with it, then
+// reloads so every view rehydrates from the new data. No-op when the user
+// declines the overwrite confirmation; throws on malformed/unsupported files.
+const importDatabase = async (text: string): Promise<void> => {
+    const payload = JSON.parse(text) as ImportExportPayload;
+
+    // v3 reshaped evidence into separate evidence + evidence_requirements
+    // stores. v4 -> v5 only added the examine_evidence store, so v4 exports
+    // import as-is (just without any examine checklist data). v6 only changed
+    // evidence bytes to base64, handled per artifact below.
+    if (payload.version === 3) {
+        const evidenceV1 = payload.evidence as
+            | PortableIDBEvidence[]
+            | undefined;
+
+        const evidenceRequirements = evidenceV1?.map((artifact) => ({
+            evidence_id: artifact.uuid,
+            requirement_id: artifact.requirement_id as string,
+        }));
+        const evidenceV2 = evidenceV1?.map(
+            (artifact) =>
+                ({
+                    id: artifact.uuid,
+                    type: artifact.type,
+                    filename: artifact.filename,
+                    data: artifact.data,
+                }) as PortableIDBEvidenceV2,
+        );
+
+        if (evidenceRequirements?.length) {
+            payload.evidenceRequirements = evidenceRequirements;
+        }
+
+        if (evidenceV2?.length) {
+            payload.evidence = evidenceV2;
+        }
+    } else if (payload.version < 4 || payload.version > EXPORT_VERSION) {
+        throw new Error("Database version mismatch");
+    }
+
+    const confirmed = await confirm({
+        title: "Import database",
+        message:
+            "Importing will overwrite the current database, replacing all existing requirements and evidence. This cannot be undone.",
+        confirmLabel: "Overwrite & import",
+        variant: "destructive",
+    });
+    if (!confirmed) {
+        return;
+    }
+
+    await IDB.securityRequirements.clear();
+    await IDB.requirements.clear();
+    await IDB.evidenceRequirements.clear();
+    await IDB.evidence.clear();
+    await IDB.examineEvidence.clear();
+
+    const requirements: Record<string, IDBRequirement> = {};
+
+    for (const secReq of payload.securityRequirements) {
+        const reqId = secReq.id.slice(0, 8);
+        await IDB.securityRequirements.put(secReq);
+        if (!requirements[reqId]) {
+            requirements[reqId] = {
+                id: reqId,
+                bySecurityRequirementId: {},
+            };
+        }
+        requirements[reqId].bySecurityRequirementId[secReq.id] =
+            secReq.status as Status;
+    }
+
+    for (const req of Object.values(requirements)) {
+        await IDB.requirements.put(req);
+    }
+
+    for (const artifact of payload?.evidence || []) {
+        const _artifact = {
+            ...artifact,
+            // v6 exports carry base64; v3-v5 number arrays.
+            data:
+                typeof artifact.data === "string"
+                    ? await fromBase64(artifact.data)
+                    : new Uint8Array(artifact.data).buffer,
+        };
+        await IDB.evidence.put(_artifact);
+    }
+
+    for (const evidenceRequirement of payload?.evidenceRequirements || []) {
+        await IDB.evidenceRequirements.put(evidenceRequirement);
+    }
+
+    for (const examineEvidence of payload?.examineEvidence || []) {
+        await IDB.examineEvidence.put(examineEvidence);
+    }
+
+    // An imported backup can carry legacy (UUID/sha1) evidence ids, so let
+    // the id migration re-run on the reload.
+    resetEvidenceIdMigration();
+    window.location.reload();
+};
+
 export const Import = () => {
     const inputRef = useRef<HTMLInputElement>(null);
-    const action = async (prevState, formData: FormData) => {
+    const { addNotification } = useNotification();
+
+    const runImport = async (text: string) => {
         try {
-            return await new Promise(async (resolve, reject) => {
-                const file = formData.get("file") as File;
-
-                if (file) {
-                    const reader = new FileReader();
-
-                    reader.onload = async (event) => {
-                        const payload = JSON.parse(
-                            event?.target?.result as string,
-                        ) as ImportExportPayload;
-
-                        // v3 reshaped evidence into separate evidence +
-                        // evidence_requirements stores. v4 -> v5 only added the
-                        // examine_evidence store, so v4 exports import as-is
-                        // (just without any examine checklist data). v6 only
-                        // changed evidence bytes to base64, handled per
-                        // artifact below.
-                        if (payload.version === 3) {
-                            const evidenceV1 = payload.evidence as
-                                | PortableIDBEvidence[]
-                                | undefined;
-
-                            const evidenceRequirements = evidenceV1?.map(
-                                (artifact) => ({
-                                    evidence_id: artifact.uuid,
-                                    requirement_id:
-                                        artifact.requirement_id as string,
-                                }),
-                            );
-                            const evidenceV2 = evidenceV1?.map(
-                                (artifact) =>
-                                    ({
-                                        id: artifact.uuid,
-                                        type: artifact.type,
-                                        filename: artifact.filename,
-                                        data: artifact.data,
-                                    }) as PortableIDBEvidenceV2,
-                            );
-
-                            if (evidenceRequirements?.length) {
-                                payload.evidenceRequirements =
-                                    evidenceRequirements;
-                            }
-
-                            if (evidenceV2?.length) {
-                                payload.evidence = evidenceV2;
-                            }
-                        } else if (
-                            payload.version < 4 ||
-                            payload.version > EXPORT_VERSION
-                        ) {
-                            throw new Error("Database version mismatch");
-                        }
-
-                        const confirmed = await confirm({
-                            title: "Import database",
-                            message:
-                                "Importing will overwrite the current database, replacing all existing requirements and evidence. This cannot be undone.",
-                            confirmLabel: "Overwrite & import",
-                            variant: "destructive",
-                        });
-                        if (!confirmed) {
-                            return;
-                        }
-
-                        await IDB.securityRequirements.clear();
-                        await IDB.requirements.clear();
-                        await IDB.evidenceRequirements.clear();
-                        await IDB.evidence.clear();
-                        await IDB.examineEvidence.clear();
-
-                        const requirements: Record<string, IDBRequirement> = {};
-
-                        for (const secReq of payload.securityRequirements) {
-                            const reqId = secReq.id.slice(0, 8);
-                            await IDB.securityRequirements.put(secReq);
-                            if (!requirements[reqId]) {
-                                requirements[reqId] = {
-                                    id: reqId,
-                                    bySecurityRequirementId: {},
-                                };
-                            }
-                            requirements[reqId].bySecurityRequirementId[
-                                secReq.id
-                            ] = secReq.status as Status;
-                        }
-
-                        for (const req of Object.values(requirements)) {
-                            await IDB.requirements.put(req);
-                        }
-
-                        for (const artifact of payload?.evidence || []) {
-                            const _artifact = {
-                                ...artifact,
-                                // v6 exports carry base64; v3-v5 number arrays.
-                                data:
-                                    typeof artifact.data === "string"
-                                        ? await fromBase64(artifact.data)
-                                        : new Uint8Array(artifact.data).buffer,
-                            };
-                            await IDB.evidence.put(_artifact);
-                        }
-
-                        for (const evidenceRequirement of payload?.evidenceRequirements ||
-                            []) {
-                            await IDB.evidenceRequirements.put(
-                                evidenceRequirement,
-                            );
-                        }
-
-                        for (const examineEvidence of payload?.examineEvidence ||
-                            []) {
-                            await IDB.examineEvidence.put(examineEvidence);
-                        }
-
-                        resolve(payload);
-                    };
-
-                    reader.readAsText(file);
-                }
+            await importDatabase(text);
+        } catch (error) {
+            console.error("Import failed", error);
+            addNotification({
+                text: `Import failed: ${error instanceof Error ? error.message : error}`,
             });
-        } finally {
-            // An imported backup can carry legacy (UUID/sha1) evidence ids, so
-            // let the id migration re-run on the reload below.
-            resetEvidenceIdMigration();
-            window.location.reload();
         }
     };
 
-    const onClick = () => {
-        inputRef.current?.click();
+    const action = async (prevState, formData: FormData) => {
+        const file = formData.get("file") as File;
+        if (file) {
+            await runImport(await file.text());
+        }
+    };
+
+    const onClick = async () => {
+        // Native dialog in the desktop shell — the webview's file input is
+        // unreliable there (WebView2 can hide *.json files entirely when the
+        // registry lacks a MIME mapping for .json).
+        const text = await openJsonFile();
+        if (text === false) {
+            inputRef.current?.click();
+            return;
+        }
+        if (text !== null) {
+            await runImport(text);
+        }
     };
 
     const [_, formAction, isPending] = useActionState(action, null);
@@ -263,7 +266,7 @@ export const Import = () => {
                 id="file"
                 name="file"
                 type="file"
-                accept="application/json"
+                accept="application/json,.json"
                 ref={inputRef}
                 className="hidden"
                 onChange={(event) => {
