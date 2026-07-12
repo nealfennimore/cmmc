@@ -2,13 +2,17 @@
 // Desktop license gate. In a blocking license state the app is NOT rendered at
 // all — the gate returns only the activation overlay, so the app's data and
 // functionality never exist in the DOM behind it (removing the overlay reveals
-// nothing). The web build never blocks (its state is always "disabled"), so it
-// renders children unchanged. Enforcement itself happens in Rust — this
-// component only reflects the state it reports.
+// nothing). The one deliberate exception is data egress: the overlay offers
+// database/evidence export so a lapsed license never holds user data hostage.
+// The web build never blocks (its state is always "disabled"), so it renders
+// children unchanged. Enforcement itself happens in Rust — this component only
+// reflects the state it reports.
 
 import { useLicense } from "@/app/context/license";
 import type { LicenseInfo } from "@/app/utils/tauri";
 import { ReactNode, useState } from "react";
+import { exportAllEvidenceFiles } from "./export_evidence";
+import { exportDatabase } from "./export_import";
 import { ActivationForm, AirGappedImport } from "./license_activation";
 import { LicenseSettingsModal } from "./license_settings";
 import { InfoModal } from "./modal";
@@ -45,6 +49,53 @@ const BLOCKING_COPY: Record<
             "The license on this device could not be verified. Re-enter your license key to reactivate.",
     },
 };
+
+// Always-available data egress for blocking states: runs outside the app's
+// providers (no confirm host, no revision context), so it only uses the
+// context-free export helpers.
+function DataExport() {
+    const [busy, setBusy] = useState<null | "database" | "evidence">(null);
+
+    const run = async (kind: "database" | "evidence") => {
+        setBusy(kind);
+        try {
+            if (kind === "database") {
+                await exportDatabase("cmmc-800-171");
+            } else {
+                await exportAllEvidenceFiles();
+            }
+        } finally {
+            setBusy(null);
+        }
+    };
+
+    return (
+        <div className="mt-3 flex flex-col gap-2">
+            <p className="text-sm leading-6 text-muted-foreground">
+                Your data stays yours. Back up the full database, or download
+                the uploaded evidence files — no active license needed.
+            </p>
+            <Button
+                variant="outline"
+                disabled={busy !== null}
+                onClick={() => run("database")}
+            >
+                {busy === "database"
+                    ? "Exporting…"
+                    : "Export database (JSON)"}
+            </Button>
+            <Button
+                variant="outline"
+                disabled={busy !== null}
+                onClick={() => run("evidence")}
+            >
+                {busy === "evidence"
+                    ? "Downloading…"
+                    : "Download evidence files"}
+            </Button>
+        </div>
+    );
+}
 
 function BlockingOverlay({ info }: { info: LicenseInfo }) {
     const { refresh } = useLicense();
@@ -99,6 +150,16 @@ function BlockingOverlay({ info }: { info: LicenseInfo }) {
                         <AirGappedImport />
                     </div>
                 </details>
+                {/* Data egress on lapsed/broken licenses; hidden on a fresh
+                    (unlicensed) install where there is nothing to export. */}
+                {info.state !== "unlicensed" && (
+                    <details className="mt-3 border-t border-border pt-3">
+                        <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+                            Export your data
+                        </summary>
+                        <DataExport />
+                    </details>
+                )}
             </div>
         </div>
     );

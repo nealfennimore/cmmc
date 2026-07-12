@@ -31,6 +31,16 @@ const exportEvidence = async (artifacts: IDBEvidenceV2[]) => {
     );
 };
 
+// Downloads every stored (non-URL) evidence file. Shared by the navigation
+// menu and the license gate's data export, which runs outside the app's
+// providers — so this must stay context-free.
+export const exportAllEvidenceFiles = async () => {
+    const evidence = await IDB.evidence.getAll();
+    await exportEvidence(
+        evidence.filter((artifact) => artifact.type !== "url"),
+    );
+};
+
 export const ViewEvidence = ({ path }) => (
     <Link
         href={`${path}/evidence`}
@@ -64,10 +74,7 @@ export const ExportEvidence = () => {
                 confirmLabel: "Download",
             })
         ) {
-            const evidence = await IDB.evidence.getAll();
-            await exportEvidence(
-                evidence.filter((artifact) => artifact.type !== "url"),
-            );
+            await exportAllEvidenceFiles();
         }
     };
 
