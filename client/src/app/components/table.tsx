@@ -125,7 +125,10 @@ const SearchableSelect = ({
 }) => {
     const [open, setOpen] = useState(false);
     const [selected, setSelected] = useState<string[]>([]);
+    // Viewport coordinates for the portaled panel, captured when opening.
+    const [position, setPosition] = useState({ top: 0, left: 0, minWidth: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
 
     const options = useMemo(() => {
         const unique = new Set<string>();
@@ -147,7 +150,11 @@ const SearchableSelect = ({
             return;
         }
         const onPointerDown = (e: MouseEvent) => {
-            if (!containerRef.current?.contains(e.target as Node)) {
+            const target = e.target as Node;
+            if (
+                !containerRef.current?.contains(target) &&
+                !panelRef.current?.contains(target)
+            ) {
                 setOpen(false);
             }
         };
@@ -156,17 +163,31 @@ const SearchableSelect = ({
                 setOpen(false);
             }
         };
+        // The fixed-position panel does not track its button, so close on any
+        // outside scroll or resize instead of drifting apart. Scrolls inside
+        // the panel's own option list are ignored.
+        const onScroll = (e: Event) => {
+            if (!panelRef.current?.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        const onResize = () => setOpen(false);
         document.addEventListener("mousedown", onPointerDown);
         document.addEventListener("keydown", onKeyDown);
+        window.addEventListener("scroll", onScroll, true);
+        window.addEventListener("resize", onResize);
         return () => {
             document.removeEventListener("mousedown", onPointerDown);
             document.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("scroll", onScroll, true);
+            window.removeEventListener("resize", onResize);
         };
     }, [open]);
 
-    // The table recomputes on bubbling change events. Clicking a checkbox
-    // bubbles natively, but the programmatic "Clear" does not, so emit a
-    // synthetic change once the checkboxes have re-rendered.
+    // The table recomputes on bubbling change events. The panel is portaled
+    // outside the table, so checkbox clicks there never reach it naturally;
+    // emit a synthetic change from inside the form once the hidden inputs
+    // have re-rendered.
     useEffect(() => {
         containerRef.current?.dispatchEvent(
             new Event("change", { bubbles: true }),
@@ -180,6 +201,22 @@ const SearchableSelect = ({
                 : [...current, option],
         );
 
+    const openPanel = () => {
+        if (open) {
+            setOpen(false);
+            return;
+        }
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+            setPosition({
+                top: rect.bottom + 4,
+                left: rect.left,
+                minWidth: rect.width,
+            });
+        }
+        setOpen(true);
+    };
+
     const label =
         selected.length === 0
             ? "All"
@@ -188,14 +225,11 @@ const SearchableSelect = ({
               : `${selected.length} selected`;
 
     return (
-        <div
-            ref={containerRef}
-            className="relative font-normal normal-case"
-        >
+        <div ref={containerRef} className="relative font-normal normal-case">
             <button
                 type="button"
                 aria-expanded={open}
-                onClick={() => setOpen((showing) => !showing)}
+                onClick={openPanel}
                 className="flex h-7 w-full min-w-24 items-center justify-between gap-1 rounded-md border border-input bg-surface px-2 text-xs text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <span className="truncate">{label}</span>
@@ -215,37 +249,50 @@ const SearchableSelect = ({
                     />
                 </svg>
             </button>
-            <div
-                className={`absolute left-0 top-full z-20 mt-1 flex max-h-64 w-max min-w-full flex-col overflow-y-auto rounded-md border border-border bg-card p-1 shadow-md ${
-                    open ? "" : "hidden"
-                }`}
-            >
-                {selected.length > 0 && (
-                    <button
-                        type="button"
-                        onClick={() => setSelected([])}
-                        className="rounded px-2 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-secondary"
+            {/* The selections that actually submit: hidden inputs inside the
+                form. The portaled panel below escapes the form (and the
+                table's overflow clipping), so its checkboxes are pure UI. */}
+            {selected.map((value) => (
+                <input
+                    key={value}
+                    type="hidden"
+                    name={`searches_${colIndex}`}
+                    value={value}
+                />
+            ))}
+            {open &&
+                createPortal(
+                    <div
+                        ref={panelRef}
+                        style={position}
+                        className="fixed z-50 flex max-h-64 w-max flex-col overflow-y-auto rounded-md border border-border bg-card p-1 text-xs font-normal normal-case text-foreground shadow-md"
                     >
-                        Clear selection
-                    </button>
+                        {selected.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setSelected([])}
+                                className="rounded px-2 py-1 text-left text-muted-foreground transition-colors hover:bg-secondary"
+                            >
+                                Clear selection
+                            </button>
+                        )}
+                        {options.map((option) => (
+                            <label
+                                key={option}
+                                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 transition-colors hover:bg-secondary"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selected.includes(option)}
+                                    onChange={() => toggle(option)}
+                                    className="h-3.5 w-3.5 accent-primary"
+                                />
+                                {option}
+                            </label>
+                        ))}
+                    </div>,
+                    document.body,
                 )}
-                {options.map((option) => (
-                    <label
-                        key={option}
-                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs transition-colors hover:bg-secondary"
-                    >
-                        <input
-                            type="checkbox"
-                            name={`searches_${colIndex}`}
-                            value={option}
-                            checked={selected.includes(option)}
-                            onChange={() => toggle(option)}
-                            className="h-3.5 w-3.5 accent-primary"
-                        />
-                        {option}
-                    </label>
-                ))}
-            </div>
         </div>
     );
 };
@@ -483,6 +530,10 @@ export function Table({
     );
     const [showFilters, setShowFilters] = useState(false);
     const [activeFilters, setActiveFilters] = useState(0);
+    // Bumping the nonce remounts the filter row, restoring every control
+    // (uncontrolled text inputs and the multi-selects' internal state) to
+    // pristine — the simplest way to reset them all at once.
+    const [resetNonce, setResetNonce] = useState(0);
 
     const handleChange = () => {
         const nextRows = processRows({
@@ -521,12 +572,30 @@ export function Table({
         sorters,
     ]);
 
+    // Recompute right after a reset: this effect runs once the remounted
+    // (now empty) filter row has committed, so the FormData scrape is clean.
+    useEffect(() => {
+        if (resetNonce > 0) {
+            handleChange();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [resetNonce]);
+
     const hasFilters = !!filters?.some(Boolean);
 
     return (
         <>
             {hasFilters && (
-                <div className="flex items-center justify-end border-b border-border bg-secondary px-4 py-2">
+                <div className="flex items-center justify-end gap-2 border-b border-border bg-secondary px-4 py-2">
+                    {activeFilters > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setResetNonce((nonce) => nonce + 1)}
+                            className="rounded-md px-2 py-1 text-xs font-medium uppercase text-muted-foreground transition-colors hover:bg-slate-200 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            Reset
+                        </button>
+                    )}
                     <button
                         type="button"
                         aria-expanded={showFilters}
@@ -571,7 +640,10 @@ export function Table({
                         filters persist (and keep applying); the toggle's count
                         badge flags them while hidden. */}
                     {hasFilters && (
-                        <tr className={showFilters ? "" : "hidden"}>
+                        <tr
+                            key={resetNonce}
+                            className={showFilters ? "" : "hidden"}
+                        >
                             {tableHeaders.map((headerProps, index) => (
                                 <th
                                     key={index}
