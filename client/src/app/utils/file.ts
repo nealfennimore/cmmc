@@ -55,6 +55,11 @@ const MIME_LABELS: Record<string, string> = {
     "application/vnd.ms-powerpoint": "PowerPoint presentation",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation":
         "PowerPoint presentation",
+    "application/vnd.oasis.opendocument.presentation":
+        "OpenDocument presentation",
+    "application/vnd.oasis.opendocument.spreadsheet":
+        "OpenDocument spreadsheet",
+    "application/vnd.oasis.opendocument.text": "OpenDocument text",
     "application/zip": "ZIP archive",
     "application/x-zip-compressed": "ZIP archive",
     "application/gzip": "Gzip archive",
@@ -65,6 +70,7 @@ const MIME_LABELS: Record<string, string> = {
     "text/csv": "CSV",
     "text/html": "HTML",
     "text/css": "CSS",
+    "text/md": "Markdown",
     "text/javascript": "JavaScript",
     "text/xml": "XML",
     "image/png": "PNG image",
