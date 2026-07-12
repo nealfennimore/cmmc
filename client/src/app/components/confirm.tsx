@@ -77,11 +77,14 @@ export function ModalShell({
     ariaLabel,
     onDismiss,
     initialFocusRef,
+    panelClassName = "max-w-md",
     children,
 }: {
     ariaLabel: string;
     onDismiss: () => void;
     initialFocusRef?: React.RefObject<HTMLElement | null>;
+    /** Width constraint for the panel (e.g. "max-w-3xl" for previews). */
+    panelClassName?: string;
     children: (finish: (action: () => void) => void) => ReactNode;
 }) {
     const [visible, setVisible] = useState(false);
@@ -128,7 +131,7 @@ export function ModalShell({
         >
             <div
                 onClick={(e) => e.stopPropagation()}
-                className={`relative w-full max-w-md overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-lg transition-all duration-150 ${
+                className={`relative w-full ${panelClassName} overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-lg transition-all duration-150 ${
                     visible ? "scale-100 opacity-100" : "scale-95 opacity-0"
                 }`}
             >
