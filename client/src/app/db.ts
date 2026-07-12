@@ -1,6 +1,6 @@
 "use client";
 import { Status } from "@/app/components/status";
-export const version = 5;
+export const version = 6;
 let loader: Promise<IDBDatabase> | undefined;
 
 enum Table {
@@ -159,6 +159,11 @@ const migrations = {
         examineEvidence.createIndex("requirement_id", "requirement_id", {
             unique: false,
         });
+    },
+    "6": async () => {
+        // No schema change. Keeps the DB version aligned with the export
+        // payload version, which moved to 6 when evidence bytes switched
+        // from number arrays to base64 in the export file format.
     },
 };
 

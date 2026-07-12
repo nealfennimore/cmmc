@@ -29,9 +29,10 @@ type PortableIDBEvidenceV3 = Omit<IDBEvidenceV2, "data"> & {
     data: string;
 };
 
-// Export payload version. Followed the IDB schema version (v5) historically;
-// v6 decoupled it when evidence data switched from number arrays to base64.
-const EXPORT_VERSION = 6;
+// Export payload version — the IDB schema version, kept in lockstep (the DB
+// got an empty v6 migration when evidence data switched from number arrays
+// to base64 in the export format).
+const EXPORT_VERSION = IDB.version;
 
 interface ImportExportPayload {
     securityRequirements: IDBSecurityRequirement[];
@@ -44,24 +45,6 @@ interface ImportExportPayload {
     version: number;
 }
 
-const toJSON = (payload: ImportExportPayload) => {
-    const arrays: string[] = [];
-
-    const json = JSON.stringify(
-        payload,
-        (key, value) => {
-            if (Array.isArray(value) && value.every(isFinite)) {
-                const id = arrays.length;
-                arrays.push(JSON.stringify(value));
-                return `__ARRAY_${id}__`;
-            }
-            return value;
-        },
-        2,
-    );
-
-    return json.replace(/"__ARRAY_(\d+)__"/g, (_, i) => arrays[i]);
-};
 
 // Builds the full-database payload and saves it as JSON. Shared by the
 // navigation menu export and the license gate's data export, which runs
@@ -91,8 +74,9 @@ export const exportDatabase = async (filenamePrefix: string) => {
         version: EXPORT_VERSION,
     };
 
-    // Create a Blob object with the text data
-    const blob = new Blob([toJSON(payload)], {
+    // Since v6 the payload holds no numeric arrays (evidence bytes are
+    // base64 strings), so plain pretty-printed stringify is fine.
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
         type: "application/json",
     });
 
@@ -187,9 +171,8 @@ export const Import = () => {
                                 payload.evidence = evidenceV2;
                             }
                         } else if (
-                            payload.version !== 4 &&
-                            payload.version !== 5 &&
-                            payload.version !== EXPORT_VERSION
+                            payload.version < 4 ||
+                            payload.version > EXPORT_VERSION
                         ) {
                             throw new Error("Database version mismatch");
                         }
