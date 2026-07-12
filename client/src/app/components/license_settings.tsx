@@ -131,9 +131,7 @@ function UpdatesSection() {
                     onClick={check}
                     disabled={phase !== "idle"}
                 >
-                    {phase === "checking"
-                        ? "Checking…"
-                        : "Check for updates"}
+                    {phase === "checking" ? "Checking…" : "Check for updates"}
                 </Button>
             </div>
         </div>
@@ -261,12 +259,12 @@ export const LicenseSettingsModal = () => {
                                     <IconInfo />
                                     <p className="my-2">
                                         Activation stored a signed offline pass
-                                        on this device, and the app runs from
-                                        it with no connection needed until this
+                                        on this device, and the app runs from it
+                                        with no connection needed until this
                                         date. Whenever the app is online, it
                                         quietly renews the pass, pushing the
-                                        date out again (up to 90 days at a
-                                        time) — no action needed on your part.
+                                        date out again (up to 30 days at a time)
+                                        — no action needed on your part.
                                     </p>
                                     <p>
                                         If this device stays offline past this
@@ -295,10 +293,9 @@ export const LicenseSettingsModal = () => {
                         {confirmingDeactivate ? (
                             <div className="mt-2 flex flex-col gap-2 rounded-md border border-border bg-secondary p-3">
                                 <p>
-                                    Deactivating frees up a seat on your
-                                    license and returns this app to the
-                                    unlicensed state. Your compliance data is
-                                    not affected.
+                                    Deactivating frees up a seat on your license
+                                    and returns this app to the unlicensed
+                                    state. Your compliance data is not affected.
                                 </p>
                                 <div className="flex gap-2">
                                     <Button
