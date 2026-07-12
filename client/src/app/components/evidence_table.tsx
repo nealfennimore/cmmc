@@ -11,6 +11,7 @@ import {
 } from "@/app/components/table";
 import { toPath, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBEvidenceV2 } from "@/app/db";
+import { mimeLabel } from "@/app/utils/file";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -151,7 +152,8 @@ export const EvidenceTable = () => {
     const stats = useMemo(() => {
         const byType = new Map<string, number>();
         for (const artifact of evidenceWithRequirements) {
-            byType.set(artifact.type, (byType.get(artifact.type) ?? 0) + 1);
+            const label = mimeLabel(artifact.type);
+            byType.set(label, (byType.get(label) ?? 0) + 1);
         }
         return [
             {
@@ -177,7 +179,7 @@ export const EvidenceTable = () => {
         () =>
             typeFilter
                 ? evidenceWithRequirements.filter(
-                      (artifact) => artifact.type === typeFilter,
+                      (artifact) => mimeLabel(artifact.type) === typeFilter,
                   )
                 : evidenceWithRequirements,
         [evidenceWithRequirements, typeFilter],
@@ -188,7 +190,7 @@ export const EvidenceTable = () => {
             visibleEvidence?.map((artifact) => ({
                 values: [
                     artifact.filename,
-                    artifact.type,
+                    mimeLabel(artifact.type),
                     artifact.requirements,
                     artifact.id,
                     "",
@@ -199,7 +201,9 @@ export const EvidenceTable = () => {
                     ) : (
                         <FileBadge artifact={artifact} hideIcon />
                     ),
-                    artifact.type,
+                    <span key={artifact.id} title={artifact.type}>
+                        {mimeLabel(artifact.type)}
+                    </span>,
                     artifact.requirements.map((requirement) => (
                         <Link
                             key={`${artifact.id}-${requirement}`}

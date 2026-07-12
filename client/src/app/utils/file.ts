@@ -41,6 +41,42 @@ export const hashType = (hash: string) => {
     return HashType.SHA256;
 };
 
+// Human-readable label for an artifact's MIME type — the Word docx type
+// alone is 72 characters. Falls back to the raw type for anything unmapped.
+const MIME_LABELS: Record<string, string> = {
+    url: "URL",
+    "application/pdf": "PDF",
+    "application/msword": "Word document",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        "Word document",
+    "application/vnd.ms-excel": "Excel spreadsheet",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        "Excel spreadsheet",
+    "application/vnd.ms-powerpoint": "PowerPoint presentation",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+        "PowerPoint presentation",
+    "application/zip": "ZIP archive",
+    "application/x-zip-compressed": "ZIP archive",
+    "application/gzip": "Gzip archive",
+    "application/json": "JSON",
+    "application/xml": "XML",
+    "application/octet-stream": "Binary file",
+    "text/plain": "Text",
+    "text/csv": "CSV",
+    "text/html": "HTML",
+    "text/css": "CSS",
+    "text/javascript": "JavaScript",
+    "text/xml": "XML",
+    "image/png": "PNG image",
+    "image/jpeg": "JPEG image",
+    "image/gif": "GIF image",
+    "image/webp": "WebP image",
+    "image/svg+xml": "SVG image",
+};
+
+export const mimeLabel = (type: string): string =>
+    MIME_LABELS[type] ?? (type || "Unknown");
+
 export const isImage = (type: string) => {
     switch (type) {
         case "image/png":

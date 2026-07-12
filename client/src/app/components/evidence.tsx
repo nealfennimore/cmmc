@@ -1,7 +1,7 @@
 "use client";
 import { viewFile } from "@/app/components/security_requirements/utils";
 import { IDBEvidenceV2 } from "@/app/db";
-import { embeddable, snippetable } from "@/app/utils/file";
+import { embeddable, mimeLabel, snippetable } from "@/app/utils/file";
 import { openExternal, openFileInSystemViewer } from "@/app/utils/tauri";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -135,8 +135,11 @@ const PreviewCard = ({
                     {snippet}
                 </span>
             )}
-            <span className="text-xs font-normal text-muted-foreground">
-                {artifact.data.byteLength} bytes | {artifact.type}
+            <span
+                className="text-xs font-normal text-muted-foreground"
+                title={artifact.type}
+            >
+                {artifact.data.byteLength} bytes | {mimeLabel(artifact.type)}
             </span>
         </span>
     );
@@ -200,8 +203,12 @@ const ExpandedPreview = ({
                                 </pre>
                             )}
                         </div>
-                        <p className="mt-3 text-xs text-muted-foreground">
-                            {artifact.data.byteLength} bytes | {artifact.type}
+                        <p
+                            className="mt-3 text-xs text-muted-foreground"
+                            title={artifact.type}
+                        >
+                            {artifact.data.byteLength} bytes |{" "}
+                            {mimeLabel(artifact.type)}
                         </p>
                     </div>
                 )}
@@ -232,7 +239,7 @@ export const FileBadge = ({
             title={
                 previewable
                     ? undefined
-                    : `${artifact.data.byteLength} bytes | ${artifact.type}`
+                    : `${artifact.data.byteLength} bytes | ${mimeLabel(artifact.type)}`
             }
             onMouseEnter={() => previewable && setShowPreview(true)}
             onMouseLeave={() => setShowPreview(false)}
