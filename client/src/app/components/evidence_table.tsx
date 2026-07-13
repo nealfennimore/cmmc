@@ -13,7 +13,7 @@ import {
 import { toPath, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBEvidenceV2, removeEvidenceExamineTags } from "@/app/db";
 import { useHoverCard } from "@/app/hooks/hoverCard";
-import { mimeLabel } from "@/app/utils/file";
+import { hashType, mimeLabel } from "@/app/utils/file";
 import Link from "next/link";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -123,7 +123,13 @@ const sorters = [defaultSort, defaultSort, nestedSort, countSort, null];
 
 const nestedFilter = (search: string) => (values: string[]) =>
     values.some((value) => value.includes(search));
-const filters = [defaultFilter, defaultFilter, nestedFilter, nestedFilter, null];
+const filters = [
+    defaultFilter,
+    defaultFilter,
+    nestedFilter,
+    nestedFilter,
+    null,
+];
 
 export const EvidenceTable = () => {
     const [evidenceWithRequirements, setEvidenceWithRequirements] = useState<
@@ -275,7 +281,7 @@ export const EvidenceTable = () => {
                         label={mimeLabel(artifact.type)}
                         className="font-mono"
                     >
-                        {artifact.id}
+                        {hashType(artifact.id)}:{artifact.id}
                     </HoverCard>,
                     [
                         ...artifact.requirements
@@ -292,8 +298,7 @@ export const EvidenceTable = () => {
                         // The rest collapse into a hover card; the grace
                         // timeout keeps it open while the pointer travels in,
                         // so the links stay clickable.
-                        ...(artifact.requirements.length >
-                        MAX_REQUIREMENT_LINKS
+                        ...(artifact.requirements.length > MAX_REQUIREMENT_LINKS
                             ? [
                                   <HoverCard
                                       key={`${artifact.id}-more-requirements`}
