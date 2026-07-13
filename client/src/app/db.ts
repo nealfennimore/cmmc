@@ -1,5 +1,6 @@
 "use client";
 import { examineIdsForStoredItem } from "@/api/entities/ExamineItemIds";
+import { showLoader } from "@/app/components/loader";
 import { Status } from "@/app/components/status";
 export const version = 9;
 let loader: Promise<IDBDatabase> | undefined;
@@ -257,9 +258,16 @@ const migrations = {
 if (typeof window !== "undefined") {
     const request = window?.indexedDB?.open("800_171_r3", version);
 
+    // Raised by onupgradeneeded, dropped once the open settles (including the
+    // follow-on id normalization), so migrations run behind the busy overlay
+    // instead of a half-rendered app. Not awaited on hide: the overlay's
+    // minimum visible time can run out while the app hydrates beneath it.
+    let hideMigrationLoader: (() => Promise<void>) | undefined;
+
     loader = new Promise((resolve, reject) => {
         request.onerror = (event) => {
             console.error("Can't use IndexDB");
+            hideMigrationLoader?.();
             reject(event);
         };
         request.onsuccess = async (event) => {
@@ -272,12 +280,14 @@ if (typeof window !== "undefined") {
                 // log and continue rather than reject the open.
                 console.error("Evidence id migration failed", error);
             }
+            hideMigrationLoader?.();
             resolve(db);
         };
 
         request.onupgradeneeded = async function (
             event: IDBVersionChangeEvent,
         ) {
+            hideMigrationLoader = showLoader("Updating local database…");
             for (let v = event.oldVersion + 1; v <= event.newVersion; v++) {
                 await migrations?.[`${v}`]?.(event);
             }
@@ -511,6 +521,21 @@ const migrateEvidenceIdsToSha256 = async (db: IDBDatabase): Promise<void> => {
         return;
     }
 
+    // Legacy ids found: hashing every artifact and rewriting rows can take a
+    // while on large evidence sets, so it runs behind the busy overlay (same
+    // message as schema upgrades — one continuous "updating" step). Hide is
+    // not awaited; see the open handler.
+    const hideLoader = showLoader("Updating local database…");
+    try {
+        await migrateLegacyEvidenceIds(db);
+    } finally {
+        hideLoader();
+    }
+
+    markEvidenceIdsMigrated();
+};
+
+const migrateLegacyEvidenceIds = async (db: IDBDatabase): Promise<void> => {
     const readTx = db.transaction(
         [
             Table.EVIDENCE,
@@ -596,8 +621,6 @@ const migrateEvidenceIdsToSha256 = async (db: IDBDatabase): Promise<void> => {
         writeTx.onerror = () => reject(writeTx.error);
         writeTx.onabort = () => reject(writeTx.error);
     });
-
-    markEvidenceIdsMigrated();
 };
 
 export const clear = (table: string) => async (): Promise<boolean> => {
