@@ -314,24 +314,6 @@ export const EditEvidenceModal = ({
     const [busy, setBusy] = useState(false);
     const nameInput = useRef<HTMLInputElement>(null);
 
-    // Assessment guidance lists the same Examine evidence (e.g. "System
-    // security plan") on many controls, so an artifact attached here can be
-    // linked to every control sharing the selected item in one step. Only
-    // offered with a requirement context; items unique to this control are
-    // skipped (nothing to propagate to).
-    const revision = toNum(useRevisionContext());
-    const sharedItems = (
-        requirementId ? examineItemsForRequirement(revision, requirementId) : []
-    ).filter(
-        (item) =>
-            requirementsSharingExamineItem(revision, item).length > 1,
-    );
-    const [sharedItem, setSharedItem] = useState("");
-    const [sharedCount, setSharedCount] = useState(0);
-    const sharedTargets = sharedItem
-        ? requirementsSharingExamineItem(revision, sharedItem)
-        : [];
-
     // Names of the shared documents this artifact is recorded as (the same
     // "Attached as" chips the evidence table shows).
     const [attachedAs, setAttachedAs] = useState<string[]>([]);
@@ -347,6 +329,26 @@ export const EditEvidenceModal = ({
         loadAttachedAs();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [artifact.id]);
+
+    // Assessment guidance lists the same Examine evidence (e.g. "System
+    // security plan") on many controls, so an artifact attached here can be
+    // linked to every control sharing the selected item in one step. Only
+    // offered with a requirement context; items unique to this control are
+    // skipped (nothing to propagate to), as are items the artifact is
+    // already tagged as (shown as chips above the select instead).
+    const revision = toNum(useRevisionContext());
+    const sharedItems = (
+        requirementId ? examineItemsForRequirement(revision, requirementId) : []
+    ).filter(
+        (item) =>
+            requirementsSharingExamineItem(revision, item).length > 1 &&
+            !attachedAs.includes(item),
+    );
+    const [sharedItem, setSharedItem] = useState("");
+    const [sharedCount, setSharedCount] = useState(0);
+    const sharedTargets = sharedItem
+        ? requirementsSharingExamineItem(revision, sharedItem)
+        : [];
 
     const onAttachShared = async () => {
         if (!sharedItem) {
@@ -374,6 +376,9 @@ export const EditEvidenceModal = ({
         await loadAttachedAs();
         await onChanged();
         setSharedCount(sharedTargets.length);
+        // The attached item leaves the options (it renders as a chip now), so
+        // the select can't keep holding it as its value.
+        setSharedItem("");
         setBusy(false);
     };
 
