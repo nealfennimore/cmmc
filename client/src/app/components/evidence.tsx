@@ -18,7 +18,8 @@ import {
     snippetable,
 } from "@/app/utils/file";
 import { openExternal, openFileInSystemViewer } from "@/app/utils/tauri";
-import { useEffect, useState } from "react";
+import type { PDFDocumentLoadingTask } from "pdfjs-dist";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ModalShell } from "./confirm";
 import { toSizeClass } from "./status";
@@ -285,9 +286,116 @@ const IconLink = () => (
     </svg>
 );
 
-// Hover preview for image and text artifacts, portaled to <body> at a fixed
-// position so the evidence table's scroll container can't clip it (and the
-// badge's hover underline can't reach it). Mounted only while hovered so
+// pdf.js is ~1MB, so it loads on demand the first time a PDF preview renders.
+// The worker is emitted by the bundler as a local asset (never a CDN fetch —
+// evidence must not leave the machine).
+let pdfjsLoader: Promise<typeof import("pdfjs-dist")> | undefined;
+const loadPdfjs = () => {
+    if (!pdfjsLoader) {
+        pdfjsLoader = import("pdfjs-dist").then((pdfjs) => {
+            pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+                "pdfjs-dist/build/pdf.worker.min.mjs",
+                import.meta.url,
+            ).toString();
+            return pdfjs;
+        });
+    }
+    return pdfjsLoader;
+};
+
+/**
+ * Renders a PDF's pages to stacked canvases. Pages lay out at `width` CSS
+ * pixels (the backing store scales by devicePixelRatio for sharpness); the
+ * hover card caps at the first page via `maxPages`, the expanded modal
+ * renders them all.
+ */
+const PdfPages = ({
+    artifact,
+    width,
+    maxPages,
+}: {
+    artifact: IDBEvidenceV2;
+    width: number;
+    maxPages?: number;
+}) => {
+    const containerRef = useRef<HTMLSpanElement>(null);
+    const [state, setState] = useState<"loading" | "ready" | "error">(
+        "loading",
+    );
+
+    useEffect(() => {
+        let cancelled = false;
+        let task: PDFDocumentLoadingTask | undefined;
+        (async () => {
+            try {
+                const pdfjs = await loadPdfjs();
+                // pdf.js transfers the buffer to its worker, which would
+                // detach the artifact's in-memory bytes — hand it a copy.
+                task = pdfjs.getDocument({ data: artifact.data.slice(0) });
+                const doc = await task.promise;
+                const total = Math.min(
+                    doc.numPages,
+                    maxPages ?? doc.numPages,
+                );
+                for (let i = 1; i <= total; i++) {
+                    if (cancelled) {
+                        return;
+                    }
+                    const page = await doc.getPage(i);
+                    const dpr = window.devicePixelRatio || 1;
+                    const scale =
+                        (width / page.getViewport({ scale: 1 }).width) * dpr;
+                    const viewport = page.getViewport({ scale });
+                    const canvas = document.createElement("canvas");
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    canvas.className = "w-full rounded border border-border";
+                    await page.render({
+                        canvas,
+                        canvasContext: canvas.getContext("2d")!,
+                        viewport,
+                    }).promise;
+                    if (cancelled) {
+                        return;
+                    }
+                    // Canvases append imperatively (they are not React
+                    // children); the status span below is React's own first
+                    // child, so removing it on "ready" stays safe.
+                    containerRef.current?.appendChild(canvas);
+                    setState("ready");
+                }
+            } catch {
+                if (!cancelled) {
+                    setState("error");
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+            task?.destroy();
+        };
+    }, [artifact, width, maxPages]);
+
+    return (
+        <span
+            ref={containerRef}
+            style={{ maxWidth: width }}
+            className="mx-auto flex w-full flex-col gap-2"
+        >
+            {state !== "ready" && (
+                <span className="text-xs font-normal text-muted-foreground">
+                    {state === "loading"
+                        ? "Loading preview…"
+                        : "Preview unavailable."}
+                </span>
+            )}
+        </span>
+    );
+};
+
+// Hover preview for image, PDF, and text artifacts, portaled to <body> at a
+// fixed position so the evidence table's scroll container can't clip it (and
+// the badge's hover underline can't reach it). Mounted only while hovered so
 // object URLs are created lazily and revoked on leave. Portaled events still
 // bubble through the React tree, so the badge's own handlers see the card's
 // clicks unless stopped.
@@ -305,6 +413,7 @@ const PreviewCard = ({
     onMouseLeave: () => void;
 }) => {
     const isImg = embeddable(artifact);
+    const isPdf = isPDF(artifact.type);
     const [imageSrc, setImageSrc] = useState<string | null>(null);
 
     useEffect(() => {
@@ -320,9 +429,10 @@ const PreviewCard = ({
 
     // A truncated slice can split a multibyte character; TextDecoder swaps
     // in a replacement character, which is fine for a preview.
-    const snippet = isImg
-        ? null
-        : new TextDecoder().decode(artifact.data.slice(0, 500));
+    const snippet =
+        isImg || isPdf
+            ? null
+            : new TextDecoder().decode(artifact.data.slice(0, 500));
 
     return createPortal(
         <span
@@ -347,6 +457,10 @@ const PreviewCard = ({
                         className="max-h-48 max-w-full rounded object-contain"
                     />
                 )
+            ) : isPdf ? (
+                <span className="block max-h-48 w-64 overflow-hidden">
+                    <PdfPages artifact={artifact} width={256} maxPages={1} />
+                </span>
             ) : (
                 <span className="block max-h-48 overflow-hidden whitespace-pre-wrap break-all font-mono text-xs font-normal text-foreground">
                     {snippet}
@@ -375,6 +489,7 @@ const ExpandedPreview = ({
     onClose: () => void;
 }) => {
     const isImg = embeddable(artifact);
+    const isPdf = isPDF(artifact.type);
     const [imageSrc, setImageSrc] = useState<string | null>(null);
 
     useEffect(() => {
@@ -388,7 +503,8 @@ const ExpandedPreview = ({
         return () => URL.revokeObjectURL(url);
     }, [artifact, isImg]);
 
-    const text = isImg ? null : new TextDecoder().decode(artifact.data);
+    const text =
+        isImg || isPdf ? null : new TextDecoder().decode(artifact.data);
 
     return createPortal(
         <span
@@ -415,6 +531,8 @@ const ExpandedPreview = ({
                                         className="rounded object-contain"
                                     />
                                 )
+                            ) : isPdf ? (
+                                <PdfPages artifact={artifact} width={960} />
                             ) : (
                                 <pre className="w-full whitespace-pre-wrap break-all font-mono text-xs text-foreground">
                                     {text}
@@ -479,7 +597,10 @@ export const FileBadge = ({
     hideIcon?: boolean;
     className?: string;
 }) => {
-    const previewable = embeddable(artifact) || snippetable(artifact);
+    const previewable =
+        embeddable(artifact) ||
+        snippetable(artifact) ||
+        isPDF(artifact.type);
     const preview = useHoverCard();
     const [expanded, setExpanded] = useState(false);
     const Icon = getIcon(artifact.type);
