@@ -49,9 +49,9 @@ const MIME_LABELS: Record<string, string> = {
     "application/msword": "Word document",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         "Word document",
-    "application/vnd.ms-excel": "Excel spreadsheet",
+    "application/vnd.ms-excel": "Spreadsheet",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-        "Excel spreadsheet",
+        "Spreadsheet",
     "application/vnd.ms-powerpoint": "PowerPoint presentation",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation":
         "PowerPoint presentation",
@@ -119,10 +119,22 @@ export const isCode = (type: string) => {
     }
 };
 
+// Only modern .xlsx — exceljs cannot read the legacy .xls binary format,
+// which keeps its icon + system-viewer fallback.
+export const isExcel = (type: string) => {
+    switch (type) {
+        case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+            return true;
+        default:
+            return false;
+    }
+};
+
 export const isCSV = (type: string) => {
     switch (type) {
         case "text/csv":
         case "application/csv":
+        case "application/vnd.ms-excel":
             return true;
         default:
             return false;

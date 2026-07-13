@@ -273,7 +273,11 @@ export const EvidenceTable = () => {
                     artifact.type === "url" ? (
                         <LinkBadge artifact={artifact} hideIcon />
                     ) : (
-                        <FileBadge artifact={artifact} hideIcon />
+                        <FileBadge
+                            artifact={artifact}
+                            siblings={visibleEvidence}
+                            hideIcon
+                        />
                     ),
                     // Hovering the type reveals the artifact's SHA-256.
                     <HoverCard

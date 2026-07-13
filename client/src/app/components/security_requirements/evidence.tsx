@@ -1010,6 +1010,7 @@ export const EvidenceBadge = ({
             ) : (
                 <FileBadge
                     artifact={artifact}
+                    siblings={evidence}
                     className={`border-r ${tagNames.length ? "border-orange-200" : "border-yellow-200"}`}
                 />
             )}
