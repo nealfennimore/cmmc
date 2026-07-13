@@ -96,6 +96,118 @@ export const isImage = (type: string) => {
     }
 };
 
+export const isPDF = (type: string) => {
+    switch (type) {
+        case "application/pdf":
+            return true;
+        default:
+            return false;
+    }
+};
+
+export const isCode = (type: string) => {
+    switch (type) {
+        case "text/javascript":
+        case "text/css":
+        case "text/html":
+        case "text/xml":
+        case "application/xml":
+        case "application/json":
+            return true;
+        default:
+            return false;
+    }
+};
+
+export const isCSV = (type: string) => {
+    switch (type) {
+        case "text/csv":
+        case "application/csv":
+            return true;
+        default:
+            return false;
+    }
+};
+
+// Generic documents; Word files have their own check (isWord).
+export const isDoc = (type: string) => {
+    switch (type) {
+        case "application/vnd.oasis.opendocument.text":
+        case "application/rtf":
+        case "text/plain":
+        case "text/md":
+            return true;
+        default:
+            return false;
+    }
+};
+
+export const isMusic = (type: string) => {
+    switch (type) {
+        case "audio/mpeg":
+        case "audio/mp4":
+        case "audio/wav":
+        case "audio/x-wav":
+        case "audio/ogg":
+        case "audio/aac":
+        case "audio/flac":
+        case "audio/webm":
+            return true;
+        default:
+            return false;
+    }
+};
+
+// OpenDocument presentations are included: same document class.
+export const isPowerpoint = (type: string) => {
+    switch (type) {
+        case "application/vnd.ms-powerpoint":
+        case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+        case "application/vnd.oasis.opendocument.presentation":
+            return true;
+        default:
+            return false;
+    }
+};
+
+export const isWord = (type: string) => {
+    switch (type) {
+        case "application/msword":
+        case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            return true;
+        default:
+            return false;
+    }
+};
+
+export const isVideo = (type: string) => {
+    switch (type) {
+        case "video/mp4":
+        case "video/webm":
+        case "video/ogg":
+        case "video/quicktime":
+        case "video/x-msvideo":
+        case "video/mpeg":
+            return true;
+        default:
+            return false;
+    }
+};
+
+export const isZip = (type: string) => {
+    switch (type) {
+        case "application/zip":
+        case "application/x-zip-compressed":
+        case "application/gzip":
+        case "application/x-tar":
+        case "application/x-7z-compressed":
+        case "application/x-rar-compressed":
+            return true;
+        default:
+            return false;
+    }
+};
+
 export const embeddable = (artifact: IDBEvidenceV2) => isImage(artifact.type);
 
 const isText = (type: string) => {

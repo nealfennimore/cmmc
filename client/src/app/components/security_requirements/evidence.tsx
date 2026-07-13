@@ -1,7 +1,4 @@
-import {
-    examineItemId,
-    examineItemName,
-} from "@/api/entities/ExamineItemIds";
+import { examineItemId, examineItemName } from "@/api/entities/ExamineItemIds";
 import {
     examineItemsForRequirement,
     requirementsSharingExamineItem,
@@ -17,6 +14,7 @@ import {
     IDB,
     IDBEvidenceV2,
     removeEvidenceExamineTags,
+    TABLE_CHANGED_EVENT,
 } from "@/app/db";
 import { isImage } from "@/app/utils/file";
 import {
@@ -653,8 +651,8 @@ export const EditEvidenceModal = ({
                                     </div>
                                     <span className="text-xs font-normal text-muted-foreground">
                                         Shared evidence documents this artifact
-                                        is recorded as. Removing a tag keeps
-                                        the control links unless you choose to
+                                        is recorded as. Removing a tag keeps the
+                                        control links unless you choose to
                                         detach them.
                                     </span>
                                 </div>
@@ -690,10 +688,10 @@ export const EditEvidenceModal = ({
                                         ))}
                                     </Select>
                                     <span className="text-xs font-normal text-muted-foreground">
-                                        Other controls list the same evidence
-                                        in their assessment guidance. Attach
-                                        this evidence to every control that
-                                        shares the selected item.
+                                        Other controls list the same evidence in
+                                        their assessment guidance. Attach this
+                                        evidence to every control that shares
+                                        the selected item.
                                     </span>
                                     <Button
                                         type="button"
@@ -749,10 +747,100 @@ export const EditEvidenceModal = ({
     );
 };
 
+// Names of the shared documents an artifact is tagged as, kept live via the
+// table-changed event so tagging/untagging in the edit modal (a child of the
+// badge) is reflected without a page refresh.
+const useEvidenceTagNames = (evidenceId: string): string[] => {
+    const [names, setNames] = useState<string[]>([]);
+
+    useEffect(() => {
+        let active = true;
+        const load = async () => {
+            const tags = await evidenceExamineTags(evidenceId);
+            if (active) {
+                setNames(
+                    tags
+                        .map(
+                            (tag) =>
+                                examineItemName(tag.examine_id) ??
+                                tag.examine_id,
+                        )
+                        .sort(),
+                );
+            }
+        };
+        load();
+        const onTableChanged = (event: Event) => {
+            const table = (event as CustomEvent<{ table: string }>).detail
+                ?.table;
+            if (table === IDB.evidenceExamineItems.table) {
+                load();
+            }
+        };
+        window.addEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+        return () => {
+            active = false;
+            window.removeEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+        };
+    }, [evidenceId]);
+
+    return names;
+};
+
+// Every tagged artifact's id, kept live like useEvidenceTagNames. Used by the
+// badge list to float tagged evidence onto its own leading row.
+const useTaggedEvidenceIds = (): Set<string> => {
+    const [ids, setIds] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        let active = true;
+        const load = async () => {
+            const tags = await IDB.evidenceExamineItems.getAll();
+            if (active) {
+                setIds(new Set(tags.map((tag) => tag.evidence_id)));
+            }
+        };
+        load();
+        const onTableChanged = (event: Event) => {
+            const table = (event as CustomEvent<{ table: string }>).detail
+                ?.table;
+            if (table === IDB.evidenceExamineItems.table) {
+                load();
+            }
+        };
+        window.addEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+        return () => {
+            active = false;
+            window.removeEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+        };
+    }, []);
+
+    return ids;
+};
+
+const IconTag = () => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        className="h-3 w-3"
+        aria-hidden="true"
+    >
+        <path
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42zM7.5 7.5h.01"
+        />
+    </svg>
+);
+
 const Badge = ({
     children,
     onDelete,
     artifact,
+    tagNames,
     requirementId,
     setEvidence,
     readOnly,
@@ -760,6 +848,7 @@ const Badge = ({
     children: ReactNode;
     onDelete: () => Promise<boolean>;
     artifact: IDBEvidenceV2;
+    tagNames: string[];
     requirementId: string;
     setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
     readOnly?: boolean;
@@ -774,9 +863,14 @@ const Badge = ({
         setEditing(true);
     }
 
-    // URL evidence stays blue (info); file evidence is a subtle gray (neutral)
-    // so the two groups read differently at a glance.
-    const variant = artifact.type === "url" ? "info" : "neutral";
+    // Tagged evidence (a shared Examine document) reads orange; otherwise URL
+    // evidence stays blue (info) and file evidence a subtle gray (neutral) so
+    // the groups read differently at a glance.
+    const variant = tagNames.length
+        ? "tagged"
+        : artifact.type === "url"
+          ? "info"
+          : "warning";
 
     return (
         <span
@@ -784,6 +878,15 @@ const Badge = ({
             onContextMenu={onContextMenu}
         >
             {children}
+            {!!tagNames.length && (
+                <span
+                    className="flex cursor-help items-center gap-0.5 pl-2 text-xs"
+                    title={`Attached as: ${tagNames.join(", ")}`}
+                >
+                    <IconTag />
+                    {tagNames.length}
+                </span>
+            )}
             {!readOnly && (
                 <button
                     type="button"
@@ -888,10 +991,13 @@ export const EvidenceBadge = ({
         return true;
     };
 
+    const tagNames = useEvidenceTagNames(artifact.id);
+
     return (
         <Badge
             onDelete={onDelete}
             artifact={artifact}
+            tagNames={tagNames}
             requirementId={requirementId}
             setEvidence={setEvidence}
             readOnly={readOnly}
@@ -899,12 +1005,12 @@ export const EvidenceBadge = ({
             {artifact.type === "url" ? (
                 <LinkBadge
                     artifact={artifact}
-                    className="border-r border-blue-200"
+                    className={`border-r ${tagNames.length ? "border-orange-200" : "border-blue-200"}`}
                 />
             ) : (
                 <FileBadge
                     artifact={artifact}
-                    className="border-r border-border"
+                    className={`border-r ${tagNames.length ? "border-orange-200" : "border-green-200"}`}
                 />
             )}
         </Badge>
@@ -921,17 +1027,18 @@ export const EvidenceBadges = ({
     requirementId: string;
     readOnly?: boolean;
 }) => {
-    // Show URL evidence first, then files. Files are pushed onto their own
-    // line via a full-width flex break so links and files read as two groups.
-    const isUrl = (artifact: IDBEvidenceV2) => artifact.type === "url";
-    const sorted = [...(evidence ?? [])].sort(
-        (a, b) => Number(isUrl(b)) - Number(isUrl(a)),
-    );
-    const firstFileIndex = sorted.findIndex((artifact) => !isUrl(artifact));
+    // Tagged evidence (orange) leads on its own row, then URL evidence, then
+    // files — each group pushed onto its own line via a full-width flex break
+    // so the three groups read separately. Sort is stable, so order within a
+    // group is preserved.
+    const taggedIds = useTaggedEvidenceIds();
+    const rank = (artifact: IDBEvidenceV2) =>
+        taggedIds.has(artifact.id) ? 0 : artifact.type === "url" ? 1 : 2;
+    const sorted = [...(evidence ?? [])].sort((a, b) => rank(a) - rank(b));
 
     return sorted.map((artifact, index) => (
         <Fragment key={artifact.id}>
-            {index === firstFileIndex && index > 0 && (
+            {index > 0 && rank(sorted[index - 1]) !== rank(artifact) && (
                 <span className="basis-full" aria-hidden="true" />
             )}
             <EvidenceBadge
