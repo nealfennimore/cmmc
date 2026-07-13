@@ -219,6 +219,12 @@ export const SecurityRequirement = ({
         <li className="mb-6">
             <fieldset className="flex grow flex-col">
                 <legend className="flex flex-row items-center text-left text-xl font-semibold tracking-tight">
+                    <h4
+                        className="mr-2"
+                        id={securityRequirement.subSubRequirement}
+                    >
+                        {securityRequirement.subSubRequirement}
+                    </h4>
                     <StatusState
                         status={
                             initialState[
@@ -226,9 +232,6 @@ export const SecurityRequirement = ({
                             ] as Status
                         }
                     />
-                    <h4 id={securityRequirement.subSubRequirement}>
-                        {securityRequirement.subSubRequirement}
-                    </h4>
                 </legend>
                 <p className="my-2 text-base leading-relaxed">
                     {securityRequirement.text}

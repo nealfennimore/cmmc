@@ -6,6 +6,7 @@ import { useHoverCard } from "@/app/hooks/hoverCard";
 import { parseCSV } from "@/app/utils/csv";
 import {
     embeddable,
+    formatBytes,
     isCSV,
     isExcel,
     isPDF,
@@ -17,12 +18,30 @@ import type { PDFDocumentLoadingTask } from "pdfjs-dist";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ModalShell } from "./confirm";
-import { toSizeClass } from "./status";
+import { toSizeClass, toIconSizeClass } from "./status";
 
 interface EvidenceStateProps {
     evidence?: boolean[] | boolean;
     size?: string;
 }
+
+const IconQuestion = ({ className = "h-4 mr-1" }: { className?: string }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        aria-hidden="true"
+        className={className}
+        viewBox="0 0 24 24"
+    >
+        <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M7 8v8a5 5 0 1 0 10 0V6.5a3.5 3.5 0 1 0-7 0V15a2 2 0 0 0 4 0V8"
+        />
+    </svg>
+);
 
 const EvidenceSpan = ({
     evidence,
@@ -34,10 +53,10 @@ const EvidenceSpan = ({
     return (
         evidence && (
             <span
-                className={`${toSizeClass(size)} text-muted-foreground mx-2`}
+                className={`${toSizeClass(size)} text-muted-foreground mr-2`}
                 title="Has evidence"
             >
-                🧾
+                <IconQuestion className={toIconSizeClass(size)} />
             </span>
         )
     );
@@ -245,7 +264,8 @@ const PreviewCard = ({
                 className="text-xs font-normal text-muted-foreground"
                 title={artifact.type}
             >
-                {artifact.data.byteLength} bytes | {mimeLabel(artifact.type)}
+                {formatBytes(artifact.data.byteLength)} |{" "}
+                {mimeLabel(artifact.type)}
             </span>
         </span>,
         document.body,
@@ -620,7 +640,7 @@ const ExpandedPreview = ({
                             className="mt-3 text-xs text-muted-foreground"
                             title={current.type}
                         >
-                            {current.data.byteLength} bytes |{" "}
+                            {formatBytes(current.data.byteLength)} |{" "}
                             {mimeLabel(current.type)}
                         </p>
                     </div>
@@ -657,7 +677,7 @@ export const FileBadge = ({
             title={
                 previewable
                     ? undefined
-                    : `${artifact.data.byteLength} bytes | ${mimeLabel(artifact.type)}`
+                    : `${formatBytes(artifact.data.byteLength)} | ${mimeLabel(artifact.type)}`
             }
             onMouseEnter={(e) => previewable && preview.show(e.currentTarget)}
             onMouseLeave={preview.scheduleHide}

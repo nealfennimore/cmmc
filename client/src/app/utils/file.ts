@@ -83,6 +83,24 @@ const MIME_LABELS: Record<string, string> = {
 export const mimeLabel = (type: string): string =>
     MIME_LABELS[type] ?? (type || "Unknown");
 
+// Human-readable size at its highest tier: "812 B", "24.3 KB", "1.5 MB"
+// (1024 base). One decimal below 10 keeps small values meaningful without
+// cluttering large ones.
+export const formatBytes = (bytes: number): string => {
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let value = bytes;
+    let unit = 0;
+    while (value >= 1024 && unit < units.length - 1) {
+        value /= 1024;
+        unit++;
+    }
+    const rounded =
+        unit > 0 && value < 10
+            ? value.toFixed(1).replace(/\.0$/, "")
+            : String(Math.round(value));
+    return `${rounded} ${units[unit]}`;
+};
+
 export const isImage = (type: string) => {
     switch (type) {
         case "image/png":
