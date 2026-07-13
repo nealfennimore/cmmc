@@ -38,6 +38,10 @@ const guideV2 = dataV2 as AssessmentGuide;
 
 export const assessmentGuideSource = guideV2.source;
 
+/** The published document the guide data was extracted from. */
+export const assessmentGuideSourceUrl =
+    "https://dodcio.defense.gov/Portals/0/Documents/CMMC/AssessmentGuideL2v2.pdf";
+
 // Matches a trailing section label so we can both strip it from the current
 // paragraph and use it to decide which section the next paragraph belongs to.
 const SECTION_MARKER =

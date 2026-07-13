@@ -1,6 +1,7 @@
 "use client";
 import {
     assessmentGuideSource,
+    assessmentGuideSourceUrl,
     getAssessmentGuidance,
 } from "@/api/entities/AssessmentGuide";
 import { examineItemIdsForItem } from "@/api/entities/ExamineItemIds";
@@ -301,7 +302,15 @@ export const AssessmentGuidance = ({
             <div className="border-t border-border px-4 py-4">
                 <p className="mb-4 text-xs text-muted-foreground">
                     How an assessor determines this requirement is met. Source:{" "}
-                    {assessmentGuideSource}.
+                    <a
+                        href={assessmentGuideSourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                    >
+                        {assessmentGuideSource}
+                    </a>
+                    .
                 </p>
 
                 {!!overview.length && (
