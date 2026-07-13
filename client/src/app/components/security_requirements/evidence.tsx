@@ -1,8 +1,21 @@
+import { examineItemId, examineItemName } from "@/api/entities/ExamineItemIds";
+import {
+    examineItemsForRequirement,
+    requirementsSharingExamineItem,
+} from "@/api/entities/ExamineItems";
 import { FileBadge, LinkBadge } from "@/app/components/evidence";
 import { SearchDropdown } from "@/app/components/search_dropdown";
 import { toBuffer } from "@/app/components/security_requirements/utils";
 import { useNotification } from "@/app/context/notification";
-import { IDB, IDBEvidenceV2 } from "@/app/db";
+import { toNum, useRevisionContext } from "@/app/context/revision";
+import {
+    copyEvidenceExamineTags,
+    evidenceExamineTags,
+    IDB,
+    IDBEvidenceV2,
+    removeEvidenceExamineTags,
+    TABLE_CHANGED_EVENT,
+} from "@/app/db";
 import { isImage } from "@/app/utils/file";
 import {
     ChangeEvent,
@@ -19,7 +32,14 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { confirm, ModalShell } from "../confirm";
-import { badgeClasses, Button, buttonClasses, Heading, Input } from "../ui";
+import {
+    badgeClasses,
+    Button,
+    buttonClasses,
+    Heading,
+    Input,
+    Select,
+} from "../ui";
 
 const deriveEvidence = async ({
     type,
@@ -107,6 +127,9 @@ const replaceEvidence = async ({
     }
 
     await IDB.evidence.put(newEvidence);
+    // The replacement is the same logical document, so it inherits the old
+    // artifact's examine tags (e.g. "this is our System security plan").
+    await copyEvidenceExamineTags(oldArtifact.id, newEvidence.id);
     for (const link of scoped) {
         await IDB.evidenceRequirements.put({
             evidence_id: newEvidence.id,
@@ -125,6 +148,7 @@ const replaceEvidence = async ({
     );
     if (!remaining.length) {
         await IDB.evidence.delete(IDBKeyRange.only(oldArtifact.id));
+        await removeEvidenceExamineTags(oldArtifact.id);
     }
 };
 
@@ -287,6 +311,133 @@ export const EditEvidenceModal = ({
     const [file, setFile] = useState<File | null>(null);
     const [busy, setBusy] = useState(false);
     const nameInput = useRef<HTMLInputElement>(null);
+
+    // Names of the shared documents this artifact is recorded as (the same
+    // "Attached as" chips the evidence table shows).
+    const [attachedAs, setAttachedAs] = useState<string[]>([]);
+    const loadAttachedAs = async () => {
+        const tags = await evidenceExamineTags(artifact.id);
+        setAttachedAs(
+            tags
+                .map((tag) => examineItemName(tag.examine_id) ?? tag.examine_id)
+                .sort(),
+        );
+    };
+    useEffect(() => {
+        loadAttachedAs();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [artifact.id]);
+
+    // Assessment guidance lists the same Examine evidence (e.g. "System
+    // security plan") on many controls, so an artifact attached here can be
+    // linked to every control sharing the selected item in one step. Only
+    // offered with a requirement context; items unique to this control are
+    // skipped (nothing to propagate to), as are items the artifact is
+    // already tagged as (shown as chips above the select instead).
+    const revision = toNum(useRevisionContext());
+    const sharedItems = (
+        requirementId ? examineItemsForRequirement(revision, requirementId) : []
+    ).filter(
+        (item) =>
+            requirementsSharingExamineItem(revision, item).length > 1 &&
+            !attachedAs.includes(item),
+    );
+    const [sharedItem, setSharedItem] = useState("");
+    const [sharedCount, setSharedCount] = useState(0);
+    const sharedTargets = sharedItem
+        ? requirementsSharingExamineItem(revision, sharedItem)
+        : [];
+
+    const onAttachShared = async () => {
+        if (!sharedItem) {
+            return;
+        }
+        setBusy(true);
+        // put() upserts on the composite key, so existing links (including
+        // this control's own) are left as-is.
+        for (const target of sharedTargets) {
+            await IDB.evidenceRequirements.put({
+                evidence_id: artifact.id,
+                requirement_id: target,
+            });
+        }
+        // Record which shared document this artifact is (the identity claim
+        // behind the fan-out); the per-control links above stay the editable
+        // truth of where it appears.
+        const examineId = examineItemId(sharedItem);
+        if (examineId) {
+            await IDB.evidenceExamineItems.put({
+                evidence_id: artifact.id,
+                examine_id: examineId,
+            });
+        }
+        await loadAttachedAs();
+        await onChanged();
+        setSharedCount(sharedTargets.length);
+        // The attached item leaves the options (it renders as a chip now), so
+        // the select can't keep holding it as its value.
+        setSharedItem("");
+        setBusy(false);
+    };
+
+    // Removing a tag drops the identity claim; the per-control links it
+    // fanned out survive unless the user opts to detach them too. Links are
+    // kept when another tag on this artifact also justifies them, or when
+    // they belong to the requirement this modal was opened from.
+    const onRemoveTag = async (name: string) => {
+        // Foreign tags (no mapping entry) store the raw string as their id.
+        const examineId = examineItemId(name) ?? name;
+
+        const links = await IDB.evidenceRequirements.getAll(
+            IDBKeyRange.only(artifact.id),
+            "evidence_id",
+        );
+        const linked = new Set(links.map((link) => link.requirement_id));
+        const keep = new Set(requirementId ? [requirementId] : []);
+        for (const other of attachedAs) {
+            if (other === name) {
+                continue;
+            }
+            for (const target of requirementsSharingExamineItem(
+                revision,
+                other,
+            )) {
+                keep.add(target);
+            }
+        }
+        const prunable = requirementsSharingExamineItem(revision, name).filter(
+            (target) => linked.has(target) && !keep.has(target),
+        );
+
+        let detach = false;
+        if (prunable.length) {
+            const choice = await confirm({
+                title: "Remove shared tag",
+                message: `This evidence is attached to ${prunable.length} controls that list "${name}". Detach it from those controls as well, or only remove the tag?`,
+                confirmLabel: `Detach from ${prunable.length} controls`,
+                cancelLabel: "Only remove tag",
+            });
+            // Closing the dialog (X / Escape / backdrop) aborts the removal.
+            if (choice === null) {
+                return;
+            }
+            detach = choice;
+        }
+
+        setBusy(true);
+        await IDB.evidenceExamineItems.delete([artifact.id, examineId]);
+        if (detach) {
+            for (const target of prunable) {
+                await IDB.evidenceRequirements.delete([artifact.id, target]);
+            }
+        }
+        await loadAttachedAs();
+        await onChanged();
+        // The attach button may reference the removed tag's fan-out; let the
+        // user attach again.
+        setSharedCount(0);
+        setBusy(false);
+    };
 
     // The file extension is not editable: it is shown as an adornment on the
     // name input and re-appended on save, following the picked replacement
@@ -473,6 +624,92 @@ export const EditEvidenceModal = ({
                                     )}
                                 </div>
                             )}
+
+                            {!!attachedAs.length && (
+                                <div className="flex flex-col gap-1 border-t border-border pt-4 font-medium">
+                                    Attached as
+                                    <div className="flex flex-wrap font-normal">
+                                        {attachedAs.map((name) => (
+                                            <span
+                                                key={name}
+                                                className="mb-1 mr-1 inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs"
+                                            >
+                                                {name}
+                                                <button
+                                                    type="button"
+                                                    aria-label={`Remove tag "${name}"`}
+                                                    disabled={busy}
+                                                    onClick={() =>
+                                                        onRemoveTag(name)
+                                                    }
+                                                    className="text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed"
+                                                >
+                                                    &times;
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <span className="text-xs font-normal text-muted-foreground">
+                                        Shared evidence documents this artifact
+                                        is recorded as. Removing a tag keeps the
+                                        control links unless you choose to
+                                        detach them.
+                                    </span>
+                                </div>
+                            )}
+
+                            {!!sharedItems.length && (
+                                <div className="flex flex-col gap-1 border-t border-border pt-4 font-medium">
+                                    Attach across controls
+                                    <Select
+                                        aria-label="Shared evidence requirement"
+                                        value={sharedItem}
+                                        disabled={busy}
+                                        onChange={(e) => {
+                                            setSharedItem(e.target.value);
+                                            setSharedCount(0);
+                                        }}
+                                    >
+                                        <option value="">
+                                            Select a shared evidence
+                                            requirement…
+                                        </option>
+                                        {sharedItems.map((item) => (
+                                            <option key={item} value={item}>
+                                                {item} (
+                                                {
+                                                    requirementsSharingExamineItem(
+                                                        revision,
+                                                        item,
+                                                    ).length
+                                                }{" "}
+                                                controls)
+                                            </option>
+                                        ))}
+                                    </Select>
+                                    <span className="text-xs font-normal text-muted-foreground">
+                                        Other controls list the same evidence in
+                                        their assessment guidance. Attach this
+                                        evidence to every control that shares
+                                        the selected item.
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={
+                                            !sharedItem || busy || !!sharedCount
+                                        }
+                                        onClick={onAttachShared}
+                                    >
+                                        {sharedCount
+                                            ? `Attached to ${sharedCount} controls`
+                                            : sharedItem
+                                              ? `Attach to ${sharedTargets.length} controls`
+                                              : "Attach"}
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -510,10 +747,100 @@ export const EditEvidenceModal = ({
     );
 };
 
+// Names of the shared documents an artifact is tagged as, kept live via the
+// table-changed event so tagging/untagging in the edit modal (a child of the
+// badge) is reflected without a page refresh.
+const useEvidenceTagNames = (evidenceId: string): string[] => {
+    const [names, setNames] = useState<string[]>([]);
+
+    useEffect(() => {
+        let active = true;
+        const load = async () => {
+            const tags = await evidenceExamineTags(evidenceId);
+            if (active) {
+                setNames(
+                    tags
+                        .map(
+                            (tag) =>
+                                examineItemName(tag.examine_id) ??
+                                tag.examine_id,
+                        )
+                        .sort(),
+                );
+            }
+        };
+        load();
+        const onTableChanged = (event: Event) => {
+            const table = (event as CustomEvent<{ table: string }>).detail
+                ?.table;
+            if (table === IDB.evidenceExamineItems.table) {
+                load();
+            }
+        };
+        window.addEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+        return () => {
+            active = false;
+            window.removeEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+        };
+    }, [evidenceId]);
+
+    return names;
+};
+
+// Every tagged artifact's id, kept live like useEvidenceTagNames. Used by the
+// badge list to float tagged evidence onto its own leading row.
+const useTaggedEvidenceIds = (): Set<string> => {
+    const [ids, setIds] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        let active = true;
+        const load = async () => {
+            const tags = await IDB.evidenceExamineItems.getAll();
+            if (active) {
+                setIds(new Set(tags.map((tag) => tag.evidence_id)));
+            }
+        };
+        load();
+        const onTableChanged = (event: Event) => {
+            const table = (event as CustomEvent<{ table: string }>).detail
+                ?.table;
+            if (table === IDB.evidenceExamineItems.table) {
+                load();
+            }
+        };
+        window.addEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+        return () => {
+            active = false;
+            window.removeEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+        };
+    }, []);
+
+    return ids;
+};
+
+const IconTag = () => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        className="h-3 w-3"
+        aria-hidden="true"
+    >
+        <path
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42zM7.5 7.5h.01"
+        />
+    </svg>
+);
+
 const Badge = ({
     children,
     onDelete,
     artifact,
+    tagNames,
     requirementId,
     setEvidence,
     readOnly,
@@ -521,6 +848,7 @@ const Badge = ({
     children: ReactNode;
     onDelete: () => Promise<boolean>;
     artifact: IDBEvidenceV2;
+    tagNames: string[];
     requirementId: string;
     setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
     readOnly?: boolean;
@@ -535,9 +863,14 @@ const Badge = ({
         setEditing(true);
     }
 
-    // URL evidence stays blue (info); file evidence is a subtle gray (neutral)
-    // so the two groups read differently at a glance.
-    const variant = artifact.type === "url" ? "info" : "neutral";
+    // Tagged evidence (a shared Examine document) reads orange; otherwise URL
+    // evidence stays blue (info) and file evidence a subtle gray (neutral) so
+    // the groups read differently at a glance.
+    const variant = tagNames.length
+        ? "tagged"
+        : artifact.type === "url"
+          ? "info"
+          : "neutral";
 
     return (
         <span
@@ -545,6 +878,15 @@ const Badge = ({
             onContextMenu={onContextMenu}
         >
             {children}
+            {!!tagNames.length && (
+                <span
+                    className="flex cursor-help items-center gap-0.5 pl-2 text-xs"
+                    title={`Attached as: ${tagNames.join(", ")}`}
+                >
+                    <IconTag />
+                    {tagNames.length}
+                </span>
+            )}
             {!readOnly && (
                 <button
                     type="button"
@@ -623,6 +965,7 @@ export const EvidenceBadge = ({
                     ]);
                 }
                 await IDB.evidence.delete(IDBKeyRange.only(artifact.id));
+                await removeEvidenceExamineTags(artifact.id);
             } else {
                 await IDB.evidenceRequirements.delete([
                     artifact.id,
@@ -641,16 +984,20 @@ export const EvidenceBadge = ({
             }
             await IDB.evidence.delete(IDBKeyRange.only(artifact.id));
             await IDB.evidenceRequirements.delete([artifact.id, requirementId]);
+            await removeEvidenceExamineTags(artifact.id);
         }
 
         setEvidence(evidence.filter((e) => e.id !== artifact.id));
         return true;
     };
 
+    const tagNames = useEvidenceTagNames(artifact.id);
+
     return (
         <Badge
             onDelete={onDelete}
             artifact={artifact}
+            tagNames={tagNames}
             requirementId={requirementId}
             setEvidence={setEvidence}
             readOnly={readOnly}
@@ -658,12 +1005,13 @@ export const EvidenceBadge = ({
             {artifact.type === "url" ? (
                 <LinkBadge
                     artifact={artifact}
-                    className="border-r border-blue-200"
+                    className={`border-r ${tagNames.length ? "border-orange-200" : "border-blue-200"}`}
                 />
             ) : (
                 <FileBadge
                     artifact={artifact}
-                    className="border-r border-border"
+                    siblings={evidence}
+                    className={`border-r ${tagNames.length ? "border-orange-200" : "border-border"}`}
                 />
             )}
         </Badge>
@@ -680,17 +1028,18 @@ export const EvidenceBadges = ({
     requirementId: string;
     readOnly?: boolean;
 }) => {
-    // Show URL evidence first, then files. Files are pushed onto their own
-    // line via a full-width flex break so links and files read as two groups.
-    const isUrl = (artifact: IDBEvidenceV2) => artifact.type === "url";
-    const sorted = [...(evidence ?? [])].sort(
-        (a, b) => Number(isUrl(b)) - Number(isUrl(a)),
-    );
-    const firstFileIndex = sorted.findIndex((artifact) => !isUrl(artifact));
+    // Tagged evidence (orange) leads on its own row, then URL evidence, then
+    // files — each group pushed onto its own line via a full-width flex break
+    // so the three groups read separately. Sort is stable, so order within a
+    // group is preserved.
+    const taggedIds = useTaggedEvidenceIds();
+    const rank = (artifact: IDBEvidenceV2) =>
+        taggedIds.has(artifact.id) ? 0 : artifact.type === "url" ? 1 : 2;
+    const sorted = [...(evidence ?? [])].sort((a, b) => rank(a) - rank(b));
 
     return sorted.map((artifact, index) => (
         <Fragment key={artifact.id}>
-            {index === firstFileIndex && index > 0 && (
+            {index > 0 && rank(sorted[index - 1]) !== rank(artifact) && (
                 <span className="basis-full" aria-hidden="true" />
             )}
             <EvidenceBadge

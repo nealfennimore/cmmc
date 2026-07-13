@@ -65,32 +65,36 @@ export const Requirements = ({ familyId }: { familyId: string }) => {
                     return (
                         <li key={requirement.element_identifier}>
                             <Link
-                                className="flex items-center rounded-lg border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary hover:bg-secondary"
+                                className="flex items-center justify-between rounded-lg border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary hover:bg-secondary"
                                 href={`${path}/requirement/${requirement.element_identifier}`}
                             >
-                                <StatusState
-                                    status={familyStatus?.requirementStatus(
-                                        requirement.element_identifier,
-                                    )}
-                                />
-                                <span className={`text-lg font-medium ${className}`}>
+                                <span
+                                    className={`text-lg font-medium ${className}`}
+                                >
                                     <span className="text-muted-foreground">
                                         {requirement.element_identifier}:
                                     </span>{" "}
                                     {requirement.title}
                                 </span>
-                                {isLockedRequirement(
-                                    requirement.element_identifier,
-                                ) && (
-                                    <span className="ms-2">
-                                        <LockedBadge />
-                                    </span>
-                                )}
-                                <EvidenceState
-                                    evidence={familyEvidence?.requirementEvidence(
+                                <span className="flex">
+                                    {isLockedRequirement(
                                         requirement.element_identifier,
+                                    ) && (
+                                        <span className="mr-2">
+                                            <LockedBadge />
+                                        </span>
                                     )}
-                                />
+                                    <StatusState
+                                        status={familyStatus?.requirementStatus(
+                                            requirement.element_identifier,
+                                        )}
+                                    />
+                                    <EvidenceState
+                                        evidence={familyEvidence?.requirementEvidence(
+                                            requirement.element_identifier,
+                                        )}
+                                    />
+                                </span>
                             </Link>
                         </li>
                     );

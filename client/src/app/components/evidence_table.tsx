@@ -1,6 +1,8 @@
 "use client";
+import { examineItemName } from "@/api/entities/ExamineItemIds";
 import { confirm } from "@/app/components/confirm";
 import { FileBadge, LinkBadge } from "@/app/components/evidence";
+import { getIconWithSheet } from "@/app/components/file_icons";
 import { EditEvidenceModal } from "@/app/components/security_requirements/evidence";
 import { Stats } from "@/app/components/stats";
 import {
@@ -10,13 +12,17 @@ import {
     Table,
 } from "@/app/components/table";
 import { toPath, useRevisionContext } from "@/app/context/revision";
-import { IDB, IDBEvidenceV2 } from "@/app/db";
-import { mimeLabel } from "@/app/utils/file";
+import { IDB, IDBEvidenceV2, removeEvidenceExamineTags } from "@/app/db";
+import { useHoverCard } from "@/app/hooks/hoverCard";
+import { hashType, mimeLabel } from "@/app/utils/file";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface Requirements {
     requirements: string[];
+    /** Names of the shared Examine documents this artifact is tagged as. */
+    attachedAs: string[];
 }
 
 interface EvidenceWithRequirements extends IDBEvidenceV2, Requirements {}
@@ -34,6 +40,21 @@ async function fetchEvidence(): Promise<EvidenceWithRequirements[]> {
         {} as { [key: string]: string[] },
     );
 
+    const tagRecords = await IDB.evidenceExamineItems.getAll();
+    const attachedAsByEvidenceId = tagRecords.reduce(
+        (acc, tag) => {
+            if (!acc[tag.evidence_id]) {
+                acc[tag.evidence_id] = [];
+            }
+            // Fall back to the raw slug for ids no longer in the mapping.
+            acc[tag.evidence_id].push(
+                examineItemName(tag.examine_id) ?? tag.examine_id,
+            );
+            return acc;
+        },
+        {} as { [key: string]: string[] },
+    );
+
     const evidence = await IDB.evidence.getAll();
 
     return evidence.map(
@@ -43,21 +64,73 @@ async function fetchEvidence(): Promise<EvidenceWithRequirements[]> {
                 requirements: (
                     requirementsByEvidenceId[artifact.id] || []
                 ).sort(),
+                attachedAs: (attachedAsByEvidenceId[artifact.id] || []).sort(),
             }) as EvidenceWithRequirements,
     );
 }
 
+/**
+ * Hover tooltip that escapes the table's scroll container: portaled to
+ * <body> at a fixed position via {@link useHoverCard} (same pattern as the
+ * table's filter dropdown), so overflow-x-auto can't clip it.
+ */
+const HoverCard = ({
+    label,
+    className,
+    children,
+}: {
+    label: ReactNode;
+    /** Extra classes for the card (e.g. font-mono for hashes). */
+    className?: string;
+    children: ReactNode;
+}) => {
+    const { position, show, cancelHide, scheduleHide, cardRef } =
+        useHoverCard();
+
+    return (
+        <div
+            className="w-fit cursor-help"
+            onMouseEnter={(e) => show(e.currentTarget)}
+            onMouseLeave={scheduleHide}
+        >
+            {label}
+            {position &&
+                createPortal(
+                    <div
+                        ref={(el) => {
+                            cardRef.current = el;
+                        }}
+                        onMouseEnter={cancelHide}
+                        onMouseLeave={scheduleHide}
+                        style={position}
+                        className={`fixed z-50 -translate-y-full rounded-md border border-border bg-card px-3 py-2 text-xs text-card-foreground shadow-md ${className ?? ""}`}
+                    >
+                        {children}
+                    </div>,
+                    document.body,
+                )}
+        </div>
+    );
+};
+
+// Requirements shown inline before the rest collapse into a hover card.
+const MAX_REQUIREMENT_LINKS = 3;
+
 const nestedSort = (a?: string[], b?: string[]) => defaultSort(a?.[0], b?.[0]);
-const sorters = [defaultSort, defaultSort, nestedSort, defaultSort, null];
+// "Attached as" renders as a count, so it orders by how many tags a row has.
+const countSort = (a?: string[], b?: string[]) =>
+    (a?.length ?? 0) - (b?.length ?? 0);
+const sorters = [defaultSort, defaultSort, nestedSort, countSort, null];
 
 const nestedFilter = (search: string) => (values: string[]) =>
     values.some((value) => value.includes(search));
-// The hash filter matches on the full id (row values), so pasting a complete
-// hash works even though the cell only displays a short prefix.
-const filters = [defaultFilter, defaultFilter, nestedFilter, defaultFilter, null];
-
-// Enough of a git-style prefix to visually tell artifacts apart.
-const HASH_DISPLAY_CHARS = 12;
+const filters = [
+    defaultFilter,
+    defaultFilter,
+    nestedFilter,
+    nestedFilter,
+    null,
+];
 
 export const EvidenceTable = () => {
     const [evidenceWithRequirements, setEvidenceWithRequirements] = useState<
@@ -107,6 +180,7 @@ export const EvidenceTable = () => {
             ]);
         }
         await IDB.evidence.delete(IDBKeyRange.only(artifact.id));
+        await removeEvidenceExamineTags(artifact.id);
         await refresh();
         return true;
     };
@@ -133,9 +207,10 @@ export const EvidenceTable = () => {
                 className: "min-w-[250px] max-w-[250px]",
             },
             {
-                text: "File Hash (SHA-256)",
+                text: "Attached as",
                 filterable: true,
-                className: "max-lg:hidden",
+                filterKind: "select" as const,
+                className: "min-w-[120px]",
             },
             {
                 text: "",
@@ -150,10 +225,17 @@ export const EvidenceTable = () => {
     // shown in the Type column), most common first. Clicking a type card
     // toggles the table down to that type; the total card clears it.
     const stats = useMemo(() => {
-        const byType = new Map<string, number>();
+        // Several MIME types share a label (e.g. "Spreadsheet"); keep one
+        // representative raw type per label to pick the card's icon.
+        const byType = new Map<string, { count: number; type: string }>();
         for (const artifact of evidenceWithRequirements) {
             const label = mimeLabel(artifact.type);
-            byType.set(label, (byType.get(label) ?? 0) + 1);
+            const entry = byType.get(label) ?? {
+                count: 0,
+                type: artifact.type,
+            };
+            entry.count += 1;
+            byType.set(label, entry);
         }
         return [
             {
@@ -162,15 +244,19 @@ export const EvidenceTable = () => {
                 onClick: () => setTypeFilter(null),
             },
             ...[...byType.entries()]
-                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-                .map(([type, count]) => ({
-                    label: type,
+                .sort(
+                    (a, b) =>
+                        b[1].count - a[1].count || a[0].localeCompare(b[0]),
+                )
+                .map(([label, { count, type }]) => ({
+                    label,
                     value: count,
+                    icon: getIconWithSheet(type),
                     onClick: () =>
                         setTypeFilter((current) =>
-                            current === type ? null : type,
+                            current === label ? null : label,
                         ),
-                    active: typeFilter === type,
+                    active: typeFilter === label,
                 })),
         ];
     }, [evidenceWithRequirements, typeFilter]);
@@ -192,40 +278,88 @@ export const EvidenceTable = () => {
                     artifact.filename,
                     mimeLabel(artifact.type),
                     artifact.requirements,
-                    artifact.id,
+                    artifact.attachedAs,
                     "",
                 ],
                 columns: [
                     artifact.type === "url" ? (
                         <LinkBadge artifact={artifact} hideIcon />
                     ) : (
-                        <FileBadge artifact={artifact} hideIcon />
+                        <FileBadge
+                            artifact={artifact}
+                            siblings={visibleEvidence}
+                            hideIcon
+                        />
                     ),
-                    <span key={artifact.id} title={artifact.type}>
-                        {mimeLabel(artifact.type)}
-                    </span>,
-                    artifact.requirements.map((requirement) => (
-                        <Link
-                            key={`${artifact.id}-${requirement}`}
-                            href={`${path}/requirement/${requirement}`}
-                            className="mr-2 text-primary hover:underline"
-                        >
-                            {requirement}
-                        </Link>
-                    )),
-                    // Hovering the short hash reveals the full value in a
-                    // card-styled tooltip; as a child of the hovered element
-                    // it stays open when moused over, so it can be selected
-                    // and copied.
-                    <div
+                    // Hovering the type reveals the artifact's SHA-256.
+                    <HoverCard
                         key={artifact.id}
-                        className="group relative w-fit cursor-help"
+                        label={
+                            <span className="flex items-center text-muted-foreground">
+                                {getIconWithSheet(artifact.type)}{" "}
+                                <span>{mimeLabel(artifact.type)}</span>
+                            </span>
+                        }
+                        className="font-mono"
                     >
-                        {artifact.id.slice(0, HASH_DISPLAY_CHARS)}&hellip;
-                        <span className="invisible absolute bottom-full right-0 z-10 mb-1 w-max rounded-md border border-border bg-card px-3 py-2 font-mono text-xs text-card-foreground shadow-md group-hover:visible">
-                            {artifact.id}
-                        </span>
-                    </div>,
+                        {hashType(artifact.id)}:{artifact.id}
+                    </HoverCard>,
+                    [
+                        ...artifact.requirements
+                            .slice(0, MAX_REQUIREMENT_LINKS)
+                            .map((requirement) => (
+                                <Link
+                                    key={`${artifact.id}-${requirement}`}
+                                    href={`${path}/requirement/${requirement}`}
+                                    className="mr-2 text-primary hover:underline"
+                                >
+                                    {requirement}
+                                </Link>
+                            )),
+                        // The rest collapse into a hover card; the grace
+                        // timeout keeps it open while the pointer travels in,
+                        // so the links stay clickable.
+                        ...(artifact.requirements.length > MAX_REQUIREMENT_LINKS
+                            ? [
+                                  <HoverCard
+                                      key={`${artifact.id}-more-requirements`}
+                                      label={
+                                          <span className="text-muted-foreground">
+                                              +
+                                              {artifact.requirements.length -
+                                                  MAX_REQUIREMENT_LINKS}{" "}
+                                              more
+                                          </span>
+                                      }
+                                      className="flex max-h-64 flex-col gap-1 overflow-y-auto"
+                                  >
+                                      {artifact.requirements
+                                          .slice(MAX_REQUIREMENT_LINKS)
+                                          .map((requirement) => (
+                                              <Link
+                                                  key={requirement}
+                                                  href={`${path}/requirement/${requirement}`}
+                                                  className="text-primary hover:underline"
+                                              >
+                                                  {requirement}
+                                              </Link>
+                                          ))}
+                                  </HoverCard>,
+                              ]
+                            : []),
+                    ],
+                    // Collapsed to a count; hovering lists the tag names.
+                    artifact.attachedAs.length ? (
+                        <HoverCard
+                            key={`${artifact.id}-attached`}
+                            label={artifact.attachedAs.length}
+                            className="flex max-w-sm flex-col gap-1"
+                        >
+                            {artifact.attachedAs.map((name) => (
+                                <span key={name}>{name}</span>
+                            ))}
+                        </HoverCard>
+                    ) : null,
                     <button
                         key={artifact.id}
                         type="button"
@@ -254,7 +388,7 @@ export const EvidenceTable = () => {
                     null,
                     "max-md:hidden",
                     "flex flex-wrap",
-                    "max-lg:hidden md:max-w-48 xl:max-w-full",
+                    null,
                     null,
                 ],
             })) ?? [],

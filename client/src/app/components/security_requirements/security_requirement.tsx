@@ -48,12 +48,16 @@ export const SecurityRequirement = ({
             <Heading
                 level={2}
                 as="h3"
-                className="mt-6 flex flex-wrap items-center gap-2"
+                className="mt-6 flex flex-wrap items-center gap-2 justify-between w-full"
             >
-                Security Requirements for {requirement.requirement}{" "}
-                {requirement.title}
-                <StatusState statuses={statuses} />
-                <EvidenceState evidence={evidence} />
+                <span className="flex">
+                    Security Requirements for {requirement.requirement}{" "}
+                    {requirement.title}
+                </span>
+                <span className="flex">
+                    <StatusState statuses={statuses} />
+                    <EvidenceState evidence={evidence} />
+                </span>
             </Heading>
             <p
                 data-tour="discussion"

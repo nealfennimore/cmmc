@@ -49,37 +49,43 @@ export const Families = () => {
                 {families.map((family) => (
                     <li key={family.element_identifier}>
                         <Link
-                            className="flex items-center rounded-lg border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary hover:bg-secondary"
+                            className="flex items-center justify-between rounded-lg border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary hover:bg-secondary"
                             href={`${path}/family/${family.element_identifier}`}
                         >
-                            <StatusState
-                                status={
-                                    globalStatus?.[family.element_identifier]
-                                        ?.status
-                                }
-                            />
                             <span className="text-lg font-medium">
                                 <span className="text-muted-foreground">
                                     {family.element_identifier}:
                                 </span>{" "}
                                 {family.title}
                             </span>
-                            {isFreeTier() &&
-                                !manifest.requirements.byFamily[
-                                    family.element_identifier
-                                ]?.some((requirement) =>
-                                    isUnlocked(requirement.element_identifier),
-                                ) && (
-                                    <span className="ms-2">
-                                        <LockedBadge />
-                                    </span>
-                                )}
-                            <EvidenceState
-                                evidence={
-                                    globalEvidence?.[family.element_identifier]
-                                        ?.hasEvidence
-                                }
-                            />
+                            <span className="flex">
+                                {isFreeTier() &&
+                                    !manifest.requirements.byFamily[
+                                        family.element_identifier
+                                    ]?.some((requirement) =>
+                                        isUnlocked(
+                                            requirement.element_identifier,
+                                        ),
+                                    ) && (
+                                        <span className="mr-2">
+                                            <LockedBadge />
+                                        </span>
+                                    )}
+                                <StatusState
+                                    status={
+                                        globalStatus?.[
+                                            family.element_identifier
+                                        ]?.status
+                                    }
+                                />
+                                <EvidenceState
+                                    evidence={
+                                        globalEvidence?.[
+                                            family.element_identifier
+                                        ]?.hasEvidence
+                                    }
+                                />
+                            </span>
                         </Link>
                     </li>
                 ))}

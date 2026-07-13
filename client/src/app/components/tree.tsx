@@ -2,7 +2,7 @@
 import type { ElementWrapper, Manifest } from "@/api/entities/Framework";
 import { useManifestContext } from "@/app/context/manifest";
 import { toPath, useRevisionContext } from "@/app/context/revision";
-import { isLockedRequirement } from "@/app/utils/tier";
+import { isLockedFamily, isLockedRequirement } from "@/app/utils/tier";
 import Link from "next/link";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import { FamilyEvidence, useFamilyEvidence } from "../hooks/evidence";
 import { FamilyStatus, useFamilyStatus } from "../hooks/status";
 import { EvidenceState } from "./evidence";
 import { StatusState } from "./status";
+import { IconLock } from "./upgrade_cta";
 
 export const Dropdown = ({ isOpen }: { isOpen: boolean }) => (
     <svg
@@ -39,16 +40,27 @@ export const FamilyBranch = ({
     const familyStatus = useFamilyStatus(family.element_identifier);
     const familyEvidence = useFamilyEvidence(family.element_identifier);
     const [isOpen, setOpen] = useState(false);
+    const requirements = manifest.requirements.byFamily[
+        family.element_identifier
+    ].map((r) => r.element_identifier);
     return (
         <li className="mb-1" key={family.element_identifier}>
             <div className="flex items-center">
-                <StatusState status={familyStatus?.status} size="sm" />
                 <Link
                     className="grow hover:underline"
                     href={`${path}/family/${family.element_identifier}`}
                 >
                     {family.element_identifier}: {family.title}
                 </Link>
+                {isLockedFamily(requirements) && (
+                    <span
+                        className="ms-1 text-xs text-amber-200"
+                        title="Available in the desktop app"
+                    >
+                        <IconLock />
+                    </span>
+                )}
+                <StatusState status={familyStatus?.status} size="sm" />
                 <EvidenceState
                     evidence={familyEvidence?.hasEvidence}
                     size="sm"
@@ -86,7 +98,7 @@ export const RequirementsLeaf = ({
     const requirements =
         manifest.requirements.byFamily[family.element_identifier];
     return (
-        <ol className="ml-4 mt-2 mb-4 flex flex-col">
+        <ol className="ml-4 mt-2 mb-4">
             {requirements.map((requirement) => (
                 <RequirementLeaf
                     key={requirement.element_identifier}
@@ -121,20 +133,27 @@ export const RequirementLeaf = ({
             className={`mb-1 text-wrap ${className}`}
             key={requirement.element_identifier}
         >
-            <StatusState status={status} size="xs" />
-            <Link
-                className="hover:underline"
-                href={`${path}/requirement/${requirement.element_identifier}`}
-            >
-                {requirement.element_identifier}:{" "}
-                {requirement.title || "Withdrawn"}
-            </Link>
-            {isLockedRequirement(requirement.element_identifier) && (
-                <span className="ms-1 text-xs" title="Available in the desktop app">
-                    🔒
+            <span className="flex justify-between items-center">
+                <Link
+                    className="hover:underline"
+                    href={`${path}/requirement/${requirement.element_identifier}`}
+                >
+                    {requirement.element_identifier}:{" "}
+                    {requirement.title || "Withdrawn"}
+                </Link>
+                <span className="flex items-center">
+                    {isLockedRequirement(requirement.element_identifier) && (
+                        <span
+                            className="ms-1 text-xs text-amber-200"
+                            title="Available in the desktop app"
+                        >
+                            <IconLock />
+                        </span>
+                    )}
+                    <StatusState status={status} size="xs" />
+                    <EvidenceState evidence={evidence} size="xs" />
                 </span>
-            )}
-            <EvidenceState evidence={evidence} size="xs" />
+            </span>
         </li>
     );
 };

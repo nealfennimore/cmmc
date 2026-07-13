@@ -3,6 +3,8 @@ import { toPath, useRevisionContext } from "@/app/context/revision";
 import { isFreeTier } from "@/app/utils/tier";
 import { usePathname, useRouter } from "next/navigation";
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
+import { EvidenceState } from "./evidence";
+import { Status, StatusState } from "./status";
 import { Button, menuItemClasses } from "./ui";
 
 // The tour spans two pages (the family list and a requirement page) and
@@ -28,7 +30,7 @@ interface TourStep {
 const STEPS: TourStep[] = [
     {
         page: "home",
-        title: "Welcome 👋",
+        title: "Welcome!",
         body: "This app helps you document NIST 800-171 / CMMC compliance: record an implementation status and notes for every security requirement, attach evidence, and generate a System Security Plan and POA&M. Everything is stored locally on this device — no accounts, no servers.",
     },
     {
@@ -49,14 +51,43 @@ const STEPS: TourStep[] = [
                     example, one not-implemented control turns the whole family
                     and requirement red.
                 </p>
+                {/* Rendered with the app's own status/evidence components so
+                    the legend can never drift from the real icons. */}
                 <ul className="flex flex-col gap-1">
-                    <li>🟢 Implemented</li>
-                    <li>🟡 Partially implemented</li>
-                    <li>🔴 Not implemented</li>
-                    <li>⚫ Not applicable</li>
-                    <li>⚪ Not started (the default)</li>
-                    <li>🚧 Started, but work remaining beneath</li>
-                    <li>🧾 Evidence has been attached</li>
+                    <li className="flex items-center">
+                        <StatusState status={Status.IMPLEMENTED} size="base" />
+                        Implemented
+                    </li>
+                    <li className="flex items-center">
+                        <StatusState
+                            status={Status.PARTIALLY_IMPLEMENTED}
+                            size="base"
+                        />
+                        Partially implemented
+                    </li>
+                    <li className="flex items-center">
+                        <StatusState
+                            status={Status.NOT_IMPLEMENTED}
+                            size="base"
+                        />
+                        Not implemented
+                    </li>
+                    <li className="flex items-center">
+                        <StatusState
+                            status={Status.NOT_APPLICABLE}
+                            size="base"
+                        />
+                        Not applicable
+                    </li>
+                    <li className="flex items-center">
+                        <StatusState status={Status.NEEDS_WORK} size="base" />
+                        Started, but work remaining beneath
+                    </li>
+                    <li className="flex items-center">
+                        <EvidenceState evidence size="base" />
+                        Evidence has been attached
+                    </li>
+                    <li>Not started shows no icon (the default)</li>
                 </ul>
             </>
         ),
@@ -106,9 +137,9 @@ const STEPS: TourStep[] = [
                         evidence files to your device in one go.
                     </li>
                     <li>
-                        <strong>Download Evidence Map</strong> — generate a
-                        JSON file mapping each artifact, with its content hash,
-                        to the requirements it supports — handy to hand to an
+                        <strong>Download Evidence Map</strong> — generate a JSON
+                        file mapping each artifact, with its content hash, to
+                        the requirements it supports — handy to hand to an
                         assessor alongside the exported files.
                     </li>
                 </ul>

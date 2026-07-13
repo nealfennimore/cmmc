@@ -1,6 +1,8 @@
 "use client";
+import { examineIdsForStoredItem } from "@/api/entities/ExamineItemIds";
+import { showLoader } from "@/app/components/loader";
 import { Status } from "@/app/components/status";
-export const version = 6;
+export const version = 9;
 let loader: Promise<IDBDatabase> | undefined;
 
 enum Table {
@@ -8,7 +10,10 @@ enum Table {
     REQUIREMENTS = "requirements",
     EVIDENCE = "evidence",
     EVIDENCE_REQUIREMENTS = "evidence_requirements",
+    /** Pre-v9 name of REQUIREMENT_EXAMINE_ITEMS; migrations 5-9 only. */
     EXAMINE_EVIDENCE = "examine_evidence",
+    EVIDENCE_EXAMINE_ITEMS = "evidence_examine_items",
+    REQUIREMENT_EXAMINE_ITEMS = "requirement_examine_items",
 }
 
 const migrations = {
@@ -165,14 +170,104 @@ const migrations = {
         // payload version, which moved to 6 when evidence bytes switched
         // from number arrays to base64 in the export file format.
     },
+    "7": async (event: IDBVersionChangeEvent) => {
+        const db = event.target.result as IDBDatabase;
+
+        // Tags an evidence artifact as being a specific shared Examine
+        // document ("this file is our System security plan"), independent of
+        // which controls it is linked to. examine_id is the frozen slug from
+        // examine-shared-items.json; the per-control evidence_requirements
+        // links remain the user-editable truth of where evidence appears.
+        const tags = db.createObjectStore(Table.EVIDENCE_EXAMINE_ITEMS, {
+            keyPath: ["evidence_id", "examine_id"],
+        });
+
+        tags.createIndex("evidence_id", "evidence_id", {
+            unique: false,
+        });
+        tags.createIndex("examine_id", "examine_id", {
+            unique: false,
+        });
+    },
+    "8": async (event: IDBVersionChangeEvent) => {
+        const db = event.target.result as IDBDatabase;
+        const tx = event.target.transaction as IDBTransaction;
+
+        // Re-key manual Examine checklist ticks from raw guide strings to
+        // frozen examine ids, matching the evidence tags' vocabulary. The
+        // keyPath changes, so the store is rebuilt in place (reads complete
+        // before the delete). Compound guide entries fan out to one row per
+        // component id; the composite key dedupes collisions.
+        const ticks = await getAll<IDBExamineEvidenceV1>(
+            Table.EXAMINE_EVIDENCE,
+            tx,
+        )();
+
+        db.deleteObjectStore(Table.EXAMINE_EVIDENCE);
+        const examineEvidence = db.createObjectStore(Table.EXAMINE_EVIDENCE, {
+            keyPath: ["requirement_id", "examine_id"],
+        });
+        examineEvidence.createIndex("requirement_id", "requirement_id", {
+            unique: false,
+        });
+
+        const putTick = put<IDBRequirementExamineItem>(
+            Table.EXAMINE_EVIDENCE,
+            tx,
+        );
+        for (const tick of ticks) {
+            for (const examineId of examineIdsForStoredItem(tick.item)) {
+                await putTick({
+                    requirement_id: tick.requirement_id,
+                    examine_id: examineId,
+                });
+            }
+        }
+    },
+    "9": async (event: IDBVersionChangeEvent) => {
+        const db = event.target.result as IDBDatabase;
+        const tx = event.target.transaction as IDBTransaction;
+
+        // Rename examine_evidence -> requirement_examine_items: the store
+        // holds per-requirement checklist ticks (requirement -> examine item),
+        // not evidence, and the new name mirrors evidence_examine_items.
+        // IndexedDB has no rename, so copy and drop.
+        const ticks = await getAll<IDBRequirementExamineItem>(
+            Table.EXAMINE_EVIDENCE,
+            tx,
+        )();
+
+        db.deleteObjectStore(Table.EXAMINE_EVIDENCE);
+        const renamed = db.createObjectStore(Table.REQUIREMENT_EXAMINE_ITEMS, {
+            keyPath: ["requirement_id", "examine_id"],
+        });
+        renamed.createIndex("requirement_id", "requirement_id", {
+            unique: false,
+        });
+
+        const putTick = put<IDBRequirementExamineItem>(
+            Table.REQUIREMENT_EXAMINE_ITEMS,
+            tx,
+        );
+        for (const tick of ticks) {
+            await putTick(tick);
+        }
+    },
 };
 
 if (typeof window !== "undefined") {
     const request = window?.indexedDB?.open("800_171_r3", version);
 
+    // Raised by onupgradeneeded, dropped once the open settles (including the
+    // follow-on id normalization), so migrations run behind the busy overlay
+    // instead of a half-rendered app. Not awaited on hide: the overlay's
+    // minimum visible time can run out while the app hydrates beneath it.
+    let hideMigrationLoader: (() => Promise<void>) | undefined;
+
     loader = new Promise((resolve, reject) => {
         request.onerror = (event) => {
             console.error("Can't use IndexDB");
+            hideMigrationLoader?.();
             reject(event);
         };
         request.onsuccess = async (event) => {
@@ -185,12 +280,14 @@ if (typeof window !== "undefined") {
                 // log and continue rather than reject the open.
                 console.error("Evidence id migration failed", error);
             }
+            hideMigrationLoader?.();
             resolve(db);
         };
 
         request.onupgradeneeded = async function (
             event: IDBVersionChangeEvent,
         ) {
+            hideMigrationLoader = showLoader("Updating local database…");
             for (let v = event.oldVersion + 1; v <= event.newVersion; v++) {
                 await migrations?.[`${v}`]?.(event);
             }
@@ -233,15 +330,44 @@ export interface IDBEvidenceRequirement {
     evidence_id: string;
 }
 
-export interface IDBExamineEvidence {
+/** Pre-v8 checklist ticks, keyed by the raw guide string. Still the shape
+ *  carried by v4-v7 export payloads; converted on import and in migration 8. */
+export interface IDBExamineEvidenceV1 {
     requirement_id: string;
     item: string;
+}
+
+export interface IDBRequirementExamineItem {
+    requirement_id: string;
+    /** Frozen slug from examine-shared-items.json — or, for foreign rows that
+     *  predate the mapping, the raw item string carried through verbatim. */
+    examine_id: string;
+}
+
+export interface IDBEvidenceExamineItem {
+    evidence_id: string;
+    /** Frozen slug from examine-shared-items.json (e.g. "system-security-plan"). */
+    examine_id: string;
 }
 
 enum Permission {
     READONLY = "readonly",
     READWRITE = "readwrite",
 }
+
+/** Fired on window after any put/delete/clear, with `detail.table` naming the
+ *  store. Lets sibling components derive state from tables they don't own
+ *  (e.g. the Examine checklist reacts to evidence written by the attach
+ *  dialog) without threading refresh callbacks between them. */
+export const TABLE_CHANGED_EVENT = "idb-table-changed";
+
+const notifyTableChanged = (table: string): void => {
+    if (typeof window !== "undefined") {
+        window.dispatchEvent(
+            new CustomEvent(TABLE_CHANGED_EVENT, { detail: { table } }),
+        );
+    }
+};
 
 export const getStore = async (
     table: string,
@@ -297,6 +423,7 @@ export const remove =
 
         return new Promise((resolve, reject) => {
             request.onsuccess = () => {
+                notifyTableChanged(table);
                 resolve(true);
             };
             request.onerror = () => {
@@ -312,6 +439,7 @@ export const put =
         return new Promise<T[]>((resolve, reject) => {
             const request = store.put(data, key);
             request.onsuccess = () => {
+                notifyTableChanged(table);
                 resolve(request.result as T[]);
             };
             request.onerror = () => {
@@ -393,13 +521,36 @@ const migrateEvidenceIdsToSha256 = async (db: IDBDatabase): Promise<void> => {
         return;
     }
 
+    // Legacy ids found: hashing every artifact and rewriting rows can take a
+    // while on large evidence sets, so it runs behind the busy overlay (same
+    // message as schema upgrades — one continuous "updating" step). Hide is
+    // not awaited; see the open handler.
+    const hideLoader = showLoader("Updating local database…");
+    try {
+        await migrateLegacyEvidenceIds(db);
+    } finally {
+        hideLoader();
+    }
+
+    markEvidenceIdsMigrated();
+};
+
+const migrateLegacyEvidenceIds = async (db: IDBDatabase): Promise<void> => {
     const readTx = db.transaction(
-        [Table.EVIDENCE, Table.EVIDENCE_REQUIREMENTS],
+        [
+            Table.EVIDENCE,
+            Table.EVIDENCE_REQUIREMENTS,
+            Table.EVIDENCE_EXAMINE_ITEMS,
+        ],
         Permission.READONLY,
     );
     const evidence = await getAll<IDBEvidenceV2>(Table.EVIDENCE, readTx)();
     const links = await getAll<IDBEvidenceRequirement>(
         Table.EVIDENCE_REQUIREMENTS,
+        readTx,
+    )();
+    const tags = await getAll<IDBEvidenceExamineItem>(
+        Table.EVIDENCE_EXAMINE_ITEMS,
         readTx,
     )();
 
@@ -413,7 +564,11 @@ const migrateEvidenceIdsToSha256 = async (db: IDBDatabase): Promise<void> => {
     }
 
     const writeTx = db.transaction(
-        [Table.EVIDENCE, Table.EVIDENCE_REQUIREMENTS],
+        [
+            Table.EVIDENCE,
+            Table.EVIDENCE_REQUIREMENTS,
+            Table.EVIDENCE_EXAMINE_ITEMS,
+        ],
         Permission.READWRITE,
     );
     const putEvidence = put<IDBEvidenceV2>(Table.EVIDENCE, writeTx);
@@ -423,6 +578,11 @@ const migrateEvidenceIdsToSha256 = async (db: IDBDatabase): Promise<void> => {
         writeTx,
     );
     const deleteLink = remove(Table.EVIDENCE_REQUIREMENTS, writeTx);
+    const putTag = put<IDBEvidenceExamineItem>(
+        Table.EVIDENCE_EXAMINE_ITEMS,
+        writeTx,
+    );
+    const deleteTag = remove(Table.EVIDENCE_EXAMINE_ITEMS, writeTx);
 
     // Re-key the evidence. put() then delete() of the old key; the keys always
     // differ (legacy vs sha256). Distinct records with identical content collapse
@@ -436,8 +596,8 @@ const migrateEvidenceIdsToSha256 = async (db: IDBDatabase): Promise<void> => {
         await deleteEvidence(artifact.id);
     }
 
-    // Repoint the only foreign key. The composite [evidence_id, requirement_id]
-    // primary key dedupes any links that collapse together.
+    // Repoint the foreign keys. The composite primary keys dedupe any rows
+    // that collapse together.
     for (const link of links) {
         const id = newIdByOldId.get(link.evidence_id);
         if (!id || id === link.evidence_id) {
@@ -447,13 +607,20 @@ const migrateEvidenceIdsToSha256 = async (db: IDBDatabase): Promise<void> => {
         await putLink({ evidence_id: id, requirement_id: link.requirement_id });
     }
 
+    for (const tag of tags) {
+        const id = newIdByOldId.get(tag.evidence_id);
+        if (!id || id === tag.evidence_id) {
+            continue;
+        }
+        await deleteTag([tag.evidence_id, tag.examine_id]);
+        await putTag({ evidence_id: id, examine_id: tag.examine_id });
+    }
+
     await new Promise<void>((resolve, reject) => {
         writeTx.oncomplete = () => resolve();
         writeTx.onerror = () => reject(writeTx.error);
         writeTx.onabort = () => reject(writeTx.error);
     });
-
-    markEvidenceIdsMigrated();
 };
 
 export const clear = (table: string) => async (): Promise<boolean> => {
@@ -461,6 +628,7 @@ export const clear = (table: string) => async (): Promise<boolean> => {
     return new Promise<boolean>((resolve, reject) => {
         const request = store.clear();
         request.onsuccess = () => {
+            notifyTableChanged(table);
             resolve(true);
         };
         request.onerror = () => {
@@ -501,9 +669,44 @@ export class IDB {
     static evidenceRequirements = new StoreWrapper<IDBEvidenceRequirement>(
         Table.EVIDENCE_REQUIREMENTS,
     );
-    static examineEvidence = new StoreWrapper<IDBExamineEvidence>(
-        Table.EXAMINE_EVIDENCE,
+    static requirementExamineItems =
+        new StoreWrapper<IDBRequirementExamineItem>(
+            Table.REQUIREMENT_EXAMINE_ITEMS,
+        );
+    static evidenceExamineItems = new StoreWrapper<IDBEvidenceExamineItem>(
+        Table.EVIDENCE_EXAMINE_ITEMS,
     );
 
     static version = version;
 }
+
+/** Every examine tag on an artifact. */
+export const evidenceExamineTags = (
+    evidenceId: string,
+): Promise<IDBEvidenceExamineItem[]> =>
+    IDB.evidenceExamineItems.getAll(IDBKeyRange.only(evidenceId), "evidence_id");
+
+/** Drop all examine tags for an artifact; call wherever the artifact record
+ *  itself is deleted (tags must not outlive the evidence they describe). */
+export const removeEvidenceExamineTags = async (
+    evidenceId: string,
+): Promise<void> => {
+    for (const tag of await evidenceExamineTags(evidenceId)) {
+        await IDB.evidenceExamineItems.delete([tag.evidence_id, tag.examine_id]);
+    }
+};
+
+/** Copy examine tags from one artifact to another. Used when a replacement
+ *  re-keys evidence (content-hashed ids): the new content is still the same
+ *  logical document, so it inherits the identity claims. */
+export const copyEvidenceExamineTags = async (
+    fromEvidenceId: string,
+    toEvidenceId: string,
+): Promise<void> => {
+    for (const tag of await evidenceExamineTags(fromEvidenceId)) {
+        await IDB.evidenceExamineItems.put({
+            evidence_id: toEvidenceId,
+            examine_id: tag.examine_id,
+        });
+    }
+};

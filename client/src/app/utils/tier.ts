@@ -75,11 +75,14 @@ export const isUnlocked = (requirementId: string): boolean =>
 export const isLockedRequirement = (requirementId: string): boolean =>
     FREE_TIER && !UNLOCKED.has(requirementId);
 
+export const isLockedFamily = (requirementIds: string[]): boolean =>
+    FREE_TIER &&
+    !requirementIds.some((requirementId) => UNLOCKED.has(requirementId));
+
 /** Denominator set for the Level 1 progress tile. */
 export const unlockedIdsForRevision = (
     revision: Revision,
-): readonly string[] =>
-    revision === Revision.V2 ? L1_REV2_IDS : L1_REV3_IDS;
+): readonly string[] => (revision === Revision.V2 ? L1_REV2_IDS : L1_REV3_IDS);
 
 // Drift check: warn (dev only) if the assessment guide's cui_data flags stop
 // matching the hardcoded list, so a data regeneration can't silently change
@@ -91,9 +94,7 @@ if (process.env.NODE_ENV !== "production") {
             .map((requirement) => requirement.export_id),
     );
     const missingFlag = L1_REV2_IDS.filter((id) => !flagged.has(id));
-    const extraFlag = [...flagged].filter(
-        (id) => !L1_REV2_IDS.includes(id),
-    );
+    const extraFlag = [...flagged].filter((id) => !L1_REV2_IDS.includes(id));
     const knownDiff =
         missingFlag.length === 1 &&
         missingFlag[0] === "03.01.02" &&

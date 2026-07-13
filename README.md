@@ -76,12 +76,15 @@ Signed installers are published on the [**Releases**](https://github.com/nealfen
 
 ### Icon Meanings
 
-- 🟢 A family, requirement, or security requirement is implemented.
-- 🔴 A family, requirement, or security requirement is not implemented (e.g. any security requirement within a family/requirement is not implemented).
-- 🟡 A family or requirement is partially implemented (e.g. any security requirement within a family/requirement is partially implemented).
-- ⚫ A family, requirement, or security requirement is not applicable.
-- ⚪ A family, requirement, or security requirement has not been started (default).
-- 🚧 A family or requirement has remaining work.
+The app renders these as line icons; the closest text equivalents are used below.
+
+- ✅ (green check circle) A family, requirement, or security requirement is implemented.
+- ⛔ (red minus circle) A family, requirement, or security requirement is not implemented (e.g. any security requirement within a family/requirement is not implemented).
+- ⏸️ (amber pause circle) A family or requirement is partially implemented (e.g. any security requirement within a family/requirement is partially implemented).
+- ➖ (minus) A family, requirement, or security requirement is not applicable.
+- 🔨 (hammer) A family or requirement has remaining work.
+- 📎 (paperclip) Evidence has been attached.
+- A family, requirement, or security requirement that has not been started (the default) shows no icon.
 
 ## Privacy
 
