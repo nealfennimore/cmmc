@@ -1,0 +1,2702 @@
+{
+  "Access authorization records": {
+    "id": "access-authorization-records",
+    "shared": true,
+    "controls": [
+      "03.01.01",
+      "03.01.05"
+    ]
+  },
+  "Access authorizations": {
+    "id": "access-authorizations",
+    "shared": false,
+    "controls": [
+      "03.03.09"
+    ]
+  },
+  "Access control list": {
+    "id": "access-control-list",
+    "shared": false,
+    "controls": [
+      "03.03.09"
+    ]
+  },
+  "Access control policy and procedures": {
+    "id": "access-control-policy-and-procedures",
+    "shared": true,
+    "controls": [
+      "03.01.01",
+      "03.01.02",
+      "03.01.03",
+      "03.01.04",
+      "03.01.05",
+      "03.01.06",
+      "03.01.08",
+      "03.01.10",
+      "03.01.11",
+      "03.01.12",
+      "03.01.13",
+      "03.01.14",
+      "03.01.15",
+      "03.01.16",
+      "03.01.17",
+      "03.01.18",
+      "03.01.19",
+      "03.01.20",
+      "03.01.21",
+      "03.01.22",
+      "03.03.08",
+      "03.03.09",
+      "03.08.01",
+      "03.08.02",
+      "03.08.05",
+      "03.13.12"
+    ]
+  },
+  "Access control records": {
+    "id": "access-control-records",
+    "shared": true,
+    "controls": [
+      "03.07.06",
+      "03.08.01"
+    ]
+  },
+  "Access credentials": {
+    "id": "access-credentials",
+    "shared": false,
+    "controls": [
+      "03.04.05"
+    ]
+  },
+  "Account management compliance reviews": {
+    "id": "account-management-compliance-reviews",
+    "shared": true,
+    "controls": [
+      "03.01.01",
+      "03.01.05"
+    ]
+  },
+  "Account management documents": {
+    "id": "account-management-documents",
+    "shared": true,
+    "controls": [
+      "03.01.20",
+      "03.01.21"
+    ]
+  },
+  "Agenda/minutes from configuration change control oversight meetings": {
+    "id": "agenda-minutes-from-configuration-change-control-oversight-meetings",
+    "shared": false,
+    "controls": [
+      "03.04.03"
+    ]
+  },
+  "Analysis tools and associated outputs": {
+    "id": "analysis-tools-and-associated-outputs",
+    "shared": false,
+    "controls": [
+      "03.04.04"
+    ]
+  },
+  "Applicable standards and policies addressing media sanitization": {
+    "id": "applicable-standards-and-policies-addressing-media-sanitization",
+    "shared": false,
+    "controls": [
+      "03.08.03"
+    ]
+  },
+  "Assessments of safeguards at alternate work sites": {
+    "id": "assessments-of-safeguards-at-alternate-work-sites",
+    "shared": false,
+    "controls": [
+      "03.10.06"
+    ]
+  },
+  "Audit and accountability policy": {
+    "id": "audit-and-accountability-policy",
+    "shared": true,
+    "controls": [
+      "03.03.01",
+      "03.03.02",
+      "03.03.03",
+      "03.03.04",
+      "03.03.05",
+      "03.03.06",
+      "03.03.07",
+      "03.03.08",
+      "03.03.09"
+    ]
+  },
+  "Audit logging tools": {
+    "id": "audit-logging-tools",
+    "shared": false,
+    "controls": [
+      "03.03.08"
+    ]
+  },
+  "Audit record reduction, review, analysis, and reporting tools": {
+    "id": "audit-record-reduction-review-analysis-and-reporting-tools",
+    "shared": false,
+    "controls": [
+      "03.03.06"
+    ]
+  },
+  "Authorization credentials": {
+    "id": "authorization-credentials",
+    "shared": false,
+    "controls": [
+      "03.10.01"
+    ]
+  },
+  "Authorization records": {
+    "id": "authorization-records",
+    "shared": false,
+    "controls": [
+      "03.13.13"
+    ]
+  },
+  "Authorizations for mobile device connections to organizational systems": {
+    "id": "authorizations-for-mobile-device-connections-to-organizational-systems",
+    "shared": false,
+    "controls": [
+      "03.01.18"
+    ]
+  },
+  "Authorized personnel access list": {
+    "id": "authorized-personnel-access-list",
+    "shared": false,
+    "controls": [
+      "03.10.01"
+    ]
+  },
+  "Backup storage locations": {
+    "id": "backup-storage-locations",
+    "shared": false,
+    "controls": [
+      "03.08.09"
+    ]
+  },
+  "Boundary protection hardware and software": {
+    "id": "boundary-protection-hardware-and-software",
+    "shared": true,
+    "controls": [
+      "03.13.01",
+      "03.13.05"
+    ]
+  },
+  "Change control audit and review reports": {
+    "id": "change-control-audit-and-review-reports",
+    "shared": false,
+    "controls": [
+      "03.04.03"
+    ]
+  },
+  "Change control records": {
+    "id": "change-control-records",
+    "shared": true,
+    "controls": [
+      "03.04.01",
+      "03.04.02",
+      "03.04.03",
+      "03.04.04",
+      "03.04.05",
+      "03.04.07",
+      "03.04.08"
+    ]
+  },
+  "Change control records associated with managing system authenticators": {
+    "id": "change-control-records-associated-with-managing-system-authenticators",
+    "shared": true,
+    "controls": [
+      "03.05.02",
+      "03.05.05",
+      "03.05.10"
+    ]
+  },
+  "Codes of federal regulations": {
+    "id": "codes-of-federal-regulations",
+    "shared": true,
+    "controls": [
+      "03.02.01",
+      "03.02.02"
+    ]
+  },
+  "Configuration management plan": {
+    "id": "configuration-management-plan",
+    "shared": true,
+    "controls": [
+      "03.01.12",
+      "03.01.16",
+      "03.01.18",
+      "03.04.01",
+      "03.04.02",
+      "03.04.03",
+      "03.04.04",
+      "03.04.05",
+      "03.04.06",
+      "03.04.07",
+      "03.04.08",
+      "03.04.09"
+    ]
+  },
+  "Configuration management policy and procedures": {
+    "id": "configuration-management-policy-and-procedures",
+    "shared": true,
+    "controls": [
+      "03.04.01",
+      "03.04.02",
+      "03.04.03",
+      "03.04.04",
+      "03.04.05",
+      "03.04.06",
+      "03.04.07",
+      "03.04.08",
+      "03.04.09",
+      "03.14.02",
+      "03.14.04",
+      "03.14.05"
+    ]
+  },
+  "Contingency plan": {
+    "id": "contingency-plan",
+    "shared": true,
+    "controls": [
+      "03.06.01",
+      "03.06.03"
+    ]
+  },
+  "Contingency planning policy": {
+    "id": "contingency-planning-policy",
+    "shared": true,
+    "controls": [
+      "03.06.01",
+      "03.06.03"
+    ]
+  },
+  "Continuous monitoring strategy": {
+    "id": "continuous-monitoring-strategy",
+    "shared": true,
+    "controls": [
+      "03.04.09",
+      "03.14.06",
+      "03.14.07"
+    ]
+  },
+  "Cryptographic mechanisms and associated configuration documentation": {
+    "id": "cryptographic-mechanisms-and-associated-configuration-documentation",
+    "shared": false,
+    "controls": [
+      "03.01.13",
+      "03.01.19",
+      "03.13.10",
+      "03.13.16"
+    ]
+  },
+  "Cryptographic module validation certificates": {
+    "id": "cryptographic-module-validation-certificates",
+    "shared": false,
+    "controls": [
+      "03.13.11"
+    ]
+  },
+  "Designated controlled areas": {
+    "id": "designated-controlled-areas",
+    "shared": true,
+    "controls": [
+      "03.08.02",
+      "03.08.04",
+      "03.08.05"
+    ]
+  },
+  "Diagnostic records": {
+    "id": "diagnostic-records",
+    "shared": false,
+    "controls": [
+      "03.07.05"
+    ]
+  },
+  "Documented approval of system use notification messages or banners": {
+    "id": "documented-approval-of-system-use-notification-messages-or-banners",
+    "shared": true,
+    "controls": [
+      "03.01.07",
+      "03.01.09"
+    ]
+  },
+  "Documented reviews of programs, functions, ports, protocols, and/or services": {
+    "id": "documented-reviews-of-programs-functions-ports-protocols-and-or-services",
+    "shared": false,
+    "controls": [
+      "03.04.07"
+    ]
+  },
+  "Enterprise architecture documentation": {
+    "id": "enterprise-architecture-documentation",
+    "shared": true,
+    "controls": [
+      "03.04.01",
+      "03.12.03",
+      "03.12.04",
+      "03.13.02"
+    ]
+  },
+  "Enterprise security architecture documentation": {
+    "id": "enterprise-security-architecture-documentation",
+    "shared": true,
+    "controls": [
+      "03.13.01",
+      "03.13.05"
+    ]
+  },
+  "Equipment sanitization records": {
+    "id": "equipment-sanitization-records",
+    "shared": true,
+    "controls": [
+      "03.07.01",
+      "03.07.03"
+    ]
+  },
+  "Evidence supporting approved deviations from established configuration settings": {
+    "id": "evidence-supporting-approved-deviations-from-established-configuration-settings",
+    "shared": false,
+    "controls": [
+      "03.04.02"
+    ]
+  },
+  "Facility diagram or layout": {
+    "id": "facility-diagram-or-layout",
+    "shared": true,
+    "controls": [
+      "03.14.06",
+      "03.14.07"
+    ]
+  },
+  "Identification and authentication policy": {
+    "id": "identification-and-authentication-policy",
+    "shared": true,
+    "controls": [
+      "03.05.01",
+      "03.05.02",
+      "03.05.03",
+      "03.05.04",
+      "03.05.05",
+      "03.05.06",
+      "03.05.07",
+      "03.05.08",
+      "03.05.09",
+      "03.05.10",
+      "03.05.11"
+    ]
+  },
+  "Incident reporting records and documentation": {
+    "id": "incident-reporting-records-and-documentation",
+    "shared": false,
+    "controls": [
+      "03.06.02"
+    ]
+  },
+  "Incident response plan": {
+    "id": "incident-response-plan",
+    "shared": true,
+    "controls": [
+      "03.06.01",
+      "03.06.02",
+      "03.06.03"
+    ]
+  },
+  "Incident response policy": {
+    "id": "incident-response-policy",
+    "shared": true,
+    "controls": [
+      "03.06.01",
+      "03.06.02",
+      "03.06.03"
+    ]
+  },
+  "Incident response records and documentation": {
+    "id": "incident-response-records-and-documentation",
+    "shared": false,
+    "controls": [
+      "03.06.02"
+    ]
+  },
+  "Incident response test plan": {
+    "id": "incident-response-test-plan",
+    "shared": false,
+    "controls": [
+      "03.06.03"
+    ]
+  },
+  "Incident response test results": {
+    "id": "incident-response-test-results",
+    "shared": false,
+    "controls": [
+      "03.06.03"
+    ]
+  },
+  "Incident response testing material": {
+    "id": "incident-response-testing-material",
+    "shared": false,
+    "controls": [
+      "03.06.03"
+    ]
+  },
+  "Incident response training curriculum": {
+    "id": "incident-response-training-curriculum",
+    "shared": false,
+    "controls": [
+      "03.06.01"
+    ]
+  },
+  "Incident response training materials": {
+    "id": "incident-response-training-materials",
+    "shared": false,
+    "controls": [
+      "03.06.01"
+    ]
+  },
+  "Incident response training records": {
+    "id": "incident-response-training-records",
+    "shared": false,
+    "controls": [
+      "03.06.01"
+    ]
+  },
+  "Information flow control policies": {
+    "id": "information-flow-control-policies",
+    "shared": false,
+    "controls": [
+      "03.01.03"
+    ]
+  },
+  "Insider threat policy and procedures": {
+    "id": "insider-threat-policy-and-procedures",
+    "shared": false,
+    "controls": [
+      "03.02.03"
+    ]
+  },
+  "Installation/change control records for security-relevant software and firmware updates": {
+    "id": "installation-change-control-records-for-security-relevant-software-and-firmware-updates",
+    "shared": false,
+    "controls": [
+      "03.14.01"
+    ]
+  },
+  "Inventory records of physical access control devices": {
+    "id": "inventory-records-of-physical-access-control-devices",
+    "shared": true,
+    "controls": [
+      "03.10.03",
+      "03.10.04",
+      "03.10.05"
+    ]
+  },
+  "Inventory review and update records": {
+    "id": "inventory-review-and-update-records",
+    "shared": false,
+    "controls": [
+      "03.04.01"
+    ]
+  },
+  "List of FIPS-validated cryptographic modules": {
+    "id": "list-of-fips-validated-cryptographic-modules",
+    "shared": false,
+    "controls": [
+      "03.13.11"
+    ]
+  },
+  "List of acceptable mobile code and mobile code technologies": {
+    "id": "list-of-acceptable-mobile-code-and-mobile-code-technologies",
+    "shared": false,
+    "controls": [
+      "03.13.13"
+    ]
+  },
+  "List of active system accounts and the name of the individual associated with each account": {
+    "id": "list-of-active-system-accounts-and-the-name-of-the-individual-associated-with-each-account",
+    "shared": true,
+    "controls": [
+      "03.01.01",
+      "03.01.05"
+    ]
+  },
+  "List of all managed network access control points": {
+    "id": "list-of-all-managed-network-access-control-points",
+    "shared": false,
+    "controls": [
+      "03.01.14"
+    ]
+  },
+  "List of applications accessible from external systems": {
+    "id": "list-of-applications-accessible-from-external-systems",
+    "shared": false,
+    "controls": [
+      "03.01.20"
+    ]
+  },
+  "List of approved authorizations including remote access authorizations": {
+    "id": "list-of-approved-authorizations-including-remote-access-authorizations",
+    "shared": false,
+    "controls": [
+      "03.01.02"
+    ]
+  },
+  "List of authorized personnel": {
+    "id": "list-of-authorized-personnel",
+    "shared": false,
+    "controls": [
+      "03.07.06"
+    ]
+  },
+  "List of conditions for group and role membership": {
+    "id": "list-of-conditions-for-group-and-role-membership",
+    "shared": true,
+    "controls": [
+      "03.01.01",
+      "03.01.05"
+    ]
+  },
+  "List of conditions or trigger events requiring session disconnect": {
+    "id": "list-of-conditions-or-trigger-events-requiring-session-disconnect",
+    "shared": false,
+    "controls": [
+      "03.01.11"
+    ]
+  },
+  "List of devices and systems authorized to connect to organizational systems": {
+    "id": "list-of-devices-and-systems-authorized-to-connect-to-organizational-systems",
+    "shared": false,
+    "controls": [
+      "03.01.01"
+    ]
+  },
+  "List of divisions of responsibility and separation of duties": {
+    "id": "list-of-divisions-of-responsibility-and-separation-of-duties",
+    "shared": false,
+    "controls": [
+      "03.01.04"
+    ]
+  },
+  "List of flaws and vulnerabilities potentially affecting the system": {
+    "id": "list-of-flaws-and-vulnerabilities-potentially-affecting-the-system",
+    "shared": false,
+    "controls": [
+      "03.14.01"
+    ]
+  },
+  "List of identifiers generated from physical access control devices": {
+    "id": "list-of-identifiers-generated-from-physical-access-control-devices",
+    "shared": false,
+    "controls": [
+      "03.05.06"
+    ]
+  },
+  "List of information at rest requiring confidentiality protections": {
+    "id": "list-of-information-at-rest-requiring-confidentiality-protections",
+    "shared": false,
+    "controls": [
+      "03.13.16"
+    ]
+  },
+  "List of information flow authorizations": {
+    "id": "list-of-information-flow-authorizations",
+    "shared": false,
+    "controls": [
+      "03.01.03"
+    ]
+  },
+  "List of key internal boundaries of the system": {
+    "id": "list-of-key-internal-boundaries-of-the-system",
+    "shared": true,
+    "controls": [
+      "03.13.01",
+      "03.13.05"
+    ]
+  },
+  "List of organization-defined event types to be logged": {
+    "id": "list-of-organization-defined-event-types-to-be-logged",
+    "shared": false,
+    "controls": [
+      "03.03.03"
+    ]
+  },
+  "List of personnel to be notified in case of an audit logging processing failure": {
+    "id": "list-of-personnel-to-be-notified-in-case-of-an-audit-logging-processing-failure",
+    "shared": false,
+    "controls": [
+      "03.03.04"
+    ]
+  },
+  "List of privileged system accounts": {
+    "id": "list-of-privileged-system-accounts",
+    "shared": false,
+    "controls": [
+      "03.05.04"
+    ]
+  },
+  "List of recent security flaw remediation actions performed on the system (e.g., list of installed patches, service packs, hot fixes, and other software updates to correct system flaws)": {
+    "id": "list-of-recent-security-flaw-remediation-actions-performed-on-the-system-e-g-list-of-installed-patches-service-packs-hot-fixes-and-other-software-updates-to-correct-system-flaws",
+    "shared": false,
+    "controls": [
+      "03.14.01"
+    ]
+  },
+  "List of recently disabled system accounts along with the name of the individual associated with each account": {
+    "id": "list-of-recently-disabled-system-accounts-along-with-the-name-of-the-individual-associated-with-each-account",
+    "shared": true,
+    "controls": [
+      "03.01.01",
+      "03.01.05"
+    ]
+  },
+  "List of rules governing user-installed software": {
+    "id": "list-of-rules-governing-user-installed-software",
+    "shared": false,
+    "controls": [
+      "03.04.09"
+    ]
+  },
+  "List of safeguards required for alternate work sites": {
+    "id": "list-of-safeguards-required-for-alternate-work-sites",
+    "shared": false,
+    "controls": [
+      "03.10.06"
+    ]
+  },
+  "List of security functions (deployed in hardware, software, and firmware) and security-relevant information for which access is to be explicitly authorized": {
+    "id": "list-of-security-functions-deployed-in-hardware-software-and-firmware-and-security-relevant-information-for-which-access-is-to-be-explicitly-authorized",
+    "shared": false,
+    "controls": [
+      "03.01.05"
+    ]
+  },
+  "List of security safeguards controlling access to designated publicly accessible areas within facility": {
+    "id": "list-of-security-safeguards-controlling-access-to-designated-publicly-accessible-areas-within-facility",
+    "shared": true,
+    "controls": [
+      "03.10.03",
+      "03.10.04",
+      "03.10.05"
+    ]
+  },
+  "List of software programs authorized to execute on the system": {
+    "id": "list-of-software-programs-authorized-to-execute-on-the-system",
+    "shared": false,
+    "controls": [
+      "03.04.08"
+    ]
+  },
+  "List of software programs not authorized to execute on the system": {
+    "id": "list-of-software-programs-not-authorized-to-execute-on-the-system",
+    "shared": false,
+    "controls": [
+      "03.04.08"
+    ]
+  },
+  "List of system accounts": {
+    "id": "list-of-system-accounts",
+    "shared": true,
+    "controls": [
+      "03.05.01",
+      "03.05.03",
+      "03.05.06",
+      "03.09.02"
+    ]
+  },
+  "List of system administration personnel": {
+    "id": "list-of-system-administration-personnel",
+    "shared": false,
+    "controls": [
+      "03.01.05"
+    ]
+  },
+  "List of system authenticator types": {
+    "id": "list-of-system-authenticator-types",
+    "shared": true,
+    "controls": [
+      "03.05.02",
+      "03.05.05",
+      "03.05.10"
+    ]
+  },
+  "List of system media marking security attributes": {
+    "id": "list-of-system-media-marking-security-attributes",
+    "shared": false,
+    "controls": [
+      "03.08.04"
+    ]
+  },
+  "List of system-generated privileged accounts": {
+    "id": "list-of-system-generated-privileged-accounts",
+    "shared": false,
+    "controls": [
+      "03.01.05"
+    ]
+  },
+  "List of system-generated security functions assigned to system accounts or roles": {
+    "id": "list-of-system-generated-security-functions-assigned-to-system-accounts-or-roles",
+    "shared": false,
+    "controls": [
+      "03.01.06"
+    ]
+  },
+  "List of unacceptable mobile code and mobile technologies": {
+    "id": "list-of-unacceptable-mobile-code-and-mobile-technologies",
+    "shared": false,
+    "controls": [
+      "03.13.13"
+    ]
+  },
+  "List of users authorized to post publicly accessible content on organizational systems": {
+    "id": "list-of-users-authorized-to-post-publicly-accessible-content-on-organizational-systems",
+    "shared": false,
+    "controls": [
+      "03.01.22"
+    ]
+  },
+  "Locations within system where monitoring devices are deployed": {
+    "id": "locations-within-system-where-monitoring-devices-are-deployed",
+    "shared": true,
+    "controls": [
+      "03.14.06",
+      "03.14.07"
+    ]
+  },
+  "Logical access approvals": {
+    "id": "logical-access-approvals",
+    "shared": false,
+    "controls": [
+      "03.04.05"
+    ]
+  },
+  "Maintenance records": {
+    "id": "maintenance-records",
+    "shared": true,
+    "controls": [
+      "03.07.01",
+      "03.07.02",
+      "03.07.03",
+      "03.07.04",
+      "03.07.05",
+      "03.07.06"
+    ]
+  },
+  "Maintenance tool inspection records": {
+    "id": "maintenance-tool-inspection-records",
+    "shared": false,
+    "controls": [
+      "03.07.02"
+    ]
+  },
+  "Malicious code protection mechanisms": {
+    "id": "malicious-code-protection-mechanisms",
+    "shared": true,
+    "controls": [
+      "03.14.02",
+      "03.14.04",
+      "03.14.05"
+    ]
+  },
+  "Manufacturer or vendor maintenance specifications": {
+    "id": "manufacturer-or-vendor-maintenance-specifications",
+    "shared": true,
+    "controls": [
+      "03.07.01",
+      "03.07.03"
+    ]
+  },
+  "Media sanitization records": {
+    "id": "media-sanitization-records",
+    "shared": true,
+    "controls": [
+      "03.07.01",
+      "03.07.03",
+      "03.08.03"
+    ]
+  },
+  "Media storage facilities": {
+    "id": "media-storage-facilities",
+    "shared": false,
+    "controls": [
+      "03.08.01"
+    ]
+  },
+  "Mobile code usage restrictions, mobile code implementation policy and procedures": {
+    "id": "mobile-code-usage-restrictions-mobile-code-implementation-policy-and-procedures",
+    "shared": false,
+    "controls": [
+      "03.13.13"
+    ]
+  },
+  "Notifications or records of recently transferred, separated, or terminated employees": {
+    "id": "notifications-or-records-of-recently-transferred-separated-or-terminated-employees",
+    "shared": true,
+    "controls": [
+      "03.01.01",
+      "03.01.05"
+    ]
+  },
+  "Other relevant documents or records": {
+    "id": "other-relevant-documents-or-records",
+    "shared": false,
+    "controls": [
+      "03.01.01",
+      "03.01.02",
+      "03.01.03",
+      "03.01.04",
+      "03.01.05",
+      "03.01.06",
+      "03.01.07",
+      "03.01.08",
+      "03.01.09",
+      "03.01.10",
+      "03.01.11",
+      "03.01.12",
+      "03.01.13",
+      "03.01.14",
+      "03.01.15",
+      "03.01.16",
+      "03.01.17",
+      "03.01.18",
+      "03.01.19",
+      "03.01.20",
+      "03.01.21",
+      "03.01.22",
+      "03.02.01",
+      "03.02.02",
+      "03.02.03",
+      "03.03.01",
+      "03.03.02",
+      "03.03.03",
+      "03.03.04",
+      "03.03.05",
+      "03.03.06",
+      "03.03.07",
+      "03.03.08",
+      "03.03.09",
+      "03.04.01",
+      "03.04.02",
+      "03.04.03",
+      "03.04.04",
+      "03.04.05",
+      "03.04.06",
+      "03.04.07",
+      "03.04.08",
+      "03.04.09",
+      "03.05.01",
+      "03.05.02",
+      "03.05.03",
+      "03.05.04",
+      "03.05.05",
+      "03.05.06",
+      "03.05.07",
+      "03.05.08",
+      "03.05.09",
+      "03.05.10",
+      "03.05.11",
+      "03.06.01",
+      "03.06.02",
+      "03.06.03",
+      "03.07.01",
+      "03.07.02",
+      "03.07.03",
+      "03.07.04",
+      "03.07.05",
+      "03.07.06",
+      "03.08.01",
+      "03.08.02",
+      "03.08.03",
+      "03.08.04",
+      "03.08.05",
+      "03.08.06",
+      "03.08.07",
+      "03.08.08",
+      "03.08.09",
+      "03.09.01",
+      "03.09.02",
+      "03.10.01",
+      "03.10.02",
+      "03.10.03",
+      "03.10.04",
+      "03.10.05",
+      "03.10.06",
+      "03.11.01",
+      "03.11.02",
+      "03.11.03",
+      "03.12.01",
+      "03.12.02",
+      "03.12.03",
+      "03.12.04",
+      "03.13.01",
+      "03.13.02",
+      "03.13.03",
+      "03.13.04",
+      "03.13.05",
+      "03.13.06",
+      "03.13.07",
+      "03.13.08",
+      "03.13.09",
+      "03.13.10",
+      "03.13.11",
+      "03.13.12",
+      "03.13.13",
+      "03.13.14",
+      "03.13.15",
+      "03.13.16",
+      "03.14.01",
+      "03.14.02",
+      "03.14.03",
+      "03.14.04",
+      "03.14.05",
+      "03.14.06",
+      "03.14.07"
+    ]
+  },
+  "Password configurations and associated documentation": {
+    "id": "password-configurations-and-associated-documentation",
+    "shared": true,
+    "controls": [
+      "03.05.07",
+      "03.05.08",
+      "03.05.09"
+    ]
+  },
+  "Password policy": {
+    "id": "password-policy",
+    "shared": true,
+    "controls": [
+      "03.05.07",
+      "03.05.08",
+      "03.05.09"
+    ]
+  },
+  "Patch and vulnerability management records": {
+    "id": "patch-and-vulnerability-management-records",
+    "shared": true,
+    "controls": [
+      "03.11.02",
+      "03.11.03"
+    ]
+  },
+  "Personnel security policy": {
+    "id": "personnel-security-policy",
+    "shared": true,
+    "controls": [
+      "03.09.01",
+      "03.09.02"
+    ]
+  },
+  "Physical access approvals": {
+    "id": "physical-access-approvals",
+    "shared": false,
+    "controls": [
+      "03.04.05"
+    ]
+  },
+  "Physical access control devices": {
+    "id": "physical-access-control-devices",
+    "shared": true,
+    "controls": [
+      "03.10.03",
+      "03.10.04",
+      "03.10.05"
+    ]
+  },
+  "Physical access control logs or records": {
+    "id": "physical-access-control-logs-or-records",
+    "shared": true,
+    "controls": [
+      "03.10.02",
+      "03.10.03",
+      "03.10.04",
+      "03.10.05"
+    ]
+  },
+  "Physical access list reviews": {
+    "id": "physical-access-list-reviews",
+    "shared": false,
+    "controls": [
+      "03.10.01"
+    ]
+  },
+  "Physical access log reviews": {
+    "id": "physical-access-log-reviews",
+    "shared": false,
+    "controls": [
+      "03.10.02"
+    ]
+  },
+  "Physical access monitoring records": {
+    "id": "physical-access-monitoring-records",
+    "shared": false,
+    "controls": [
+      "03.10.02"
+    ]
+  },
+  "Physical access termination records and associated documentation": {
+    "id": "physical-access-termination-records-and-associated-documentation",
+    "shared": false,
+    "controls": [
+      "03.10.01"
+    ]
+  },
+  "Physical and environmental protection policy and procedures": {
+    "id": "physical-and-environmental-protection-policy-and-procedures",
+    "shared": true,
+    "controls": [
+      "03.08.01",
+      "03.08.02",
+      "03.08.04",
+      "03.08.05",
+      "03.10.01",
+      "03.10.02",
+      "03.10.03",
+      "03.10.04",
+      "03.10.05",
+      "03.10.06"
+    ]
+  },
+  "Plan of action": {
+    "id": "plan-of-action",
+    "shared": false,
+    "controls": [
+      "03.12.02"
+    ]
+  },
+  "Privacy and security policies, procedures addressing system use notification": {
+    "id": "privacy-and-security-policies-procedures-addressing-system-use-notification",
+    "shared": true,
+    "controls": [
+      "03.01.07",
+      "03.01.09"
+    ]
+  },
+  "Procedures addressing VoIP": {
+    "id": "procedures-addressing-voip",
+    "shared": false,
+    "controls": [
+      "03.13.14"
+    ]
+  },
+  "Procedures addressing access control for mobile devices": {
+    "id": "procedures-addressing-access-control-for-mobile-devices",
+    "shared": true,
+    "controls": [
+      "03.01.18",
+      "03.01.19"
+    ]
+  },
+  "Procedures addressing access enforcement": {
+    "id": "procedures-addressing-access-enforcement",
+    "shared": false,
+    "controls": [
+      "03.01.02"
+    ]
+  },
+  "Procedures addressing access restrictions for changes to the system": {
+    "id": "procedures-addressing-access-restrictions-for-changes-to-the-system",
+    "shared": false,
+    "controls": [
+      "03.04.05"
+    ]
+  },
+  "Procedures addressing account management": {
+    "id": "procedures-addressing-account-management",
+    "shared": true,
+    "controls": [
+      "03.01.01",
+      "03.01.05",
+      "03.05.06"
+    ]
+  },
+  "Procedures addressing alternate work sites for personnel": {
+    "id": "procedures-addressing-alternate-work-sites-for-personnel",
+    "shared": false,
+    "controls": [
+      "03.10.06"
+    ]
+  },
+  "Procedures addressing application partitioning": {
+    "id": "procedures-addressing-application-partitioning",
+    "shared": true,
+    "controls": [
+      "03.13.03",
+      "03.13.04"
+    ]
+  },
+  "Procedures addressing audit record generation": {
+    "id": "procedures-addressing-audit-record-generation",
+    "shared": true,
+    "controls": [
+      "03.03.01",
+      "03.03.02"
+    ]
+  },
+  "Procedures addressing audit record reduction and report generation": {
+    "id": "procedures-addressing-audit-record-reduction-and-report-generation",
+    "shared": false,
+    "controls": [
+      "03.03.06"
+    ]
+  },
+  "Procedures addressing audit record review, analysis, and reporting": {
+    "id": "procedures-addressing-audit-record-review-analysis-and-reporting",
+    "shared": true,
+    "controls": [
+      "03.03.02",
+      "03.03.05"
+    ]
+  },
+  "Procedures addressing audit records and event types": {
+    "id": "procedures-addressing-audit-records-and-event-types",
+    "shared": true,
+    "controls": [
+      "03.03.02",
+      "03.03.03"
+    ]
+  },
+  "Procedures addressing auditable events": {
+    "id": "procedures-addressing-auditable-events",
+    "shared": false,
+    "controls": [
+      "03.03.01"
+    ]
+  },
+  "Procedures addressing authenticator feedback": {
+    "id": "procedures-addressing-authenticator-feedback",
+    "shared": false,
+    "controls": [
+      "03.05.11"
+    ]
+  },
+  "Procedures addressing authenticator management": {
+    "id": "procedures-addressing-authenticator-management",
+    "shared": true,
+    "controls": [
+      "03.05.02",
+      "03.05.05",
+      "03.05.07",
+      "03.05.08",
+      "03.05.09",
+      "03.05.10"
+    ]
+  },
+  "Procedures addressing boundary protection": {
+    "id": "procedures-addressing-boundary-protection",
+    "shared": true,
+    "controls": [
+      "03.13.01",
+      "03.13.05",
+      "03.13.06",
+      "03.13.07"
+    ]
+  },
+  "Procedures addressing collaborative computing": {
+    "id": "procedures-addressing-collaborative-computing",
+    "shared": false,
+    "controls": [
+      "03.13.12"
+    ]
+  },
+  "Procedures addressing configuration management": {
+    "id": "procedures-addressing-configuration-management",
+    "shared": false,
+    "controls": [
+      "03.14.01"
+    ]
+  },
+  "Procedures addressing configuration settings for the system": {
+    "id": "procedures-addressing-configuration-settings-for-the-system",
+    "shared": false,
+    "controls": [
+      "03.04.02"
+    ]
+  },
+  "Procedures addressing contingency plan testing": {
+    "id": "procedures-addressing-contingency-plan-testing",
+    "shared": false,
+    "controls": [
+      "03.06.03"
+    ]
+  },
+  "Procedures addressing control of audit records": {
+    "id": "procedures-addressing-control-of-audit-records",
+    "shared": false,
+    "controls": [
+      "03.03.01"
+    ]
+  },
+  "Procedures addressing controlled system maintenance": {
+    "id": "procedures-addressing-controlled-system-maintenance",
+    "shared": true,
+    "controls": [
+      "03.07.01",
+      "03.07.03"
+    ]
+  },
+  "Procedures addressing cryptographic key establishment and management": {
+    "id": "procedures-addressing-cryptographic-key-establishment-and-management",
+    "shared": false,
+    "controls": [
+      "03.13.10"
+    ]
+  },
+  "Procedures addressing cryptographic protection": {
+    "id": "procedures-addressing-cryptographic-protection",
+    "shared": false,
+    "controls": [
+      "03.13.11"
+    ]
+  },
+  "Procedures addressing divisions of responsibility and separation of duties": {
+    "id": "procedures-addressing-divisions-of-responsibility-and-separation-of-duties",
+    "shared": false,
+    "controls": [
+      "03.01.04"
+    ]
+  },
+  "Procedures addressing flaw remediation": {
+    "id": "procedures-addressing-flaw-remediation",
+    "shared": false,
+    "controls": [
+      "03.14.01"
+    ]
+  },
+  "Procedures addressing identifier management": {
+    "id": "procedures-addressing-identifier-management",
+    "shared": false,
+    "controls": [
+      "03.05.06"
+    ]
+  },
+  "Procedures addressing incident handling": {
+    "id": "procedures-addressing-incident-handling",
+    "shared": false,
+    "controls": [
+      "03.06.01"
+    ]
+  },
+  "Procedures addressing incident monitoring": {
+    "id": "procedures-addressing-incident-monitoring",
+    "shared": false,
+    "controls": [
+      "03.06.02"
+    ]
+  },
+  "Procedures addressing incident reporting": {
+    "id": "procedures-addressing-incident-reporting",
+    "shared": false,
+    "controls": [
+      "03.06.02"
+    ]
+  },
+  "Procedures addressing incident response assistance": {
+    "id": "procedures-addressing-incident-response-assistance",
+    "shared": false,
+    "controls": [
+      "03.06.01"
+    ]
+  },
+  "Procedures addressing incident response testing": {
+    "id": "procedures-addressing-incident-response-testing",
+    "shared": false,
+    "controls": [
+      "03.06.03"
+    ]
+  },
+  "Procedures addressing incident response training": {
+    "id": "procedures-addressing-incident-response-training",
+    "shared": false,
+    "controls": [
+      "03.06.01"
+    ]
+  },
+  "Procedures addressing information flow enforcement": {
+    "id": "procedures-addressing-information-flow-enforcement",
+    "shared": false,
+    "controls": [
+      "03.01.03"
+    ]
+  },
+  "Procedures addressing investigation of and response to suspicious activities": {
+    "id": "procedures-addressing-investigation-of-and-response-to-suspicious-activities",
+    "shared": false,
+    "controls": [
+      "03.03.05"
+    ]
+  },
+  "Procedures addressing least functionality in the system": {
+    "id": "procedures-addressing-least-functionality-in-the-system",
+    "shared": true,
+    "controls": [
+      "03.04.06",
+      "03.04.07",
+      "03.04.08"
+    ]
+  },
+  "Procedures addressing least privilege": {
+    "id": "procedures-addressing-least-privilege",
+    "shared": true,
+    "controls": [
+      "03.01.05",
+      "03.01.06"
+    ]
+  },
+  "Procedures addressing maintenance personnel": {
+    "id": "procedures-addressing-maintenance-personnel",
+    "shared": false,
+    "controls": [
+      "03.07.06"
+    ]
+  },
+  "Procedures addressing malicious code protection": {
+    "id": "procedures-addressing-malicious-code-protection",
+    "shared": true,
+    "controls": [
+      "03.14.02",
+      "03.14.04",
+      "03.14.05"
+    ]
+  },
+  "Procedures addressing media access restrictions": {
+    "id": "procedures-addressing-media-access-restrictions",
+    "shared": false,
+    "controls": [
+      "03.08.01"
+    ]
+  },
+  "Procedures addressing media marking": {
+    "id": "procedures-addressing-media-marking",
+    "shared": false,
+    "controls": [
+      "03.08.04"
+    ]
+  },
+  "Procedures addressing media sanitization and disposal": {
+    "id": "procedures-addressing-media-sanitization-and-disposal",
+    "shared": false,
+    "controls": [
+      "03.08.03"
+    ]
+  },
+  "Procedures addressing media storage": {
+    "id": "procedures-addressing-media-storage",
+    "shared": true,
+    "controls": [
+      "03.08.01",
+      "03.08.02",
+      "03.08.05"
+    ]
+  },
+  "Procedures addressing media transport": {
+    "id": "procedures-addressing-media-transport",
+    "shared": false,
+    "controls": [
+      "03.08.06"
+    ]
+  },
+  "Procedures addressing media usage restrictions": {
+    "id": "procedures-addressing-media-usage-restrictions",
+    "shared": true,
+    "controls": [
+      "03.08.07",
+      "03.08.08"
+    ]
+  },
+  "Procedures addressing mobile code": {
+    "id": "procedures-addressing-mobile-code",
+    "shared": false,
+    "controls": [
+      "03.13.13"
+    ]
+  },
+  "Procedures addressing network disconnect": {
+    "id": "procedures-addressing-network-disconnect",
+    "shared": false,
+    "controls": [
+      "03.13.09"
+    ]
+  },
+  "Procedures addressing nonlocal system maintenance": {
+    "id": "procedures-addressing-nonlocal-system-maintenance",
+    "shared": false,
+    "controls": [
+      "03.07.05"
+    ]
+  },
+  "Procedures addressing organizational risk assessments": {
+    "id": "procedures-addressing-organizational-risk-assessments",
+    "shared": false,
+    "controls": [
+      "03.11.01"
+    ]
+  },
+  "Procedures addressing personnel screening": {
+    "id": "procedures-addressing-personnel-screening",
+    "shared": false,
+    "controls": [
+      "03.09.01"
+    ]
+  },
+  "Procedures addressing personnel transfer and termination": {
+    "id": "procedures-addressing-personnel-transfer-and-termination",
+    "shared": false,
+    "controls": [
+      "03.09.02"
+    ]
+  },
+  "Procedures addressing physical access authorizations": {
+    "id": "procedures-addressing-physical-access-authorizations",
+    "shared": false,
+    "controls": [
+      "03.10.01"
+    ]
+  },
+  "Procedures addressing physical access control": {
+    "id": "procedures-addressing-physical-access-control",
+    "shared": true,
+    "controls": [
+      "03.10.03",
+      "03.10.04",
+      "03.10.05"
+    ]
+  },
+  "Procedures addressing physical access monitoring": {
+    "id": "procedures-addressing-physical-access-monitoring",
+    "shared": false,
+    "controls": [
+      "03.10.02"
+    ]
+  },
+  "Procedures addressing plan of action": {
+    "id": "procedures-addressing-plan-of-action",
+    "shared": false,
+    "controls": [
+      "03.12.02"
+    ]
+  },
+  "Procedures addressing protection of audit information": {
+    "id": "procedures-addressing-protection-of-audit-information",
+    "shared": true,
+    "controls": [
+      "03.03.08",
+      "03.03.09"
+    ]
+  },
+  "Procedures addressing protection of information at rest": {
+    "id": "procedures-addressing-protection-of-information-at-rest",
+    "shared": false,
+    "controls": [
+      "03.13.16"
+    ]
+  },
+  "Procedures addressing publicly accessible content": {
+    "id": "procedures-addressing-publicly-accessible-content",
+    "shared": false,
+    "controls": [
+      "03.01.22"
+    ]
+  },
+  "Procedures addressing remote access implementation and usage (including restrictions)": {
+    "id": "procedures-addressing-remote-access-implementation-and-usage-including-restrictions",
+    "shared": false,
+    "controls": [
+      "03.01.12"
+    ]
+  },
+  "Procedures addressing remote access to the system": {
+    "id": "procedures-addressing-remote-access-to-the-system",
+    "shared": true,
+    "controls": [
+      "03.01.13",
+      "03.01.14",
+      "03.01.15"
+    ]
+  },
+  "Procedures addressing response to audit logging processing failures": {
+    "id": "procedures-addressing-response-to-audit-logging-processing-failures",
+    "shared": false,
+    "controls": [
+      "03.03.04"
+    ]
+  },
+  "Procedures addressing security alerts, advisories, and directives": {
+    "id": "procedures-addressing-security-alerts-advisories-and-directives",
+    "shared": false,
+    "controls": [
+      "03.14.03"
+    ]
+  },
+  "Procedures addressing security assessment planning": {
+    "id": "procedures-addressing-security-assessment-planning",
+    "shared": false,
+    "controls": [
+      "03.12.01"
+    ]
+  },
+  "Procedures addressing security assessments": {
+    "id": "procedures-addressing-security-assessments",
+    "shared": false,
+    "controls": [
+      "03.12.01"
+    ]
+  },
+  "Procedures addressing security awareness training implementation": {
+    "id": "procedures-addressing-security-awareness-training-implementation",
+    "shared": true,
+    "controls": [
+      "03.02.01",
+      "03.02.03"
+    ]
+  },
+  "Procedures addressing security engineering principles used in the specification, design, development, implementation, and modification of the system": {
+    "id": "procedures-addressing-security-engineering-principles-used-in-the-specification-design-development-implementation-and-modification-of-the-system",
+    "shared": false,
+    "controls": [
+      "03.13.02"
+    ]
+  },
+  "Procedures addressing security impact analysis for system changes": {
+    "id": "procedures-addressing-security-impact-analysis-for-system-changes",
+    "shared": false,
+    "controls": [
+      "03.04.04"
+    ]
+  },
+  "Procedures addressing security training implementation": {
+    "id": "procedures-addressing-security-training-implementation",
+    "shared": false,
+    "controls": [
+      "03.02.02"
+    ]
+  },
+  "Procedures addressing session authenticity": {
+    "id": "procedures-addressing-session-authenticity",
+    "shared": false,
+    "controls": [
+      "03.13.15"
+    ]
+  },
+  "Procedures addressing session lock": {
+    "id": "procedures-addressing-session-lock",
+    "shared": false,
+    "controls": [
+      "03.01.10"
+    ]
+  },
+  "Procedures addressing session termination": {
+    "id": "procedures-addressing-session-termination",
+    "shared": false,
+    "controls": [
+      "03.01.11"
+    ]
+  },
+  "Procedures addressing system backup": {
+    "id": "procedures-addressing-system-backup",
+    "shared": false,
+    "controls": [
+      "03.08.09"
+    ]
+  },
+  "Procedures addressing system configuration change control": {
+    "id": "procedures-addressing-system-configuration-change-control",
+    "shared": false,
+    "controls": [
+      "03.04.03"
+    ]
+  },
+  "Procedures addressing system inventory": {
+    "id": "procedures-addressing-system-inventory",
+    "shared": false,
+    "controls": [
+      "03.04.01"
+    ]
+  },
+  "Procedures addressing system maintenance tools": {
+    "id": "procedures-addressing-system-maintenance-tools",
+    "shared": true,
+    "controls": [
+      "03.07.02",
+      "03.07.04"
+    ]
+  },
+  "Procedures addressing system monitoring tools and techniques": {
+    "id": "procedures-addressing-system-monitoring-tools-and-techniques",
+    "shared": true,
+    "controls": [
+      "03.14.06",
+      "03.14.07"
+    ]
+  },
+  "Procedures addressing system security plan development and implementation": {
+    "id": "procedures-addressing-system-security-plan-development-and-implementation",
+    "shared": true,
+    "controls": [
+      "03.12.03",
+      "03.12.04",
+      "03.13.02"
+    ]
+  },
+  "Procedures addressing system security plan reviews and updates": {
+    "id": "procedures-addressing-system-security-plan-reviews-and-updates",
+    "shared": true,
+    "controls": [
+      "03.12.03",
+      "03.12.04",
+      "03.13.02"
+    ]
+  },
+  "Procedures addressing the baseline configuration of the system": {
+    "id": "procedures-addressing-the-baseline-configuration-of-the-system",
+    "shared": false,
+    "controls": [
+      "03.04.01"
+    ]
+  },
+  "Procedures addressing the use of external systems": {
+    "id": "procedures-addressing-the-use-of-external-systems",
+    "shared": true,
+    "controls": [
+      "03.01.20",
+      "03.01.21"
+    ]
+  },
+  "Procedures addressing time stamp generation": {
+    "id": "procedures-addressing-time-stamp-generation",
+    "shared": false,
+    "controls": [
+      "03.03.07"
+    ]
+  },
+  "Procedures addressing transmission confidentiality and integrity": {
+    "id": "procedures-addressing-transmission-confidentiality-and-integrity",
+    "shared": false,
+    "controls": [
+      "03.13.08"
+    ]
+  },
+  "Procedures addressing unsuccessful logon attempts": {
+    "id": "procedures-addressing-unsuccessful-logon-attempts",
+    "shared": false,
+    "controls": [
+      "03.01.08"
+    ]
+  },
+  "Procedures addressing user identification and authentication": {
+    "id": "procedures-addressing-user-identification-and-authentication",
+    "shared": true,
+    "controls": [
+      "03.01.10",
+      "03.05.01",
+      "03.05.02",
+      "03.05.03",
+      "03.05.04",
+      "03.05.05",
+      "03.05.10"
+    ]
+  },
+  "Procedures addressing user installed software": {
+    "id": "procedures-addressing-user-installed-software",
+    "shared": false,
+    "controls": [
+      "03.04.09"
+    ]
+  },
+  "Procedures addressing vulnerability scanning": {
+    "id": "procedures-addressing-vulnerability-scanning",
+    "shared": true,
+    "controls": [
+      "03.11.02",
+      "03.11.03"
+    ]
+  },
+  "Procedures addressing wireless access implementation and usage (including restrictions)": {
+    "id": "procedures-addressing-wireless-access-implementation-and-usage-including-restrictions",
+    "shared": true,
+    "controls": [
+      "03.01.16",
+      "03.01.17"
+    ]
+  },
+  "Record of actions initiated by malicious code protection mechanisms in response to malicious code detection": {
+    "id": "record-of-actions-initiated-by-malicious-code-protection-mechanisms-in-response-to-malicious-code-detection",
+    "shared": true,
+    "controls": [
+      "03.14.02",
+      "03.14.04",
+      "03.14.05"
+    ]
+  },
+  "Records of exit interviews": {
+    "id": "records-of-exit-interviews",
+    "shared": false,
+    "controls": [
+      "03.09.02"
+    ]
+  },
+  "Records of key and lock combination changes": {
+    "id": "records-of-key-and-lock-combination-changes",
+    "shared": true,
+    "controls": [
+      "03.10.03",
+      "03.10.04",
+      "03.10.05"
+    ]
+  },
+  "Records of malicious code protection updates": {
+    "id": "records-of-malicious-code-protection-updates",
+    "shared": true,
+    "controls": [
+      "03.14.02",
+      "03.14.04",
+      "03.14.05"
+    ]
+  },
+  "Records of personnel transfer and termination actions": {
+    "id": "records-of-personnel-transfer-and-termination-actions",
+    "shared": false,
+    "controls": [
+      "03.09.02"
+    ]
+  },
+  "Records of publicly accessible information reviews": {
+    "id": "records-of-publicly-accessible-information-reviews",
+    "shared": false,
+    "controls": [
+      "03.01.22"
+    ]
+  },
+  "Records of response to nonpublic information on public websites": {
+    "id": "records-of-response-to-nonpublic-information-on-public-websites",
+    "shared": false,
+    "controls": [
+      "03.01.22"
+    ]
+  },
+  "Records of screened personnel": {
+    "id": "records-of-screened-personnel",
+    "shared": false,
+    "controls": [
+      "03.09.01"
+    ]
+  },
+  "Records of security alerts and advisories": {
+    "id": "records-of-security-alerts-and-advisories",
+    "shared": false,
+    "controls": [
+      "03.14.03"
+    ]
+  },
+  "Records of system security plan reviews and updates": {
+    "id": "records-of-system-security-plan-reviews-and-updates",
+    "shared": true,
+    "controls": [
+      "03.12.03",
+      "03.12.04",
+      "03.13.02"
+    ]
+  },
+  "Records of terminated or revoked authenticators and credentials": {
+    "id": "records-of-terminated-or-revoked-authenticators-and-credentials",
+    "shared": false,
+    "controls": [
+      "03.09.02"
+    ]
+  },
+  "Remote access authorizations": {
+    "id": "remote-access-authorizations",
+    "shared": false,
+    "controls": [
+      "03.01.12"
+    ]
+  },
+  "Reports of audit findings": {
+    "id": "reports-of-audit-findings",
+    "shared": false,
+    "controls": [
+      "03.03.02"
+    ]
+  },
+  "Review and update records associated with list of authorized or unauthorized software programs": {
+    "id": "review-and-update-records-associated-with-list-of-authorized-or-unauthorized-software-programs",
+    "shared": false,
+    "controls": [
+      "03.04.08"
+    ]
+  },
+  "Reviewed and updated records of logged event types": {
+    "id": "reviewed-and-updated-records-of-logged-event-types",
+    "shared": false,
+    "controls": [
+      "03.03.03"
+    ]
+  },
+  "Risk assessment": {
+    "id": "risk-assessment",
+    "shared": true,
+    "controls": [
+      "03.11.01",
+      "03.11.02",
+      "03.11.03"
+    ]
+  },
+  "Risk assessment policy": {
+    "id": "risk-assessment-policy",
+    "shared": true,
+    "controls": [
+      "03.11.01",
+      "03.11.02",
+      "03.11.03"
+    ]
+  },
+  "Risk assessment results": {
+    "id": "risk-assessment-results",
+    "shared": false,
+    "controls": [
+      "03.11.01"
+    ]
+  },
+  "Risk assessment reviews": {
+    "id": "risk-assessment-reviews",
+    "shared": false,
+    "controls": [
+      "03.11.01"
+    ]
+  },
+  "Risk assessment updates": {
+    "id": "risk-assessment-updates",
+    "shared": false,
+    "controls": [
+      "03.11.01"
+    ]
+  },
+  "Rules of behavior": {
+    "id": "rules-of-behavior",
+    "shared": true,
+    "controls": [
+      "03.08.07",
+      "03.08.08"
+    ]
+  },
+  "Scan results from malicious code protection mechanisms": {
+    "id": "scan-results-from-malicious-code-protection-mechanisms",
+    "shared": true,
+    "controls": [
+      "03.14.02",
+      "03.14.04",
+      "03.14.05"
+    ]
+  },
+  "Security architecture documentation": {
+    "id": "security-architecture-documentation",
+    "shared": false,
+    "controls": [
+      "03.13.02"
+    ]
+  },
+  "Security assessment and authorization policy": {
+    "id": "security-assessment-and-authorization-policy",
+    "shared": true,
+    "controls": [
+      "03.12.01",
+      "03.12.02"
+    ]
+  },
+  "Security assessment evidence": {
+    "id": "security-assessment-evidence",
+    "shared": false,
+    "controls": [
+      "03.12.02"
+    ]
+  },
+  "Security assessment plan": {
+    "id": "security-assessment-plan",
+    "shared": true,
+    "controls": [
+      "03.12.01",
+      "03.12.02"
+    ]
+  },
+  "Security assessment report": {
+    "id": "security-assessment-report",
+    "shared": true,
+    "controls": [
+      "03.11.02",
+      "03.11.03",
+      "03.12.02"
+    ]
+  },
+  "Security awareness and training policy": {
+    "id": "security-awareness-and-training-policy",
+    "shared": true,
+    "controls": [
+      "03.02.01",
+      "03.02.02",
+      "03.02.03"
+    ]
+  },
+  "Security awareness training curriculum": {
+    "id": "security-awareness-training-curriculum",
+    "shared": true,
+    "controls": [
+      "03.02.01",
+      "03.02.03"
+    ]
+  },
+  "Security awareness training materials": {
+    "id": "security-awareness-training-materials",
+    "shared": true,
+    "controls": [
+      "03.02.01",
+      "03.02.03"
+    ]
+  },
+  "Security awareness training records": {
+    "id": "security-awareness-training-records",
+    "shared": false,
+    "controls": [
+      "03.01.22"
+    ]
+  },
+  "Security configuration checklists": {
+    "id": "security-configuration-checklists",
+    "shared": true,
+    "controls": [
+      "03.04.02",
+      "03.04.06",
+      "03.04.07",
+      "03.04.08"
+    ]
+  },
+  "Security impact analysis documentation": {
+    "id": "security-impact-analysis-documentation",
+    "shared": false,
+    "controls": [
+      "03.04.04"
+    ]
+  },
+  "Security planning policy and procedures": {
+    "id": "security-planning-policy-and-procedures",
+    "shared": true,
+    "controls": [
+      "03.11.01",
+      "03.12.03",
+      "03.12.04",
+      "03.13.02"
+    ]
+  },
+  "Security requirements and specifications for the system": {
+    "id": "security-requirements-and-specifications-for-the-system",
+    "shared": false,
+    "controls": [
+      "03.13.02"
+    ]
+  },
+  "Security training curriculum": {
+    "id": "security-training-curriculum",
+    "shared": false,
+    "controls": [
+      "03.02.02"
+    ]
+  },
+  "Security training materials": {
+    "id": "security-training-materials",
+    "shared": false,
+    "controls": [
+      "03.02.02"
+    ]
+  },
+  "Service provider contracts": {
+    "id": "service-provider-contracts",
+    "shared": false,
+    "controls": [
+      "03.07.06"
+    ]
+  },
+  "Service-level agreements": {
+    "id": "service-level-agreements",
+    "shared": false,
+    "controls": [
+      "03.07.06"
+    ]
+  },
+  "Specifications for preventing software program execution": {
+    "id": "specifications-for-preventing-software-program-execution",
+    "shared": false,
+    "controls": [
+      "03.04.07"
+    ]
+  },
+  "Storage locations for physical access control devices": {
+    "id": "storage-locations-for-physical-access-control-devices",
+    "shared": true,
+    "controls": [
+      "03.10.03",
+      "03.10.04",
+      "03.10.05"
+    ]
+  },
+  "System access authorizations": {
+    "id": "system-access-authorizations",
+    "shared": false,
+    "controls": [
+      "03.01.04"
+    ]
+  },
+  "System and communications protection policy": {
+    "id": "system-and-communications-protection-policy",
+    "shared": true,
+    "controls": [
+      "03.13.01",
+      "03.13.02",
+      "03.13.03",
+      "03.13.04",
+      "03.13.05",
+      "03.13.06",
+      "03.13.07",
+      "03.13.08",
+      "03.13.09",
+      "03.13.10",
+      "03.13.11",
+      "03.13.12",
+      "03.13.13",
+      "03.13.14",
+      "03.13.15",
+      "03.13.16"
+    ]
+  },
+  "System and information integrity policy": {
+    "id": "system-and-information-integrity-policy",
+    "shared": true,
+    "controls": [
+      "03.14.01",
+      "03.14.02",
+      "03.14.03",
+      "03.14.04",
+      "03.14.05",
+      "03.14.06",
+      "03.14.07"
+    ]
+  },
+  "System architecture": {
+    "id": "system-architecture",
+    "shared": false,
+    "controls": [
+      "03.13.07"
+    ]
+  },
+  "System architecture and configuration documentation": {
+    "id": "system-architecture-and-configuration-documentation",
+    "shared": true,
+    "controls": [
+      "03.04.01",
+      "03.04.03",
+      "03.04.05"
+    ]
+  },
+  "System audit logs and records": {
+    "id": "system-audit-logs-and-records",
+    "shared": false,
+    "controls": [
+      "03.01.01",
+      "03.01.02",
+      "03.01.03",
+      "03.01.04",
+      "03.01.06",
+      "03.01.07",
+      "03.01.08",
+      "03.01.09",
+      "03.01.11",
+      "03.01.12",
+      "03.01.13",
+      "03.01.14",
+      "03.01.15",
+      "03.01.16",
+      "03.01.17",
+      "03.01.18",
+      "03.01.19",
+      "03.01.22",
+      "03.03.01",
+      "03.03.02",
+      "03.03.03",
+      "03.03.04",
+      "03.03.06",
+      "03.03.07",
+      "03.03.08",
+      "03.03.09",
+      "03.04.02",
+      "03.04.03",
+      "03.04.04",
+      "03.04.05",
+      "03.04.07",
+      "03.04.08",
+      "03.04.09",
+      "03.05.01",
+      "03.05.02",
+      "03.05.03",
+      "03.05.04",
+      "03.05.05",
+      "03.05.10",
+      "03.05.11",
+      "03.08.03",
+      "03.08.06",
+      "03.08.07",
+      "03.08.08",
+      "03.13.01",
+      "03.13.03",
+      "03.13.04",
+      "03.13.05",
+      "03.13.06",
+      "03.13.07",
+      "03.13.08",
+      "03.13.09",
+      "03.13.10",
+      "03.13.11",
+      "03.13.12",
+      "03.13.13",
+      "03.13.14",
+      "03.13.15",
+      "03.14.02",
+      "03.14.04",
+      "03.14.05",
+      "03.14.06"
+    ]
+  },
+  "System audit logs and records across different repositories": {
+    "id": "system-audit-logs-and-records-across-different-repositories",
+    "shared": false,
+    "controls": [
+      "03.03.05"
+    ]
+  },
+  "System auditable events": {
+    "id": "system-auditable-events",
+    "shared": false,
+    "controls": [
+      "03.03.01"
+    ]
+  },
+  "System backup logs or records": {
+    "id": "system-backup-logs-or-records",
+    "shared": false,
+    "controls": [
+      "03.08.09"
+    ]
+  },
+  "System baseline configuration": {
+    "id": "system-baseline-configuration",
+    "shared": true,
+    "controls": [
+      "03.01.03",
+      "03.04.02"
+    ]
+  },
+  "System component installation records": {
+    "id": "system-component-installation-records",
+    "shared": false,
+    "controls": [
+      "03.04.01"
+    ]
+  },
+  "System component removal records": {
+    "id": "system-component-removal-records",
+    "shared": false,
+    "controls": [
+      "03.04.01"
+    ]
+  },
+  "System configuration settings and associated documentation": {
+    "id": "system-configuration-settings-and-associated-documentation",
+    "shared": false,
+    "controls": [
+      "03.01.01",
+      "03.01.02",
+      "03.01.03",
+      "03.01.04",
+      "03.01.05",
+      "03.01.06",
+      "03.01.07",
+      "03.01.08",
+      "03.01.09",
+      "03.01.10",
+      "03.01.11",
+      "03.01.12",
+      "03.01.13",
+      "03.01.14",
+      "03.01.15",
+      "03.01.16",
+      "03.01.17",
+      "03.01.18",
+      "03.01.19",
+      "03.01.20",
+      "03.01.21",
+      "03.03.01",
+      "03.03.02",
+      "03.03.04",
+      "03.03.05",
+      "03.03.06",
+      "03.03.07",
+      "03.03.08",
+      "03.03.09",
+      "03.04.01",
+      "03.04.02",
+      "03.04.05",
+      "03.04.06",
+      "03.04.07",
+      "03.04.08",
+      "03.04.09",
+      "03.05.01",
+      "03.05.02",
+      "03.05.03",
+      "03.05.04",
+      "03.05.05",
+      "03.05.06",
+      "03.05.07",
+      "03.05.08",
+      "03.05.09",
+      "03.05.10",
+      "03.05.11",
+      "03.07.05",
+      "03.08.03",
+      "03.08.06",
+      "03.08.07",
+      "03.08.08",
+      "03.08.09",
+      "03.13.01",
+      "03.13.02",
+      "03.13.03",
+      "03.13.04",
+      "03.13.05",
+      "03.13.06",
+      "03.13.07",
+      "03.13.08",
+      "03.13.09",
+      "03.13.10",
+      "03.13.11",
+      "03.13.12",
+      "03.13.14",
+      "03.13.15",
+      "03.13.16",
+      "03.14.02",
+      "03.14.04",
+      "03.14.05",
+      "03.14.06",
+      "03.14.07"
+    ]
+  },
+  "System connection or processing agreements": {
+    "id": "system-connection-or-processing-agreements",
+    "shared": true,
+    "controls": [
+      "03.01.20",
+      "03.01.21"
+    ]
+  },
+  "System design documentation": {
+    "id": "system-design-documentation",
+    "shared": false,
+    "controls": [
+      "03.01.01",
+      "03.01.02",
+      "03.01.03",
+      "03.01.05",
+      "03.01.07",
+      "03.01.08",
+      "03.01.09",
+      "03.01.10",
+      "03.01.11",
+      "03.01.12",
+      "03.01.13",
+      "03.01.14",
+      "03.01.16",
+      "03.01.17",
+      "03.01.18",
+      "03.01.19",
+      "03.03.01",
+      "03.03.02",
+      "03.03.04",
+      "03.03.05",
+      "03.03.06",
+      "03.03.07",
+      "03.03.08",
+      "03.03.09",
+      "03.04.01",
+      "03.04.02",
+      "03.04.05",
+      "03.04.06",
+      "03.04.07",
+      "03.04.08",
+      "03.04.09",
+      "03.05.01",
+      "03.05.02",
+      "03.05.03",
+      "03.05.04",
+      "03.05.05",
+      "03.05.06",
+      "03.05.07",
+      "03.05.08",
+      "03.05.09",
+      "03.05.10",
+      "03.05.11",
+      "03.07.05",
+      "03.08.03",
+      "03.08.06",
+      "03.08.07",
+      "03.08.08",
+      "03.13.01",
+      "03.13.02",
+      "03.13.03",
+      "03.13.04",
+      "03.13.05",
+      "03.13.06",
+      "03.13.07",
+      "03.13.08",
+      "03.13.09",
+      "03.13.10",
+      "03.13.11",
+      "03.13.12",
+      "03.13.14",
+      "03.13.15",
+      "03.13.16",
+      "03.14.02",
+      "03.14.04",
+      "03.14.05",
+      "03.14.06",
+      "03.14.07"
+    ]
+  },
+  "System entry and exit points": {
+    "id": "system-entry-and-exit-points",
+    "shared": true,
+    "controls": [
+      "03.10.03",
+      "03.10.04",
+      "03.10.05"
+    ]
+  },
+  "System events": {
+    "id": "system-events",
+    "shared": false,
+    "controls": [
+      "03.03.02"
+    ]
+  },
+  "System hardware and software": {
+    "id": "system-hardware-and-software",
+    "shared": false,
+    "controls": [
+      "03.13.07"
+    ]
+  },
+  "System incident reports": {
+    "id": "system-incident-reports",
+    "shared": true,
+    "controls": [
+      "03.03.01",
+      "03.03.02",
+      "03.03.03",
+      "03.03.04"
+    ]
+  },
+  "System inventory records": {
+    "id": "system-inventory-records",
+    "shared": false,
+    "controls": [
+      "03.04.01"
+    ]
+  },
+  "System maintenance policy": {
+    "id": "system-maintenance-policy",
+    "shared": true,
+    "controls": [
+      "03.07.01",
+      "03.07.02",
+      "03.07.03",
+      "03.07.04",
+      "03.07.05",
+      "03.07.06"
+    ]
+  },
+  "System maintenance tools and associated documentation": {
+    "id": "system-maintenance-tools-and-associated-documentation",
+    "shared": true,
+    "controls": [
+      "03.07.02",
+      "03.07.04"
+    ]
+  },
+  "System media": {
+    "id": "system-media",
+    "shared": true,
+    "controls": [
+      "03.08.02",
+      "03.08.05"
+    ]
+  },
+  "System media protection policy": {
+    "id": "system-media-protection-policy",
+    "shared": true,
+    "controls": [
+      "03.08.01",
+      "03.08.02",
+      "03.08.03",
+      "03.08.04",
+      "03.08.05",
+      "03.08.06",
+      "03.08.07",
+      "03.08.08"
+    ]
+  },
+  "System media transport records": {
+    "id": "system-media-transport-records",
+    "shared": false,
+    "controls": [
+      "03.08.06"
+    ]
+  },
+  "System monitoring records": {
+    "id": "system-monitoring-records",
+    "shared": false,
+    "controls": [
+      "03.01.01",
+      "03.04.09",
+      "03.13.13",
+      "03.13.14"
+    ]
+  },
+  "System monitoring tools and techniques documentation": {
+    "id": "system-monitoring-tools-and-techniques-documentation",
+    "shared": true,
+    "controls": [
+      "03.14.06",
+      "03.14.07"
+    ]
+  },
+  "System monitoring/audit records": {
+    "id": "system-monitoring-audit-records",
+    "shared": false,
+    "controls": [
+      "03.01.05"
+    ]
+  },
+  "System protocols": {
+    "id": "system-protocols",
+    "shared": false,
+    "controls": [
+      "03.14.06"
+    ]
+  },
+  "System security plan": {
+    "id": "system-security-plan",
+    "shared": true,
+    "controls": [
+      "03.01.01",
+      "03.01.02",
+      "03.01.03",
+      "03.01.04",
+      "03.01.05",
+      "03.01.06",
+      "03.01.07",
+      "03.01.08",
+      "03.01.09",
+      "03.01.10",
+      "03.01.11",
+      "03.01.12",
+      "03.01.13",
+      "03.01.14",
+      "03.01.15",
+      "03.01.16",
+      "03.01.17",
+      "03.01.18",
+      "03.01.19",
+      "03.01.20",
+      "03.01.21",
+      "03.01.22",
+      "03.02.01",
+      "03.02.02",
+      "03.02.03",
+      "03.03.01",
+      "03.03.02",
+      "03.03.03",
+      "03.03.04",
+      "03.03.05",
+      "03.03.06",
+      "03.03.07",
+      "03.03.08",
+      "03.03.09",
+      "03.04.01",
+      "03.04.02",
+      "03.04.03",
+      "03.04.04",
+      "03.04.05",
+      "03.04.06",
+      "03.04.07",
+      "03.04.08",
+      "03.04.09",
+      "03.05.01",
+      "03.05.02",
+      "03.05.03",
+      "03.05.04",
+      "03.05.05",
+      "03.05.06",
+      "03.05.07",
+      "03.05.08",
+      "03.05.09",
+      "03.05.10",
+      "03.05.11",
+      "03.06.01",
+      "03.06.02",
+      "03.06.03",
+      "03.07.01",
+      "03.07.02",
+      "03.07.03",
+      "03.07.04",
+      "03.07.05",
+      "03.07.06",
+      "03.08.01",
+      "03.08.02",
+      "03.08.03",
+      "03.08.04",
+      "03.08.05",
+      "03.08.06",
+      "03.08.07",
+      "03.08.08",
+      "03.08.09",
+      "03.09.01",
+      "03.10.01",
+      "03.10.02",
+      "03.10.03",
+      "03.10.04",
+      "03.10.05",
+      "03.10.06",
+      "03.11.01",
+      "03.11.02",
+      "03.11.03",
+      "03.12.01",
+      "03.12.02",
+      "03.12.03",
+      "03.12.04",
+      "03.13.01",
+      "03.13.02",
+      "03.13.03",
+      "03.13.04",
+      "03.13.05",
+      "03.13.06",
+      "03.13.07",
+      "03.13.08",
+      "03.13.09",
+      "03.13.10",
+      "03.13.11",
+      "03.13.12",
+      "03.13.13",
+      "03.13.14",
+      "03.13.15",
+      "03.13.16",
+      "03.14.01",
+      "03.14.02",
+      "03.14.03",
+      "03.14.04",
+      "03.14.05",
+      "03.14.06",
+      "03.14.07"
+    ]
+  },
+  "System use notification messages": {
+    "id": "system-use-notification-messages",
+    "shared": true,
+    "controls": [
+      "03.01.07",
+      "03.01.09"
+    ]
+  },
+  "System use policy": {
+    "id": "system-use-policy",
+    "shared": true,
+    "controls": [
+      "03.08.07",
+      "03.08.08"
+    ]
+  },
+  "System-generated list of privileged users with access to management of audit logging functionality": {
+    "id": "system-generated-list-of-privileged-users-with-access-to-management-of-audit-logging-functionality",
+    "shared": false,
+    "controls": [
+      "03.03.09"
+    ]
+  },
+  "Terms and conditions for external systems": {
+    "id": "terms-and-conditions-for-external-systems",
+    "shared": false,
+    "controls": [
+      "03.01.20"
+    ]
+  },
+  "Test results from the installation of software and firmware updates to correct system flaws": {
+    "id": "test-results-from-the-installation-of-software-and-firmware-updates-to-correct-system-flaws",
+    "shared": false,
+    "controls": [
+      "03.14.01"
+    ]
+  },
+  "Training materials and/or records": {
+    "id": "training-materials-and-or-records",
+    "shared": false,
+    "controls": [
+      "03.01.22"
+    ]
+  },
+  "Training records": {
+    "id": "training-records",
+    "shared": true,
+    "controls": [
+      "03.02.01",
+      "03.02.02"
+    ]
+  },
+  "User acknowledgements of notification message or banner": {
+    "id": "user-acknowledgements-of-notification-message-or-banner",
+    "shared": true,
+    "controls": [
+      "03.01.07",
+      "03.01.09"
+    ]
+  },
+  "VoIP implementation guidance": {
+    "id": "voip-implementation-guidance",
+    "shared": false,
+    "controls": [
+      "03.13.14"
+    ]
+  },
+  "VoIP usage restrictions": {
+    "id": "voip-usage-restrictions",
+    "shared": false,
+    "controls": [
+      "03.13.14"
+    ]
+  },
+  "Vulnerability scanning results": {
+    "id": "vulnerability-scanning-results",
+    "shared": true,
+    "controls": [
+      "03.11.02",
+      "03.11.03"
+    ]
+  },
+  "Vulnerability scanning tools and associated configuration documentation": {
+    "id": "vulnerability-scanning-tools-and-associated-configuration-documentation",
+    "shared": true,
+    "controls": [
+      "03.11.02",
+      "03.11.03"
+    ]
+  },
+  "Wireless access authorizations": {
+    "id": "wireless-access-authorizations",
+    "shared": false,
+    "controls": [
+      "03.01.16"
+    ]
+  }
+}
