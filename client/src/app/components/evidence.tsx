@@ -13,6 +13,7 @@ import {
     isMusic,
     isPDF,
     isPowerpoint,
+    isSheet,
     isVideo,
     isWord,
     isZip,
@@ -287,6 +288,21 @@ const IconLink = () => (
         />
     </svg>
 );
+const IconTable = () => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        aria-hidden="true"
+        className="h-4 mr-1"
+        viewBox="0 0 24 24"
+    >
+        <path
+            stroke="currentColor"
+            strokeWidth="2"
+            d="M3 11h18M3 15h18m-9-4v8m-8 0h16a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Z"
+        />
+    </svg>
+);
 
 // pdf.js is ~1MB, so it loads on demand the first time a PDF preview renders.
 // The worker is emitted by the bundler as a local asset (never a CDN fetch —
@@ -335,10 +351,7 @@ const PdfPages = ({
                 // detach the artifact's in-memory bytes — hand it a copy.
                 task = pdfjs.getDocument({ data: artifact.data.slice(0) });
                 const doc = await task.promise;
-                const total = Math.min(
-                    doc.numPages,
-                    maxPages ?? doc.numPages,
-                );
+                const total = Math.min(doc.numPages, maxPages ?? doc.numPages);
                 for (let i = 1; i <= total; i++) {
                     if (cancelled) {
                         return;
@@ -552,9 +565,7 @@ const sheetKind = (artifact: IDBEvidenceV2): "csv" | "xlsx" | null => {
 // time a spreadsheet preview renders (same pattern as pdf.js — never a CDN).
 const loadSheets = async (artifact: IDBEvidenceV2): Promise<Sheet[]> => {
     if (sheetKind(artifact) === "csv") {
-        return [
-            { rows: parseCSV(new TextDecoder().decode(artifact.data)) },
-        ];
+        return [{ rows: parseCSV(new TextDecoder().decode(artifact.data)) }];
     }
     const ExcelJS = await import("exceljs");
     const workbook = new ExcelJS.Workbook();
@@ -586,9 +597,7 @@ const SheetTable = ({
     maxRows?: number;
 }) => {
     const shown = rows.slice(0, maxRows);
-    const clippedCols = rows.some(
-        (row) => row.length > SHEET_PREVIEW_MAX_COLS,
-    );
+    const clippedCols = rows.some((row) => row.length > SHEET_PREVIEW_MAX_COLS);
     return (
         <span className="flex flex-col gap-1">
             <table className="w-max border-collapse text-xs font-normal text-foreground">
@@ -871,7 +880,10 @@ const ExpandedPreview = ({
     );
 };
 
-const getIcon = (type: string): JSX.Element => {
+export const getIcon = (type: string): JSX.Element => {
+    if (type === "url") {
+        return <IconLink />;
+    }
     if (isImage(type)) {
         return <IconFileImage />;
     }
@@ -903,6 +915,13 @@ const getIcon = (type: string): JSX.Element => {
         return <IconFileZip />;
     }
     return <IconFileDownload />;
+};
+
+export const getIconWithSheet = (type: string): JSX.Element => {
+    if (isSheet(type)) {
+        return <IconTable />;
+    }
+    return getIcon(type);
 };
 
 export const FileBadge = ({

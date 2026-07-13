@@ -4,6 +4,8 @@ import { Card, cn } from "./ui";
 export interface Stat {
     label: string;
     value: ReactNode;
+    /** Small glyph rendered before the label (e.g. the file-type icon). */
+    icon?: ReactNode;
     /** When set, the card renders as a button (e.g. to toggle a filter). */
     onClick?: () => void;
     /** Highlights the card as the active selection. */
@@ -17,7 +19,10 @@ const StatContent = ({ stat }: { stat: Stat }) => (
         <span className="text-2xl font-semibold tracking-tight">
             {stat.value}
         </span>
-        <span className="text-xs text-muted-foreground">{stat.label}</span>
+        <span className="flex items-center text-xs text-muted-foreground">
+            {stat.icon}
+            {stat.label}
+        </span>
     </>
 );
 

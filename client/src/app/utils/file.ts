@@ -46,23 +46,23 @@ export const hashType = (hash: string) => {
 const MIME_LABELS: Record<string, string> = {
     url: "URL",
     "application/pdf": "PDF",
-    "application/msword": "Word document",
+    "application/msword": "Word",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        "Word document",
+        "Word",
     "application/vnd.ms-excel": "Spreadsheet",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
         "Spreadsheet",
-    "application/vnd.ms-powerpoint": "PowerPoint presentation",
+    "application/vnd.ms-powerpoint": "PowerPoint",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-        "PowerPoint presentation",
+        "PowerPoint",
     "application/vnd.oasis.opendocument.presentation":
         "OpenDocument presentation",
     "application/vnd.oasis.opendocument.spreadsheet":
         "OpenDocument spreadsheet",
-    "application/vnd.oasis.opendocument.text": "OpenDocument text",
-    "application/zip": "ZIP archive",
-    "application/x-zip-compressed": "ZIP archive",
-    "application/gzip": "Gzip archive",
+    "application/vnd.oasis.opendocument.text": "OpenDocument document",
+    "application/zip": "ZIP",
+    "application/x-zip-compressed": "ZIP",
+    "application/gzip": "Gzip",
     "application/json": "JSON",
     "application/xml": "XML",
     "application/octet-stream": "Binary file",
@@ -73,11 +73,11 @@ const MIME_LABELS: Record<string, string> = {
     "text/md": "Markdown",
     "text/javascript": "JavaScript",
     "text/xml": "XML",
-    "image/png": "PNG image",
-    "image/jpeg": "JPEG image",
-    "image/gif": "GIF image",
-    "image/webp": "WebP image",
-    "image/svg+xml": "SVG image",
+    "image/png": "PNG",
+    "image/jpeg": "JPEG",
+    "image/gif": "GIF",
+    "image/webp": "WebP",
+    "image/svg+xml": "SVG",
 };
 
 export const mimeLabel = (type: string): string =>
@@ -140,6 +140,8 @@ export const isCSV = (type: string) => {
             return false;
     }
 };
+
+export const isSheet = (type: string) => isCSV(type) || isExcel(type);
 
 // Generic documents; Word files have their own check (isWord).
 export const isDoc = (type: string) => {

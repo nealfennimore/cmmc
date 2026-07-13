@@ -1,7 +1,11 @@
 "use client";
 import { examineItemName } from "@/api/entities/ExamineItemIds";
 import { confirm } from "@/app/components/confirm";
-import { FileBadge, LinkBadge } from "@/app/components/evidence";
+import {
+    FileBadge,
+    getIconWithSheet,
+    LinkBadge,
+} from "@/app/components/evidence";
 import { EditEvidenceModal } from "@/app/components/security_requirements/evidence";
 import { Stats } from "@/app/components/stats";
 import {
@@ -224,10 +228,17 @@ export const EvidenceTable = () => {
     // shown in the Type column), most common first. Clicking a type card
     // toggles the table down to that type; the total card clears it.
     const stats = useMemo(() => {
-        const byType = new Map<string, number>();
+        // Several MIME types share a label (e.g. "Spreadsheet"); keep one
+        // representative raw type per label to pick the card's icon.
+        const byType = new Map<string, { count: number; type: string }>();
         for (const artifact of evidenceWithRequirements) {
             const label = mimeLabel(artifact.type);
-            byType.set(label, (byType.get(label) ?? 0) + 1);
+            const entry = byType.get(label) ?? {
+                count: 0,
+                type: artifact.type,
+            };
+            entry.count += 1;
+            byType.set(label, entry);
         }
         return [
             {
@@ -236,15 +247,19 @@ export const EvidenceTable = () => {
                 onClick: () => setTypeFilter(null),
             },
             ...[...byType.entries()]
-                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-                .map(([type, count]) => ({
-                    label: type,
+                .sort(
+                    (a, b) =>
+                        b[1].count - a[1].count || a[0].localeCompare(b[0]),
+                )
+                .map(([label, { count, type }]) => ({
+                    label,
                     value: count,
+                    icon: getIconWithSheet(type),
                     onClick: () =>
                         setTypeFilter((current) =>
-                            current === type ? null : type,
+                            current === label ? null : label,
                         ),
-                    active: typeFilter === type,
+                    active: typeFilter === label,
                 })),
         ];
     }, [evidenceWithRequirements, typeFilter]);
@@ -282,7 +297,12 @@ export const EvidenceTable = () => {
                     // Hovering the type reveals the artifact's SHA-256.
                     <HoverCard
                         key={artifact.id}
-                        label={mimeLabel(artifact.type)}
+                        label={
+                            <span className="flex items-center text-muted-foreground">
+                                {getIconWithSheet(artifact.type)}{" "}
+                                <span>{mimeLabel(artifact.type)}</span>
+                            </span>
+                        }
                         className="font-mono"
                     >
                         {hashType(artifact.id)}:{artifact.id}
