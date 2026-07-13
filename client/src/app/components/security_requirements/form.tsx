@@ -19,7 +19,7 @@ export const Form = ({
             <ContentNavigation previous={prev} next={next} />
             {!locked && (
                 <div
-                    className="sticky top-36 left-full flex flex-row-reverse items-center shrink-0 w-1/4 pb-4 z-10 -translate-y-full"
+                    className="sticky top-36 left-full flex flex-row-reverse items-center shrink-0 w-1/4 pb-4 z-20 -translate-y-full"
                     data-tour="save"
                 >
                     <Button
