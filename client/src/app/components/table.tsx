@@ -29,6 +29,9 @@ const OrderPath = {
     ["none"]: Order.ASC,
 };
 
+// Cell values are strings for plain columns and string arrays for nested ones
+// (e.g. the evidence table's Requirements column), and either can be absent —
+// sorters take whatever their column stores.
 type Sorter = (a: any, b: any) => number;
 type Filter = (search: string) => (value: string) => boolean;
 type PotentialSorter = null | Sorter;
@@ -404,7 +407,13 @@ interface Props {
     formRef: React.RefObject<HTMLFormElement> | null;
 }
 
-export const defaultSort = (a: any, b: any) => {
+export const defaultSort = (a: string | undefined, b: string | undefined) => {
+    // Rows without a value (e.g. evidence with no "Attached as" tags) sort
+    // after rows with one; localeCompare would otherwise coerce undefined to
+    // the string "undefined" (or return undefined, leaving rows unsorted).
+    if (a === undefined || b === undefined) {
+        return a === b ? 0 : a === undefined ? 1 : -1;
+    }
     if (!isNaN(Number(a)) && !isNaN(Number(b))) {
         return a.localeCompare(b, undefined, {
             numeric: true,
@@ -650,8 +659,7 @@ export function Table({
                                     className={`px-6 pb-3 ${headerProps.className ?? ""}`}
                                 >
                                     {filters?.[index] &&
-                                        (headerProps.filterKind ===
-                                        "select" ? (
+                                        (headerProps.filterKind === "select" ? (
                                             <SearchableSelect
                                                 colIndex={index}
                                                 rows={initialRows}

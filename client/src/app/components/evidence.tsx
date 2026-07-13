@@ -1,6 +1,7 @@
 "use client";
 import { viewFile } from "@/app/components/security_requirements/utils";
 import { IDBEvidenceV2 } from "@/app/db";
+import { useHoverCard } from "@/app/hooks/hoverCard";
 import { embeddable, mimeLabel, snippetable } from "@/app/utils/file";
 import { openExternal, openFileInSystemViewer } from "@/app/utils/tauri";
 import { useEffect, useState } from "react";
@@ -78,17 +79,24 @@ const IconExternal = () => (
     </svg>
 );
 
-// Hover preview for image and text artifacts, anchored like the hash
-// tooltip: opens upward so it stays inside the evidence table's scroll
-// container. Mounted only while hovered so object URLs are created lazily
-// and revoked on leave. Being absolutely positioned it also escapes the
-// badge's hover underline (text-decoration does not propagate out of flow).
+// Hover preview for image and text artifacts, portaled to <body> at a fixed
+// position so the evidence table's scroll container can't clip it (and the
+// badge's hover underline can't reach it). Mounted only while hovered so
+// object URLs are created lazily and revoked on leave. Portaled events still
+// bubble through the React tree, so the badge's own handlers see the card's
+// clicks unless stopped.
 const PreviewCard = ({
     artifact,
+    position,
     onExpand,
+    onMouseEnter,
+    onMouseLeave,
 }: {
     artifact: IDBEvidenceV2;
+    position: { top: number; left: number };
     onExpand: () => void;
+    onMouseEnter: () => void;
+    onMouseLeave: () => void;
 }) => {
     const isImg = embeddable(artifact);
     const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -110,16 +118,19 @@ const PreviewCard = ({
         ? null
         : new TextDecoder().decode(artifact.data.slice(0, 500));
 
-    return (
+    return createPortal(
         <span
-            // Inside the badge <button>: without stopPropagation, clicking
-            // the card would bubble up and open the file instead.
+            // React-tree child of the badge <button>: without stopPropagation,
+            // clicking the card would bubble up and open the file instead.
             onClick={(e) => {
                 e.stopPropagation();
                 onExpand();
             }}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
             title="Click to expand"
-            className="absolute bottom-[calc(100%-10px)] left-0 z-10 mb-2 flex w-max max-w-72 cursor-zoom-in flex-col gap-1 rounded-md border border-border bg-card p-2 text-left shadow-md"
+            style={position}
+            className="fixed z-50 flex w-max max-w-72 -translate-y-full cursor-zoom-in flex-col gap-1 rounded-md border border-border bg-card p-2 text-left font-normal normal-case shadow-md"
         >
             {isImg ? (
                 imageSrc && (
@@ -141,7 +152,8 @@ const PreviewCard = ({
             >
                 {artifact.data.byteLength} bytes | {mimeLabel(artifact.type)}
             </span>
-        </span>
+        </span>,
+        document.body,
     );
 };
 
@@ -228,7 +240,7 @@ export const FileBadge = ({
     className?: string;
 }) => {
     const previewable = embeddable(artifact) || snippetable(artifact);
-    const [showPreview, setShowPreview] = useState(false);
+    const preview = useHoverCard();
     const [expanded, setExpanded] = useState(false);
 
     return (
@@ -241,10 +253,10 @@ export const FileBadge = ({
                     ? undefined
                     : `${artifact.data.byteLength} bytes | ${mimeLabel(artifact.type)}`
             }
-            onMouseEnter={() => previewable && setShowPreview(true)}
-            onMouseLeave={() => setShowPreview(false)}
-            onFocus={() => previewable && setShowPreview(true)}
-            onBlur={() => setShowPreview(false)}
+            onMouseEnter={(e) => previewable && preview.show(e.currentTarget)}
+            onMouseLeave={preview.scheduleHide}
+            onFocus={(e) => previewable && preview.show(e.currentTarget)}
+            onBlur={preview.scheduleHide}
             onClick={async () => {
                 // In the desktop shell, open via the OS default app; the blob
                 // URL in viewFile is the browser fallback.
@@ -261,10 +273,13 @@ export const FileBadge = ({
         >
             {!hideIcon && <IconFileDownload />}
             <span>{artifact.filename}</span>
-            {showPreview && !expanded && (
+            {preview.position && !expanded && (
                 <PreviewCard
                     artifact={artifact}
+                    position={preview.position}
                     onExpand={() => setExpanded(true)}
+                    onMouseEnter={preview.cancelHide}
+                    onMouseLeave={preview.scheduleHide}
                 />
             )}
             {expanded && (
@@ -275,7 +290,7 @@ export const FileBadge = ({
                     // closes, which would pop the card right back open.
                     onClose={() => {
                         setExpanded(false);
-                        setShowPreview(false);
+                        preview.hide();
                     }}
                 />
             )}

@@ -12,9 +12,11 @@ import {
 } from "@/app/components/table";
 import { toPath, useRevisionContext } from "@/app/context/revision";
 import { IDB, IDBEvidenceV2, removeEvidenceExamineTags } from "@/app/db";
+import { useHoverCard } from "@/app/hooks/hoverCard";
 import { mimeLabel } from "@/app/utils/file";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface Requirements {
     requirements: string[];
@@ -66,31 +68,55 @@ async function fetchEvidence(): Promise<EvidenceWithRequirements[]> {
     );
 }
 
+/**
+ * Hover tooltip that escapes the table's scroll container: portaled to
+ * <body> at a fixed position via {@link useHoverCard} (same pattern as the
+ * table's filter dropdown), so overflow-x-auto can't clip it.
+ */
+const HoverCard = ({
+    label,
+    className,
+    children,
+}: {
+    label: ReactNode;
+    /** Extra classes for the card (e.g. font-mono for hashes). */
+    className?: string;
+    children: ReactNode;
+}) => {
+    const { position, show, cancelHide, scheduleHide } = useHoverCard();
+
+    return (
+        <div
+            className="w-fit cursor-help"
+            onMouseEnter={(e) => show(e.currentTarget)}
+            onMouseLeave={scheduleHide}
+        >
+            {label}
+            {position &&
+                createPortal(
+                    <div
+                        onMouseEnter={cancelHide}
+                        onMouseLeave={scheduleHide}
+                        style={position}
+                        className={`fixed z-50 -translate-y-full rounded-md border border-border bg-card px-3 py-2 text-xs text-card-foreground shadow-md ${className ?? ""}`}
+                    >
+                        {children}
+                    </div>,
+                    document.body,
+                )}
+        </div>
+    );
+};
+
 const nestedSort = (a?: string[], b?: string[]) => defaultSort(a?.[0], b?.[0]);
-const sorters = [
-    defaultSort,
-    defaultSort,
-    nestedSort,
-    nestedSort,
-    defaultSort,
-    null,
-];
+// "Attached as" renders as a count, so it orders by how many tags a row has.
+const countSort = (a?: string[], b?: string[]) =>
+    (a?.length ?? 0) - (b?.length ?? 0);
+const sorters = [defaultSort, defaultSort, nestedSort, countSort, null];
 
 const nestedFilter = (search: string) => (values: string[]) =>
     values.some((value) => value.includes(search));
-// The hash filter matches on the full id (row values), so pasting a complete
-// hash works even though the cell only displays a short prefix.
-const filters = [
-    defaultFilter,
-    defaultFilter,
-    nestedFilter,
-    nestedFilter,
-    defaultFilter,
-    null,
-];
-
-// Enough of a git-style prefix to visually tell artifacts apart.
-const HASH_DISPLAY_CHARS = 12;
+const filters = [defaultFilter, defaultFilter, nestedFilter, nestedFilter, null];
 
 export const EvidenceTable = () => {
     const [evidenceWithRequirements, setEvidenceWithRequirements] = useState<
@@ -170,12 +196,7 @@ export const EvidenceTable = () => {
                 text: "Attached as",
                 filterable: true,
                 filterKind: "select" as const,
-                className: "min-w-[200px] max-lg:hidden",
-            },
-            {
-                text: "File Hash (SHA-256)",
-                filterable: true,
-                className: "max-lg:hidden",
+                className: "min-w-[120px]",
             },
             {
                 text: "",
@@ -233,7 +254,6 @@ export const EvidenceTable = () => {
                     mimeLabel(artifact.type),
                     artifact.requirements,
                     artifact.attachedAs,
-                    artifact.id,
                     "",
                 ],
                 columns: [
@@ -242,9 +262,14 @@ export const EvidenceTable = () => {
                     ) : (
                         <FileBadge artifact={artifact} hideIcon />
                     ),
-                    <span key={artifact.id} title={artifact.type}>
-                        {mimeLabel(artifact.type)}
-                    </span>,
+                    // Hovering the type reveals the artifact's SHA-256.
+                    <HoverCard
+                        key={artifact.id}
+                        label={mimeLabel(artifact.type)}
+                        className="font-mono"
+                    >
+                        {artifact.id}
+                    </HoverCard>,
                     artifact.requirements.map((requirement) => (
                         <Link
                             key={`${artifact.id}-${requirement}`}
@@ -254,27 +279,18 @@ export const EvidenceTable = () => {
                             {requirement}
                         </Link>
                     )),
-                    artifact.attachedAs.map((name) => (
-                        <span
-                            key={`${artifact.id}-${name}`}
-                            className="mb-1 mr-1 inline-block rounded-full border border-border bg-secondary px-2 py-0.5 text-xs"
+                    // Collapsed to a count; hovering lists the tag names.
+                    artifact.attachedAs.length ? (
+                        <HoverCard
+                            key={`${artifact.id}-attached`}
+                            label={artifact.attachedAs.length}
+                            className="flex max-w-sm flex-col gap-1"
                         >
-                            {name}
-                        </span>
-                    )),
-                    // Hovering the short hash reveals the full value in a
-                    // card-styled tooltip; as a child of the hovered element
-                    // it stays open when moused over, so it can be selected
-                    // and copied.
-                    <div
-                        key={artifact.id}
-                        className="group relative w-fit cursor-help"
-                    >
-                        {artifact.id.slice(0, HASH_DISPLAY_CHARS)}&hellip;
-                        <span className="invisible absolute bottom-full right-0 z-10 mb-1 w-max rounded-md border border-border bg-card px-3 py-2 font-mono text-xs text-card-foreground shadow-md group-hover:visible">
-                            {artifact.id}
-                        </span>
-                    </div>,
+                            {artifact.attachedAs.map((name) => (
+                                <span key={name}>{name}</span>
+                            ))}
+                        </HoverCard>
+                    ) : null,
                     <button
                         key={artifact.id}
                         type="button"
@@ -303,8 +319,7 @@ export const EvidenceTable = () => {
                     null,
                     "max-md:hidden",
                     "flex flex-wrap",
-                    "max-lg:hidden",
-                    "max-lg:hidden md:max-w-48 xl:max-w-full",
+                    null,
                     null,
                 ],
             })) ?? [],
@@ -327,7 +342,6 @@ export const EvidenceTable = () => {
                         tableBody={tableBody}
                         initialOrders={[
                             Order.ASC,
-                            Order.NONE,
                             Order.NONE,
                             Order.NONE,
                             Order.NONE,
