@@ -83,7 +83,8 @@ const HoverCard = ({
     className?: string;
     children: ReactNode;
 }) => {
-    const { position, show, cancelHide, scheduleHide } = useHoverCard();
+    const { position, show, cancelHide, scheduleHide, cardRef } =
+        useHoverCard();
 
     return (
         <div
@@ -95,6 +96,9 @@ const HoverCard = ({
             {position &&
                 createPortal(
                     <div
+                        ref={(el) => {
+                            cardRef.current = el;
+                        }}
                         onMouseEnter={cancelHide}
                         onMouseLeave={scheduleHide}
                         style={position}
@@ -107,6 +111,9 @@ const HoverCard = ({
         </div>
     );
 };
+
+// Requirements shown inline before the rest collapse into a hover card.
+const MAX_REQUIREMENT_LINKS = 3;
 
 const nestedSort = (a?: string[], b?: string[]) => defaultSort(a?.[0], b?.[0]);
 // "Attached as" renders as a count, so it orders by how many tags a row has.
@@ -270,15 +277,51 @@ export const EvidenceTable = () => {
                     >
                         {artifact.id}
                     </HoverCard>,
-                    artifact.requirements.map((requirement) => (
-                        <Link
-                            key={`${artifact.id}-${requirement}`}
-                            href={`${path}/requirement/${requirement}`}
-                            className="mr-2 text-primary hover:underline"
-                        >
-                            {requirement}
-                        </Link>
-                    )),
+                    [
+                        ...artifact.requirements
+                            .slice(0, MAX_REQUIREMENT_LINKS)
+                            .map((requirement) => (
+                                <Link
+                                    key={`${artifact.id}-${requirement}`}
+                                    href={`${path}/requirement/${requirement}`}
+                                    className="mr-2 text-primary hover:underline"
+                                >
+                                    {requirement}
+                                </Link>
+                            )),
+                        // The rest collapse into a hover card; the grace
+                        // timeout keeps it open while the pointer travels in,
+                        // so the links stay clickable.
+                        ...(artifact.requirements.length >
+                        MAX_REQUIREMENT_LINKS
+                            ? [
+                                  <HoverCard
+                                      key={`${artifact.id}-more-requirements`}
+                                      label={
+                                          <span className="text-muted-foreground">
+                                              +
+                                              {artifact.requirements.length -
+                                                  MAX_REQUIREMENT_LINKS}{" "}
+                                              more
+                                          </span>
+                                      }
+                                      className="flex max-h-64 flex-col gap-1 overflow-y-auto"
+                                  >
+                                      {artifact.requirements
+                                          .slice(MAX_REQUIREMENT_LINKS)
+                                          .map((requirement) => (
+                                              <Link
+                                                  key={requirement}
+                                                  href={`${path}/requirement/${requirement}`}
+                                                  className="text-primary hover:underline"
+                                              >
+                                                  {requirement}
+                                              </Link>
+                                          ))}
+                                  </HoverCard>,
+                              ]
+                            : []),
+                    ],
                     // Collapsed to a count; hovering lists the tag names.
                     artifact.attachedAs.length ? (
                         <HoverCard

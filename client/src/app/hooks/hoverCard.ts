@@ -11,7 +11,9 @@ import { useEffect, useRef, useState } from "react";
  * rather than letting it drift from its trigger.
  *
  * Wire `show(e.currentTarget)` / `scheduleHide` to the trigger's enter/leave
- * (and focus/blur), and `cancelHide` / `scheduleHide` to the card's.
+ * (and focus/blur), and `cancelHide` / `scheduleHide` to the card's. A card
+ * with scrollable content should also attach `cardRef`, so its own scrolls
+ * don't count as "outside".
  */
 export const useHoverCard = () => {
     const [position, setPosition] = useState<{
@@ -19,6 +21,7 @@ export const useHoverCard = () => {
         left: number;
     } | null>(null);
     const hideTimer = useRef<number | undefined>(undefined);
+    const cardRef = useRef<HTMLElement | null>(null);
 
     const show = (trigger: HTMLElement | null) => {
         window.clearTimeout(hideTimer.current);
@@ -42,13 +45,18 @@ export const useHoverCard = () => {
             return;
         }
         const close = () => setPosition(null);
-        window.addEventListener("scroll", close, true);
+        const onScroll = (e: Event) => {
+            if (!cardRef.current?.contains(e.target as Node)) {
+                close();
+            }
+        };
+        window.addEventListener("scroll", onScroll, true);
         window.addEventListener("resize", close);
         return () => {
-            window.removeEventListener("scroll", close, true);
+            window.removeEventListener("scroll", onScroll, true);
             window.removeEventListener("resize", close);
         };
     }, [position]);
 
-    return { position, show, cancelHide, scheduleHide, hide };
+    return { position, show, cancelHide, scheduleHide, hide, cardRef };
 };
