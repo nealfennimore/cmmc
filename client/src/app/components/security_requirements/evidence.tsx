@@ -377,6 +377,65 @@ export const EditEvidenceModal = ({
         setBusy(false);
     };
 
+    // Removing a tag drops the identity claim; the per-control links it
+    // fanned out survive unless the user opts to detach them too. Links are
+    // kept when another tag on this artifact also justifies them, or when
+    // they belong to the requirement this modal was opened from.
+    const onRemoveTag = async (name: string) => {
+        // Foreign tags (no mapping entry) store the raw string as their id.
+        const examineId = examineItemId(name) ?? name;
+
+        const links = await IDB.evidenceRequirements.getAll(
+            IDBKeyRange.only(artifact.id),
+            "evidence_id",
+        );
+        const linked = new Set(links.map((link) => link.requirement_id));
+        const keep = new Set(requirementId ? [requirementId] : []);
+        for (const other of attachedAs) {
+            if (other === name) {
+                continue;
+            }
+            for (const target of requirementsSharingExamineItem(
+                revision,
+                other,
+            )) {
+                keep.add(target);
+            }
+        }
+        const prunable = requirementsSharingExamineItem(revision, name).filter(
+            (target) => linked.has(target) && !keep.has(target),
+        );
+
+        let detach = false;
+        if (prunable.length) {
+            const choice = await confirm({
+                title: "Remove shared tag",
+                message: `This evidence is attached to ${prunable.length} controls that list "${name}". Detach it from those controls as well, or only remove the tag?`,
+                confirmLabel: `Detach from ${prunable.length} controls`,
+                cancelLabel: "Only remove tag",
+            });
+            // Closing the dialog (X / Escape / backdrop) aborts the removal.
+            if (choice === null) {
+                return;
+            }
+            detach = choice;
+        }
+
+        setBusy(true);
+        await IDB.evidenceExamineItems.delete([artifact.id, examineId]);
+        if (detach) {
+            for (const target of prunable) {
+                await IDB.evidenceRequirements.delete([artifact.id, target]);
+            }
+        }
+        await loadAttachedAs();
+        await onChanged();
+        // The attach button may reference the removed tag's fan-out; let the
+        // user attach again.
+        setSharedCount(0);
+        setBusy(false);
+    };
+
     // The file extension is not editable: it is shown as an adornment on the
     // name input and re-appended on save, following the picked replacement
     // file when there is one.
@@ -570,15 +629,28 @@ export const EditEvidenceModal = ({
                                         {attachedAs.map((name) => (
                                             <span
                                                 key={name}
-                                                className="mb-1 mr-1 inline-block rounded-full border border-border bg-secondary px-2 py-0.5 text-xs"
+                                                className="mb-1 mr-1 inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs"
                                             >
                                                 {name}
+                                                <button
+                                                    type="button"
+                                                    aria-label={`Remove tag "${name}"`}
+                                                    disabled={busy}
+                                                    onClick={() =>
+                                                        onRemoveTag(name)
+                                                    }
+                                                    className="text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed"
+                                                >
+                                                    &times;
+                                                </button>
                                             </span>
                                         ))}
                                     </div>
                                     <span className="text-xs font-normal text-muted-foreground">
                                         Shared evidence documents this artifact
-                                        is recorded as.
+                                        is recorded as. Removing a tag keeps
+                                        the control links unless you choose to
+                                        detach them.
                                     </span>
                                 </div>
                             )}
