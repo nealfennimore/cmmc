@@ -1,13 +1,16 @@
 "use client";
 import { Status } from "@/app/components/status";
 import { toNum, useRevisionContext } from "@/app/context/revision";
+import { examineIdsForStoredItem } from "@/api/entities/ExamineItemIds";
 import {
     IDB,
     IDBEvidence,
+    IDBEvidenceExamineItem,
     IDBEvidenceRequirement,
     IDBEvidenceV2,
-    IDBExamineEvidence,
+    IDBExamineEvidenceV1,
     IDBRequirement,
+    IDBRequirementExamineItem,
     IDBSecurityRequirement,
     resetEvidenceIdMigration,
 } from "@/app/db";
@@ -44,7 +47,11 @@ interface ImportExportPayload {
         | PortableIDBEvidenceV2[]
         | PortableIDBEvidenceV3[];
     evidenceRequirements?: IDBEvidenceRequirement[];
-    examineEvidence?: IDBExamineEvidence[];
+    requirementExamineItems?: IDBRequirementExamineItem[];
+    // Pre-v9 payload key for the checklist ticks: raw-item rows in v4-v7
+    // exports, examine ids in v8.
+    examineEvidence?: (IDBRequirementExamineItem | IDBExamineEvidenceV1)[];
+    evidenceExamineItems?: IDBEvidenceExamineItem[];
     version: number;
 }
 
@@ -61,7 +68,9 @@ const buildAndSaveExport = async (filenamePrefix: string) => {
     const idbSecurityRequirements = await IDB.securityRequirements.getAll();
     const idbEvidence = await IDB.evidence.getAll();
     const idbEvidenceRequirements = await IDB.evidenceRequirements.getAll();
-    const idbExamineEvidence = await IDB.examineEvidence.getAll();
+    const idbRequirementExamineItems =
+        await IDB.requirementExamineItems.getAll();
+    const idbEvidenceExamineItems = await IDB.evidenceExamineItems.getAll();
     // Encode via the engine-native base64 path; a JS spread over the bytes
     // stalls for minutes on large evidence sets.
     const evidence: PortableIDBEvidenceV3[] = await Promise.all(
@@ -78,7 +87,8 @@ const buildAndSaveExport = async (filenamePrefix: string) => {
         securityRequirements: validSecurityRequirements,
         evidence,
         evidenceRequirements: idbEvidenceRequirements,
-        examineEvidence: idbExamineEvidence,
+        requirementExamineItems: idbRequirementExamineItems,
+        evidenceExamineItems: idbEvidenceExamineItems,
         version: EXPORT_VERSION,
     };
 
@@ -141,6 +151,11 @@ const importDatabase = async (text: string): Promise<void> => {
         // stores. v4 -> v5 only added the examine_evidence store, so v4
         // exports import as-is (just without any examine checklist data). v6
         // only changed evidence bytes to base64, handled per artifact below.
+        // v7 added the evidence_examine_items tags; older exports simply
+        // carry none. v8 re-keyed examine_evidence rows from raw item
+        // strings to examine ids, converted per row below. v9 renamed the
+        // store (and payload key) to requirementExamineItems; the old key is
+        // still read.
         if (payload.version === 3) {
             const evidenceV1 = payload.evidence as
                 | PortableIDBEvidence[]
@@ -193,7 +208,8 @@ const importDatabase = async (text: string): Promise<void> => {
         await IDB.requirements.clear();
         await IDB.evidenceRequirements.clear();
         await IDB.evidence.clear();
-        await IDB.examineEvidence.clear();
+        await IDB.requirementExamineItems.clear();
+        await IDB.evidenceExamineItems.clear();
 
         const requirements: Record<string, IDBRequirement> = {};
 
@@ -231,8 +247,25 @@ const importDatabase = async (text: string): Promise<void> => {
             await IDB.evidenceRequirements.put(evidenceRequirement);
         }
 
-        for (const examineEvidence of payload?.examineEvidence || []) {
-            await IDB.examineEvidence.put(examineEvidence);
+        const ticks =
+            payload?.requirementExamineItems ?? payload?.examineEvidence ?? [];
+        for (const tick of ticks) {
+            // Pre-v8 rows key ticks by the raw guide string; convert them the
+            // same way migration 8 converts the live store.
+            const rows: IDBRequirementExamineItem[] =
+                "item" in tick
+                    ? examineIdsForStoredItem(tick.item).map((examineId) => ({
+                          requirement_id: tick.requirement_id,
+                          examine_id: examineId,
+                      }))
+                    : [tick];
+            for (const row of rows) {
+                await IDB.requirementExamineItems.put(row);
+            }
+        }
+
+        for (const tag of payload?.evidenceExamineItems || []) {
+            await IDB.evidenceExamineItems.put(tag);
         }
 
         // An imported backup can carry legacy (UUID/sha1) evidence ids, so let

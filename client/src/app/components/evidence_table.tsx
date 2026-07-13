@@ -1,4 +1,5 @@
 "use client";
+import { examineItemName } from "@/api/entities/ExamineItemIds";
 import { confirm } from "@/app/components/confirm";
 import { FileBadge, LinkBadge } from "@/app/components/evidence";
 import { EditEvidenceModal } from "@/app/components/security_requirements/evidence";
@@ -10,13 +11,15 @@ import {
     Table,
 } from "@/app/components/table";
 import { toPath, useRevisionContext } from "@/app/context/revision";
-import { IDB, IDBEvidenceV2 } from "@/app/db";
+import { IDB, IDBEvidenceV2, removeEvidenceExamineTags } from "@/app/db";
 import { mimeLabel } from "@/app/utils/file";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface Requirements {
     requirements: string[];
+    /** Names of the shared Examine documents this artifact is tagged as. */
+    attachedAs: string[];
 }
 
 interface EvidenceWithRequirements extends IDBEvidenceV2, Requirements {}
@@ -34,6 +37,21 @@ async function fetchEvidence(): Promise<EvidenceWithRequirements[]> {
         {} as { [key: string]: string[] },
     );
 
+    const tagRecords = await IDB.evidenceExamineItems.getAll();
+    const attachedAsByEvidenceId = tagRecords.reduce(
+        (acc, tag) => {
+            if (!acc[tag.evidence_id]) {
+                acc[tag.evidence_id] = [];
+            }
+            // Fall back to the raw slug for ids no longer in the mapping.
+            acc[tag.evidence_id].push(
+                examineItemName(tag.examine_id) ?? tag.examine_id,
+            );
+            return acc;
+        },
+        {} as { [key: string]: string[] },
+    );
+
     const evidence = await IDB.evidence.getAll();
 
     return evidence.map(
@@ -43,18 +61,33 @@ async function fetchEvidence(): Promise<EvidenceWithRequirements[]> {
                 requirements: (
                     requirementsByEvidenceId[artifact.id] || []
                 ).sort(),
+                attachedAs: (attachedAsByEvidenceId[artifact.id] || []).sort(),
             }) as EvidenceWithRequirements,
     );
 }
 
 const nestedSort = (a?: string[], b?: string[]) => defaultSort(a?.[0], b?.[0]);
-const sorters = [defaultSort, defaultSort, nestedSort, defaultSort, null];
+const sorters = [
+    defaultSort,
+    defaultSort,
+    nestedSort,
+    nestedSort,
+    defaultSort,
+    null,
+];
 
 const nestedFilter = (search: string) => (values: string[]) =>
     values.some((value) => value.includes(search));
 // The hash filter matches on the full id (row values), so pasting a complete
 // hash works even though the cell only displays a short prefix.
-const filters = [defaultFilter, defaultFilter, nestedFilter, defaultFilter, null];
+const filters = [
+    defaultFilter,
+    defaultFilter,
+    nestedFilter,
+    nestedFilter,
+    defaultFilter,
+    null,
+];
 
 // Enough of a git-style prefix to visually tell artifacts apart.
 const HASH_DISPLAY_CHARS = 12;
@@ -107,6 +140,7 @@ export const EvidenceTable = () => {
             ]);
         }
         await IDB.evidence.delete(IDBKeyRange.only(artifact.id));
+        await removeEvidenceExamineTags(artifact.id);
         await refresh();
         return true;
     };
@@ -131,6 +165,12 @@ export const EvidenceTable = () => {
                 filterable: true,
                 filterKind: "select" as const,
                 className: "min-w-[250px] max-w-[250px]",
+            },
+            {
+                text: "Attached as",
+                filterable: true,
+                filterKind: "select" as const,
+                className: "min-w-[200px] max-lg:hidden",
             },
             {
                 text: "File Hash (SHA-256)",
@@ -192,6 +232,7 @@ export const EvidenceTable = () => {
                     artifact.filename,
                     mimeLabel(artifact.type),
                     artifact.requirements,
+                    artifact.attachedAs,
                     artifact.id,
                     "",
                 ],
@@ -212,6 +253,14 @@ export const EvidenceTable = () => {
                         >
                             {requirement}
                         </Link>
+                    )),
+                    artifact.attachedAs.map((name) => (
+                        <span
+                            key={`${artifact.id}-${name}`}
+                            className="mb-1 mr-1 inline-block rounded-full border border-border bg-secondary px-2 py-0.5 text-xs"
+                        >
+                            {name}
+                        </span>
                     )),
                     // Hovering the short hash reveals the full value in a
                     // card-styled tooltip; as a child of the hovered element
@@ -254,6 +303,7 @@ export const EvidenceTable = () => {
                     null,
                     "max-md:hidden",
                     "flex flex-wrap",
+                    "max-lg:hidden",
                     "max-lg:hidden md:max-w-48 xl:max-w-full",
                     null,
                 ],
@@ -277,6 +327,7 @@ export const EvidenceTable = () => {
                         tableBody={tableBody}
                         initialOrders={[
                             Order.ASC,
+                            Order.NONE,
                             Order.NONE,
                             Order.NONE,
                             Order.NONE,

@@ -3,8 +3,12 @@ import {
     assessmentGuideSource,
     getAssessmentGuidance,
 } from "@/api/entities/AssessmentGuide";
+import { examineItemIdsForItem } from "@/api/entities/ExamineItemIds";
 import { Revision, useRevisionContext } from "@/app/context/revision";
-import { useExamineEvidence } from "@/app/hooks/examineEvidence";
+import {
+    useEvidencedExamineIds,
+    useExamineChecklist,
+} from "@/app/hooks/examineChecklist";
 import { ReactNode } from "react";
 import { IconInfo } from "./icon_info";
 import { Popover } from "./popover";
@@ -147,18 +151,22 @@ const MethodList = ({
 /**
  * The Examine method renders as a manual checklist: tick each evidence type
  * that has been collected for the requirement. State is persisted immediately
- * via {@link useExamineEvidence}.
+ * via {@link useExamineChecklist}.
  */
 const ExamineList = ({
     requirementId,
     items,
     checked,
+    evidenced,
     onToggle,
     disabled,
 }: {
     requirementId: string;
     items: string[];
     checked?: Set<string>;
+    /** Items auto-collected via tagged evidence; rendered checked and locked
+     *  (unticking would contradict the attached artifact). */
+    evidenced: Set<string>;
     onToggle: (item: string) => void;
     disabled?: boolean;
 }) => {
@@ -175,14 +183,15 @@ const ExamineList = ({
             <ul className="flex flex-col gap-1.5 text-sm leading-relaxed text-foreground">
                 {items.map((item, idx) => {
                     const id = `examine-${requirementId}-${idx}`;
-                    const isChecked = checked?.has(item) ?? false;
+                    const isEvidenced = evidenced.has(item);
+                    const isChecked = isEvidenced || (checked?.has(item) ?? false);
                     return (
                         <li key={idx} className="flex items-start gap-2">
                             <input
                                 type="checkbox"
                                 id={id}
                                 checked={isChecked}
-                                disabled={disabled}
+                                disabled={disabled || isEvidenced}
                                 onChange={() => onToggle(item)}
                                 className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-primary disabled:cursor-not-allowed"
                             />
@@ -191,8 +200,18 @@ const ExamineList = ({
                                 className={`cursor-pointer ${
                                     isChecked ? "" : "text-muted-foreground"
                                 }`}
+                                title={
+                                    isEvidenced
+                                        ? "Checked automatically: attached evidence is tagged as this item."
+                                        : undefined
+                                }
                             >
                                 {item}
+                                {isEvidenced && (
+                                    <span className="ml-1 text-xs italic text-muted-foreground">
+                                        — evidence attached
+                                    </span>
+                                )}
                             </label>
                         </li>
                     );
@@ -210,7 +229,8 @@ export const AssessmentGuidance = ({
     locked?: boolean;
 }) => {
     const revision = useRevisionContext();
-    const { checked, toggle } = useExamineEvidence(requirementId);
+    const { isChecked, toggle } = useExamineChecklist(requirementId);
+    const evidencedIds = useEvidencedExamineIds(requirementId);
 
     // Guidance is published for Rev. 2 only.
     const guidance =
@@ -225,8 +245,19 @@ export const AssessmentGuidance = ({
     const { furtherDiscussion, assessmentMethods, keyReferences } = guidance;
     const { overview, examples, considerations } = furtherDiscussion;
     const examineItems = assessmentMethods.examine;
+    // An item counts as collected when attached evidence is tagged with every
+    // document it names (compound guide entries name two) — or when ticked by
+    // hand.
+    const evidenced = new Set(
+        examineItems.filter((item) => {
+            const ids = examineItemIdsForItem(item);
+            return ids.length > 0 && ids.every((id) => evidencedIds.has(id));
+        }),
+    );
+    const manuallyChecked = new Set(examineItems.filter(isChecked));
     const examineCollected = examineItems.reduce(
-        (count, item) => count + (checked?.has(item) ? 1 : 0),
+        (count, item) =>
+            count + (evidenced.has(item) || manuallyChecked.has(item) ? 1 : 0),
         0,
     );
 
@@ -311,7 +342,8 @@ export const AssessmentGuidance = ({
                         <ExamineList
                             requirementId={requirementId}
                             items={examineItems}
-                            checked={checked}
+                            checked={manuallyChecked}
+                            evidenced={evidenced}
                             onToggle={toggle}
                             disabled={locked}
                         />

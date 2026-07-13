@@ -1,8 +1,23 @@
+import {
+    examineItemId,
+    examineItemName,
+} from "@/api/entities/ExamineItemIds";
+import {
+    examineItemsForRequirement,
+    requirementsSharingExamineItem,
+} from "@/api/entities/ExamineItems";
 import { FileBadge, LinkBadge } from "@/app/components/evidence";
 import { SearchDropdown } from "@/app/components/search_dropdown";
 import { toBuffer } from "@/app/components/security_requirements/utils";
 import { useNotification } from "@/app/context/notification";
-import { IDB, IDBEvidenceV2 } from "@/app/db";
+import { toNum, useRevisionContext } from "@/app/context/revision";
+import {
+    copyEvidenceExamineTags,
+    evidenceExamineTags,
+    IDB,
+    IDBEvidenceV2,
+    removeEvidenceExamineTags,
+} from "@/app/db";
 import { isImage } from "@/app/utils/file";
 import {
     ChangeEvent,
@@ -19,7 +34,14 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { confirm, ModalShell } from "../confirm";
-import { badgeClasses, Button, buttonClasses, Heading, Input } from "../ui";
+import {
+    badgeClasses,
+    Button,
+    buttonClasses,
+    Heading,
+    Input,
+    Select,
+} from "../ui";
 
 const deriveEvidence = async ({
     type,
@@ -107,6 +129,9 @@ const replaceEvidence = async ({
     }
 
     await IDB.evidence.put(newEvidence);
+    // The replacement is the same logical document, so it inherits the old
+    // artifact's examine tags (e.g. "this is our System security plan").
+    await copyEvidenceExamineTags(oldArtifact.id, newEvidence.id);
     for (const link of scoped) {
         await IDB.evidenceRequirements.put({
             evidence_id: newEvidence.id,
@@ -125,6 +150,7 @@ const replaceEvidence = async ({
     );
     if (!remaining.length) {
         await IDB.evidence.delete(IDBKeyRange.only(oldArtifact.id));
+        await removeEvidenceExamineTags(oldArtifact.id);
     }
 };
 
@@ -287,6 +313,69 @@ export const EditEvidenceModal = ({
     const [file, setFile] = useState<File | null>(null);
     const [busy, setBusy] = useState(false);
     const nameInput = useRef<HTMLInputElement>(null);
+
+    // Assessment guidance lists the same Examine evidence (e.g. "System
+    // security plan") on many controls, so an artifact attached here can be
+    // linked to every control sharing the selected item in one step. Only
+    // offered with a requirement context; items unique to this control are
+    // skipped (nothing to propagate to).
+    const revision = toNum(useRevisionContext());
+    const sharedItems = (
+        requirementId ? examineItemsForRequirement(revision, requirementId) : []
+    ).filter(
+        (item) =>
+            requirementsSharingExamineItem(revision, item).length > 1,
+    );
+    const [sharedItem, setSharedItem] = useState("");
+    const [sharedCount, setSharedCount] = useState(0);
+    const sharedTargets = sharedItem
+        ? requirementsSharingExamineItem(revision, sharedItem)
+        : [];
+
+    // Names of the shared documents this artifact is recorded as (the same
+    // "Attached as" chips the evidence table shows).
+    const [attachedAs, setAttachedAs] = useState<string[]>([]);
+    const loadAttachedAs = async () => {
+        const tags = await evidenceExamineTags(artifact.id);
+        setAttachedAs(
+            tags
+                .map((tag) => examineItemName(tag.examine_id) ?? tag.examine_id)
+                .sort(),
+        );
+    };
+    useEffect(() => {
+        loadAttachedAs();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [artifact.id]);
+
+    const onAttachShared = async () => {
+        if (!sharedItem) {
+            return;
+        }
+        setBusy(true);
+        // put() upserts on the composite key, so existing links (including
+        // this control's own) are left as-is.
+        for (const target of sharedTargets) {
+            await IDB.evidenceRequirements.put({
+                evidence_id: artifact.id,
+                requirement_id: target,
+            });
+        }
+        // Record which shared document this artifact is (the identity claim
+        // behind the fan-out); the per-control links above stay the editable
+        // truth of where it appears.
+        const examineId = examineItemId(sharedItem);
+        if (examineId) {
+            await IDB.evidenceExamineItems.put({
+                evidence_id: artifact.id,
+                examine_id: examineId,
+            });
+        }
+        await loadAttachedAs();
+        await onChanged();
+        setSharedCount(sharedTargets.length);
+        setBusy(false);
+    };
 
     // The file extension is not editable: it is shown as an adornment on the
     // name input and re-appended on save, following the picked replacement
@@ -473,6 +562,79 @@ export const EditEvidenceModal = ({
                                     )}
                                 </div>
                             )}
+
+                            {!!attachedAs.length && (
+                                <div className="flex flex-col gap-1 border-t border-border pt-4 font-medium">
+                                    Attached as
+                                    <div className="flex flex-wrap font-normal">
+                                        {attachedAs.map((name) => (
+                                            <span
+                                                key={name}
+                                                className="mb-1 mr-1 inline-block rounded-full border border-border bg-secondary px-2 py-0.5 text-xs"
+                                            >
+                                                {name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <span className="text-xs font-normal text-muted-foreground">
+                                        Shared evidence documents this artifact
+                                        is recorded as.
+                                    </span>
+                                </div>
+                            )}
+
+                            {!!sharedItems.length && (
+                                <div className="flex flex-col gap-1 border-t border-border pt-4 font-medium">
+                                    Attach across controls
+                                    <Select
+                                        aria-label="Shared evidence requirement"
+                                        value={sharedItem}
+                                        disabled={busy}
+                                        onChange={(e) => {
+                                            setSharedItem(e.target.value);
+                                            setSharedCount(0);
+                                        }}
+                                    >
+                                        <option value="">
+                                            Select a shared evidence
+                                            requirement…
+                                        </option>
+                                        {sharedItems.map((item) => (
+                                            <option key={item} value={item}>
+                                                {item} (
+                                                {
+                                                    requirementsSharingExamineItem(
+                                                        revision,
+                                                        item,
+                                                    ).length
+                                                }{" "}
+                                                controls)
+                                            </option>
+                                        ))}
+                                    </Select>
+                                    <span className="text-xs font-normal text-muted-foreground">
+                                        Other controls list the same evidence
+                                        in their assessment guidance. Attach
+                                        this evidence to every control that
+                                        shares the selected item.
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={
+                                            !sharedItem || busy || !!sharedCount
+                                        }
+                                        onClick={onAttachShared}
+                                    >
+                                        {sharedCount
+                                            ? `Attached to ${sharedCount} controls`
+                                            : sharedItem
+                                              ? `Attach to ${sharedTargets.length} controls`
+                                              : "Attach"}
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -623,6 +785,7 @@ export const EvidenceBadge = ({
                     ]);
                 }
                 await IDB.evidence.delete(IDBKeyRange.only(artifact.id));
+                await removeEvidenceExamineTags(artifact.id);
             } else {
                 await IDB.evidenceRequirements.delete([
                     artifact.id,
@@ -641,6 +804,7 @@ export const EvidenceBadge = ({
             }
             await IDB.evidence.delete(IDBKeyRange.only(artifact.id));
             await IDB.evidenceRequirements.delete([artifact.id, requirementId]);
+            await removeEvidenceExamineTags(artifact.id);
         }
 
         setEvidence(evidence.filter((e) => e.id !== artifact.id));
