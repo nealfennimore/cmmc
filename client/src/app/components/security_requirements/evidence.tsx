@@ -870,7 +870,7 @@ const Badge = ({
         ? "tagged"
         : artifact.type === "url"
           ? "info"
-          : "warning";
+          : "neutral";
 
     return (
         <span
@@ -1011,7 +1011,7 @@ export const EvidenceBadge = ({
                 <FileBadge
                     artifact={artifact}
                     siblings={evidence}
-                    className={`border-r ${tagNames.length ? "border-orange-200" : "border-yellow-200"}`}
+                    className={`border-r ${tagNames.length ? "border-orange-200" : "border-border"}`}
                 />
             )}
         </Badge>

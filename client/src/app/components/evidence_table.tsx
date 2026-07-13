@@ -1,11 +1,8 @@
 "use client";
 import { examineItemName } from "@/api/entities/ExamineItemIds";
 import { confirm } from "@/app/components/confirm";
-import {
-    FileBadge,
-    getIconWithSheet,
-    LinkBadge,
-} from "@/app/components/evidence";
+import { FileBadge, LinkBadge } from "@/app/components/evidence";
+import { getIconWithSheet } from "@/app/components/file_icons";
 import { EditEvidenceModal } from "@/app/components/security_requirements/evidence";
 import { Stats } from "@/app/components/stats";
 import {
