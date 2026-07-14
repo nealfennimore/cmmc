@@ -9,12 +9,15 @@ import { toBuffer } from "@/app/components/security_requirements/utils";
 import { useNotification } from "@/app/context/notification";
 import { toNum, useRevisionContext } from "@/app/context/revision";
 import {
+    useEvidenceTagNames,
+    useTaggedEvidenceIds,
+} from "@/app/hooks/evidenceTags";
+import {
     copyEvidenceExamineTags,
     evidenceExamineTags,
     IDB,
     IDBEvidenceV2,
     removeEvidenceExamineTags,
-    TABLE_CHANGED_EVENT,
 } from "@/app/db";
 import { isImage } from "@/app/utils/file";
 import {
@@ -745,77 +748,6 @@ export const EditEvidenceModal = ({
         </ModalShell>,
         document.body,
     );
-};
-
-// Names of the shared documents an artifact is tagged as, kept live via the
-// table-changed event so tagging/untagging in the edit modal (a child of the
-// badge) is reflected without a page refresh.
-const useEvidenceTagNames = (evidenceId: string): string[] => {
-    const [names, setNames] = useState<string[]>([]);
-
-    useEffect(() => {
-        let active = true;
-        const load = async () => {
-            const tags = await evidenceExamineTags(evidenceId);
-            if (active) {
-                setNames(
-                    tags
-                        .map(
-                            (tag) =>
-                                examineItemName(tag.examine_id) ??
-                                tag.examine_id,
-                        )
-                        .sort(),
-                );
-            }
-        };
-        load();
-        const onTableChanged = (event: Event) => {
-            const table = (event as CustomEvent<{ table: string }>).detail
-                ?.table;
-            if (table === IDB.evidenceExamineItems.table) {
-                load();
-            }
-        };
-        window.addEventListener(TABLE_CHANGED_EVENT, onTableChanged);
-        return () => {
-            active = false;
-            window.removeEventListener(TABLE_CHANGED_EVENT, onTableChanged);
-        };
-    }, [evidenceId]);
-
-    return names;
-};
-
-// Every tagged artifact's id, kept live like useEvidenceTagNames. Used by the
-// badge list to float tagged evidence onto its own leading row.
-const useTaggedEvidenceIds = (): Set<string> => {
-    const [ids, setIds] = useState<Set<string>>(new Set());
-
-    useEffect(() => {
-        let active = true;
-        const load = async () => {
-            const tags = await IDB.evidenceExamineItems.getAll();
-            if (active) {
-                setIds(new Set(tags.map((tag) => tag.evidence_id)));
-            }
-        };
-        load();
-        const onTableChanged = (event: Event) => {
-            const table = (event as CustomEvent<{ table: string }>).detail
-                ?.table;
-            if (table === IDB.evidenceExamineItems.table) {
-                load();
-            }
-        };
-        window.addEventListener(TABLE_CHANGED_EVENT, onTableChanged);
-        return () => {
-            active = false;
-            window.removeEventListener(TABLE_CHANGED_EVENT, onTableChanged);
-        };
-    }, []);
-
-    return ids;
 };
 
 const IconTag = () => (
