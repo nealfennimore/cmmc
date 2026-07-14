@@ -533,7 +533,7 @@ dependencies = [
 
 [[package]]
 name = "cmmc"
-version = "1.8.1"
+version = "1.8.2"
 dependencies = [
  "base64 0.22.1",
  "ed25519-dalek",
