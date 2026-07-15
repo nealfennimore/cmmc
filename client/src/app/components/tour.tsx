@@ -180,7 +180,7 @@ const STEPS: TourStep[] = [
         page: "requirement",
         target: "save",
         title: "Saving",
-        body: "Changes save automatically as you type (Ctrl+S and the Save button work too), straight into your browser's local database.",
+        body: "Changes save automatically as you type (Ctrl+S and the Save button work too), straight into your local database.",
     },
     {
         page: "requirement",
