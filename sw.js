@@ -2,7 +2,7 @@
 // scripts/stamp-sw.mjs (npm postbuild) so every deploy gets a fresh cache and the
 // activate handler purges the old one. The literal placeholder only survives in
 // local dev, where the worker doesn't cache anyway (http, not https).
-const cacheName = "1.8.2-8cb9c5c";
+const cacheName = "1.9.0-2677963";
 
 const deleteCache = async (key) => {
   await caches.delete(key);
