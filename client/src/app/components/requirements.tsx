@@ -9,7 +9,7 @@ import { useFamilyStatus } from "../hooks/status";
 import { Breadcrumbs } from "./breadcrumbs";
 import { ContentNavigation } from "./content_navigation";
 import { EvidenceState } from "./evidence";
-import { IconInfo } from "./icon_info";
+import { IconInfo } from "./icons";
 import { Popover } from "./popover";
 import { StatusState } from "./status";
 import { Heading } from "./ui";

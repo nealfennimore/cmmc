@@ -9,7 +9,7 @@ import { useLicense } from "@/app/context/license";
 import { useUpdate } from "@/app/context/update";
 import { licenseKeyReveal, openExternal } from "@/app/utils/tauri";
 import { ReactNode, useState } from "react";
-import { IconInfo } from "./icon_info";
+import { IconInfo } from "./icons";
 import {
     ActivationForm,
     AirGappedImport,

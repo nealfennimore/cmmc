@@ -10,7 +10,7 @@ import { FamilyEvidence, useFamilyEvidence } from "../hooks/evidence";
 import { FamilyStatus, useFamilyStatus } from "../hooks/status";
 import { EvidenceState } from "./evidence";
 import { StatusState } from "./status";
-import { IconLock } from "./upgrade_cta";
+import { IconLock } from "./icons";
 
 export const Dropdown = ({ isOpen }: { isOpen: boolean }) => (
     <svg

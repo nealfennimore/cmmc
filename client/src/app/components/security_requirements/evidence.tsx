@@ -4,6 +4,8 @@ import {
     requirementsSharingExamineItem,
 } from "@/api/entities/ExamineItems";
 import { FileBadge, LinkBadge } from "@/app/components/evidence";
+import { IconLink } from "@/app/components/file_icons";
+import { IconTag } from "@/app/components/icons";
 import { SearchDropdown } from "@/app/components/search_dropdown";
 import { toBuffer } from "@/app/components/security_requirements/utils";
 import { useNotification } from "@/app/context/notification";
@@ -155,22 +157,6 @@ const replaceEvidence = async ({
     }
 };
 
-const IconLink = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        className="h-4 mr-1"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
-        />
-    </svg>
-);
 export const Files = ({
     requirementId,
     setUploading,
@@ -749,24 +735,6 @@ export const EditEvidenceModal = ({
         document.body,
     );
 };
-
-const IconTag = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        className="h-3 w-3"
-        aria-hidden="true"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42zM7.5 7.5h.01"
-        />
-    </svg>
-);
 
 const Badge = ({
     children,

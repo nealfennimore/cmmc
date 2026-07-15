@@ -7,7 +7,7 @@ import { AssessmentGuidance } from "../assessment_guidance";
 import { Breadcrumbs } from "../breadcrumbs";
 import { DataTable } from "../datatable";
 import { EvidenceState } from "../evidence";
-import { IconInfo } from "../icon_info";
+import { IconInfo } from "../icons";
 import { Popover } from "../popover";
 import { StatusState } from "../status";
 import { Heading } from "../ui";

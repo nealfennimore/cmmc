@@ -1,171 +1,21 @@
 "use client";
+import {
+    IconBlank,
+    IconCheckmark,
+    IconHammer,
+    IconMinus,
+    IconMinusLine,
+    IconPause,
+    IconPauseLine,
+    IconQuestion,
+    IconWarning,
+} from "./icons";
 
 interface StatusStateProps {
     statuses?: Status[];
     status?: Status;
     size?: string;
 }
-
-const IconCheckmark = ({ className = "h-4 mr-1" }: { className?: string }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        aria-hidden="true"
-        className={`${className}`}
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M8.5 11.5 11 14l4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0"
-        />
-    </svg>
-);
-
-const IconWarning = ({ className = "h-4 mr-1" }: { className?: string }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        aria-hidden="true"
-        className={`${className}`}
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M12 13V8m0 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0"
-        />
-    </svg>
-);
-const IconPause = ({ className = "h-4 mr-1" }: { className?: string }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        aria-hidden="true"
-        className={`${className}`}
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M10 9v6m4-6v6m7-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0"
-        />
-    </svg>
-);
-const IconPauseLine = ({ className = "h-4 mr-1" }: { className?: string }) => (
-    <svg
-        className={`${className}`}
-        aria-hidden="true"
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        fill="none"
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 6H8a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1Zm7 0h-1a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1Z"
-        />
-    </svg>
-);
-const IconMinus = ({ className = "h-4 mr-1" }: { className?: string }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        aria-hidden="true"
-        className={`${className}`}
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M7.757 12h8.486M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0"
-        />
-    </svg>
-);
-const IconHammer = ({ className = "h-4 mr-1" }: { className?: string }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        aria-hidden="true"
-        className={`${className}`}
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="m20.9532 11.7634-2.0523-2.05225-2.0523 2.05225 2.0523 2.0523zm-1.3681-2.73651-4.1046-4.10457L12.06 8.3428l4.1046 4.1046zm-4.1047 2.73651-2.7363-2.73638-8.20919 8.20918 2.73639 2.7364z"
-        />
-        <path
-            stroke="currentColor"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="m12.9306 3.74083 1.8658 1.86571-2.0523 2.05229-1.5548-1.55476c-.995-.99505-3.23389-.49753-3.91799.18657l2.73639-2.73639c.6841-.68409 1.9901-.74628 2.9229.18658Z"
-        />
-    </svg>
-);
-const IconMinusLine = ({ className = "h-4 mr-1" }: { className?: string }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        aria-hidden="true"
-        className={`${className}`}
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M5 12h14"
-        />
-    </svg>
-);
-const IconQuestion = ({ className = "h-4 mr-1" }: { className?: string }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        aria-hidden="true"
-        className={`${className}`}
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M9.529 9.988a2.502 2.502 0 1 1 5 .191A2.441 2.441 0 0 1 12 12.582V14m-.01 3.008H12M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0"
-        />
-    </svg>
-);
-const IconBlank = ({ className = "h-4 mr-1" }: { className?: string }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        aria-hidden="true"
-        className={`${className}`}
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-        />
-    </svg>
-);
 
 export enum Status {
     IMPLEMENTED = "implemented",

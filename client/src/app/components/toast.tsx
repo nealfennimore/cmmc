@@ -1,6 +1,11 @@
 "use client";
 
 import { useNotification } from "@/app/context/notification";
+import {
+    IconCheck,
+    IconWarning as IconWarningGlyph,
+    IconX,
+} from "./icons";
 import { useRef } from "react";
 
 interface ToastProps {
@@ -42,68 +47,20 @@ const CloseIcon = ({ onClick }: { onClick: CallableFunction }) => (
 
 const IconDanger = () => (
     <div className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-red-100 text-red-600">
-        <svg
-            className="w-5 h-5"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-        >
-            <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18 17.94 6M18 18 6.06 6"
-            />
-        </svg>
+        <IconX />
         <span className="sr-only">Error icon</span>
     </div>
 );
 const IconWarning = () => (
     <div className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-600">
-        <svg
-            className="w-5 h-5"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-        >
-            <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 13V8m0 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-            />
-        </svg>
+        <IconWarningGlyph className="w-5 h-5" />
         <span className="sr-only">Warning icon</span>
     </div>
 );
 
 const IconSuccess = () => (
     <div className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-green-100 text-green-600">
-        <svg
-            className="w-5 h-5"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-        >
-            <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 11.917 9.724 16.5 19 7.5"
-            />
-        </svg>
+        <IconCheck />
         <span className="sr-only">Check icon</span>
     </div>
 );

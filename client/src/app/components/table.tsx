@@ -3,6 +3,7 @@ import { debounce } from "./security_requirements/utils";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { IconChevronDown, IconFunnel } from "./icons";
 import { Input } from "./ui";
 
 interface TableRowProps {
@@ -236,21 +237,7 @@ const SearchableSelect = ({
                 className="flex h-7 w-full min-w-24 items-center justify-between gap-1 rounded-md border border-input bg-surface px-2 text-xs text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 <span className="truncate">{label}</span>
-                <svg
-                    className="h-3 w-3 shrink-0"
-                    aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="m6 9 6 6 6-6"
-                    />
-                </svg>
+                <IconChevronDown className="h-3 w-3 shrink-0" />
             </button>
             {/* The selections that actually submit: hidden inputs inside the
                 form. The portaled panel below escapes the form (and the
@@ -299,24 +286,6 @@ const SearchableSelect = ({
         </div>
     );
 };
-
-const IconFunnel = () => (
-    <svg
-        className="h-3.5 w-3.5"
-        aria-hidden="true"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M4 5h16l-6 7v5.5L10 20v-8L4 5Z"
-        />
-    </svg>
-);
 
 interface TableHeaderProps {
     text: string;

@@ -11,7 +11,7 @@ import {
     useExamineChecklist,
 } from "@/app/hooks/examineChecklist";
 import { ReactNode } from "react";
-import { IconInfo } from "./icon_info";
+import { IconChevronDown, IconInfo } from "./icons";
 import { Popover } from "./popover";
 import { Badge, Heading } from "./ui";
 
@@ -282,21 +282,7 @@ export const AssessmentGuidance = ({
                         Examine {examineCollected}/{examineItems.length}
                     </Badge>
                 )}
-                <svg
-                    className="chevron h-4 w-4 shrink-0 text-muted-foreground transition-transform"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                >
-                    <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="m6 9 6 6 6-6"
-                    />
-                </svg>
+                <IconChevronDown className="chevron h-4 w-4 shrink-0 text-muted-foreground transition-transform" />
             </summary>
 
             <div className="border-t border-border px-4 py-4">

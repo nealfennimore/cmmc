@@ -3,33 +3,11 @@
 // plain anchors are fine — no Tauri openExternal fallback needed.
 
 import type { ReactNode } from "react";
-import { IconInfo } from "./icon_info";
+import { IconInfo, IconLock } from "./icons";
 import { Badge, buttonClasses } from "./ui";
 
 export const MARKETING_URL =
     "https://getcmmc.consulting/download?utm_source=cmmc-app&utm_medium=upgrade";
-
-export const IconLock = ({
-    className = "h-4 mr-1",
-}: {
-    className?: string;
-}) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        aria-hidden="true"
-        className={className}
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M12 14v3m-3-6V7a3 3 0 1 1 6 0v4m-8 0h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1"
-        />
-    </svg>
-);
 
 /** Small marker on locked requirement/family rows in list views. */
 export const LockedBadge = () => (

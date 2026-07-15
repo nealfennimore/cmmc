@@ -4,7 +4,7 @@ import { GlobalScore, useGlobalScore } from "@/app/hooks/score";
 import { useGlobalStatus } from "@/app/hooks/status";
 import { renderNumber } from "@/app/utils/number";
 import { isFreeTier, unlockedIdsForRevision } from "@/app/utils/tier";
-import { IconInfo } from "./icon_info";
+import { IconInfo } from "./icons";
 import { Popover } from "./popover";
 import { Status } from "./status";
 import { UpgradeLink } from "./upgrade_cta";

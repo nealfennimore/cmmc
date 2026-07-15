@@ -1,5 +1,10 @@
 "use client";
 import { getIcon, IconLink } from "@/app/components/file_icons";
+import {
+    IconChevronLeft,
+    IconChevronRight,
+    IconPaperclip,
+} from "@/app/components/icons";
 import { viewFile } from "@/app/components/security_requirements/utils";
 import { IDBEvidenceV2 } from "@/app/db";
 import { useHoverCard } from "@/app/hooks/hoverCard";
@@ -25,24 +30,6 @@ interface EvidenceStateProps {
     size?: string;
 }
 
-const IconInfo = ({ className = "h-4 mr-1" }: { className?: string }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        aria-hidden="true"
-        className={className}
-        viewBox="0 0 24 24"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M7 8v8a5 5 0 1 0 10 0V6.5a3.5 3.5 0 1 0-7 0V15a2 2 0 0 0 4 0V8"
-        />
-    </svg>
-);
-
 const EvidenceSpan = ({
     evidence,
     size = "xl",
@@ -56,7 +43,7 @@ const EvidenceSpan = ({
                 className={`${toSizeClass(size)} text-muted-foreground mr-2`}
                 title="Has evidence"
             >
-                <IconInfo className={toIconSizeClass(size)} />
+                <IconPaperclip className={toIconSizeClass(size)} />
             </span>
         )
     );
@@ -465,42 +452,6 @@ const isPreviewable = (artifact: IDBEvidenceV2) =>
     snippetable(artifact) ||
     isPDF(artifact.type) ||
     sheetKind(artifact) !== null;
-
-const IconChevronLeft = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        className="h-4 w-4"
-        aria-hidden="true"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="m15 19-7-7 7-7"
-        />
-    </svg>
-);
-
-const IconChevronRight = () => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        className="h-4 w-4"
-        aria-hidden="true"
-    >
-        <path
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="m9 5 7 7-7 7"
-        />
-    </svg>
-);
 
 // Full-size preview modal, opened by clicking the hover card. Portaled to
 // <body> so the dialog markup escapes the badge <button>; the wrapper stops
