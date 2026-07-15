@@ -2,6 +2,7 @@
 import { ElementWrapper } from "@/api/entities/Framework";
 import { marked } from "marked";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { StatementText } from "../odp_values";
 import { Status, StatusState } from "../status";
 import { Label, Select, Textarea } from "../ui";
 
@@ -234,7 +235,10 @@ export const SecurityRequirement = ({
                     />
                 </legend>
                 <p className="my-2 text-base leading-relaxed">
-                    {securityRequirement.text}
+                    <StatementText
+                        text={securityRequirement.text}
+                        statementId={securityRequirement.subSubRequirement}
+                    />
                 </p>
                 <div className="flex flex-col md:flex-row">
                     <SecurityRequirementSelect

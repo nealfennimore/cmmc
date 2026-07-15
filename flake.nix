@@ -135,6 +135,7 @@
           allowedDomains = agentbox.lib.${system}.agentDomains // {
             "crates.io" = "*";
             "keygen.sh" = "*";
+            "defense.gov" = "*";
           };
         };
       in

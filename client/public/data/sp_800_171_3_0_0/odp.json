@@ -1,0 +1,538 @@
+{
+    "source": {
+        "title": "Department of Defense Organization-Defined Parameters for NIST SP 800-171 Revision 3",
+        "url": "https://dodcio.defense.gov/Portals/0/Documents/CMMC/OrgDefinedParmsNISTSP800-171.pdf",
+        "signed": "2025-04-10",
+        "authority": "DoD CIO"
+    },
+    "footnotes": {
+        "significant": "Significant: having or likely to have influence or effect.",
+        "esp": "External Service Providers (ESP): External people, technology, or facilities that an organization utilizes for provision and management of IT and/or cybersecurity services on behalf of the organization."
+    },
+    "controls": {
+        "03.01.01": [
+            {
+                "id": "03.01.01.f.02",
+                "assignment": "organization-defined time period",
+                "value": "at most 90 days"
+            },
+            {
+                "id": "03.01.01.g.01",
+                "assignment": "organization-defined time period",
+                "value": "24 hours"
+            },
+            {
+                "id": "03.01.01.g.02",
+                "assignment": "organization-defined time period",
+                "value": "24 hours"
+            },
+            {
+                "id": "03.01.01.g.03",
+                "assignment": "organization-defined time period",
+                "value": "24 hours"
+            },
+            {
+                "id": "03.01.01.h.01",
+                "assignment": "organization-defined time period",
+                "value": "at most 24 hours"
+            },
+            {
+                "id": "03.01.01.h.02",
+                "assignment": "organization-defined circumstances",
+                "value": "the work period ends, for privileged users at a minimum"
+            }
+        ],
+        "03.01.05": [
+            {
+                "id": "03.01.05.b.01",
+                "assignment": "organization-defined security functions",
+                "value": "at a minimum and if applicable: establishing system accounts and assigning privileges, configuring access authorizations, configuring settings for events to be audited, establishing vulnerability scanning parameters, establishing intrusion detection parameters, and managing audit information"
+            },
+            {
+                "id": "03.01.05.b.02",
+                "assignment": "organization-defined security-relevant information",
+                "value": "at a minimum and if applicable: threat and vulnerability information, filtering rules for routers or firewalls, configuration parameters for security services, cryptographic key management information, security architecture, access control lists, and audit information"
+            },
+            {
+                "id": "03.01.05.c",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months"
+            }
+        ],
+        "03.01.06": [
+            {
+                "id": "03.01.06.a",
+                "assignment": "organization-defined personnel or roles",
+                "value": "only defined and authorized personnel or administrative roles"
+            }
+        ],
+        "03.01.08": [
+            {
+                "id": "03.01.08.a.01",
+                "assignment": "organization-defined number",
+                "value": "at most five (5)"
+            },
+            {
+                "id": "03.01.08.a.02",
+                "assignment": "organization-defined time period",
+                "value": "period of five (5) minutes"
+            },
+            {
+                "id": "03.01.08.b",
+                "assignment": "organization-defined time period",
+                "value": "[Selection (one or more): lock the account or node for an at least 15-minute time period; lock the account or node until released by an administrator and notify a system administrator]"
+            }
+        ],
+        "03.01.10": [
+            {
+                "id": "03.01.10.a",
+                "assignment": "organization-defined time period",
+                "value": "initiating a device lock after “at most 15 minutes” of inactivity and requiring the user to initiate a device lock before leaving the system unattended"
+            }
+        ],
+        "03.01.11": [
+            {
+                "id": "03.01.11",
+                "assignment": "organization-defined conditions or trigger events requiring session disconnect",
+                "value": "a specified duration (maximum of 24 hours) of inactivity, misbehavior (end the session due to an attempted policy violation), and maintenance (terminate sessions to prevent issues with an upgrade or service outage)"
+            }
+        ],
+        "03.01.20": [
+            {
+                "id": "03.01.20.b",
+                "assignment": "organization-defined security requirements",
+                "guidance": true,
+                "value": "Organizations establish specific terms and conditions for the use of external systems in accordance with organizational security policies and procedures. At a minimum, terms and conditions address the specific types of applications that can be accessed on organizational systems from external systems and the highest security category of information that can be processed, stored, or transmitted on external systems. If the terms and conditions with the owners of the external systems cannot be established, organizations may impose restrictions on organizational personnel using those external systems. If applicable, use NIST SP 800-47 as a guide for establishing information exchanges between organizations."
+            }
+        ],
+        "03.02.01": [
+            {
+                "id": "03.02.01.a.01",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months"
+            },
+            {
+                "id": "03.02.01.a.02",
+                "assignment": "organization-defined events",
+                "value": "significant, novel incidents, or significant changes to risks",
+                "footnotes": ["significant"]
+            },
+            {
+                "id": "03.02.01.b.01",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months"
+            },
+            {
+                "id": "03.02.01.b.02",
+                "assignment": "organization-defined events",
+                "value": "significant, novel incidents, or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.02.02": [
+            {
+                "id": "03.02.02.a.01",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months"
+            },
+            {
+                "id": "03.02.02.a.02",
+                "assignment": "organization-defined events",
+                "value": "significant, novel incidents, or significant changes to risks",
+                "footnotes": ["significant"]
+            },
+            {
+                "id": "03.02.02.b.01",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months"
+            },
+            {
+                "id": "03.02.02.b.02",
+                "assignment": "organization-defined events",
+                "value": "significant, novel incidents, or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.03.01": [
+            {
+                "id": "03.03.01.a",
+                "assignment": "organization-defined event types",
+                "value": "at a minimum and where applicable:\n1) Authentication events:\n   a) Logons (Success/Failure)\n   b) Logoffs (Success)\n2) Security Relevant File and Objects events:\n   a) Create (Success/Failure)\n   b) Access (Success/Failure)\n   c) Delete (Success/Failure)\n   d) Modify (Success/Failure)\n   e) Permission Modification (Success/Failure)\n   f) Ownership Modification (Success/Failure)\n3) Export/Writes/downloads to devices/digital media (e.g., CD/DVD, USB, SD) (Success/Failure)\n4) Import/Uploads from devices/digital media (e.g., CD/DVD, USB, SD) (Success/Failure)\n5) User and Group Management events:\n   a) User add, delete, modify, disable, lock (Success/Failure)\n   b) Group/Role add, delete, modify (Success/Failure)\n6) Use of Privileged/Special Rights events:\n   a) Security or audit policy changes (Success/Failure)\n   b) Configuration changes (Success/Failure)\n7) Admin or root-level access (Success/Failure)\n8) Privilege/Role escalation (Success/Failure)\n9) Audit and security relevant log data accesses (Success/Failure)\n10) System reboot, restart, and shutdown (Success/Failure)\n11) Print to a device (Success/Failure)\n12) Print to a file (e.g., pdf format) (Success/Failure)\n13) Application (e.g., Adobe, Firefox, MS Office Suite) initialization (Success/Failure)\nFor additional guidance, see: OMB M-21-31 ML 1"
+            },
+            {
+                "id": "03.03.01.b",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months and after any significant incidents or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.03.04": [
+            {
+                "id": "03.03.04.a",
+                "assignment": "organization-defined time period",
+                "value": "near real time or as soon as practicable upon discovery"
+            },
+            {
+                "id": "03.03.04.b",
+                "assignment": "organization-defined additional actions",
+                "value": "document the failure and resolution, troubleshoot, repair/restart the audit logging process, and report as incident if applicable"
+            }
+        ],
+        "03.03.05": [
+            {
+                "id": "03.03.05.a",
+                "assignment": "organization-defined frequency",
+                "value": "at least weekly"
+            }
+        ],
+        "03.03.07": [
+            {
+                "id": "03.03.07.b",
+                "assignment": "organization-defined granularity of time measurement",
+                "value": "a granularity of one (1) second or smaller"
+            }
+        ],
+        "03.04.01": [
+            {
+                "id": "03.04.01.b",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months and after any significant incidents or significant changes occur",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.04.02": [
+            {
+                "id": "03.04.02.a",
+                "assignment": "organization-defined configuration settings",
+                "value": "Apply the appropriate use of common security configurations available from the National Institute of Standards and Technology’s National Checklist Program (NCP) website (https://ncp.nist.gov/repository) and prevent remote devices from simultaneously establishing non-remote connections with organizational systems and communicating via some other unauthorized connection to resources in external networks. Document any deviations from the published standard or source document."
+            }
+        ],
+        "03.04.06": [
+            {
+                "id": "03.04.06.b",
+                "assignment": "organization-defined functions, ports, protocols, connections, and services",
+                "guidance": true,
+                "value": "Where feasible, organizations should limit component functionality to a single function per component. Organizations should consider removing unused or unnecessary software and disabling unused or unnecessary physical and logical ports and protocols to prevent unauthorized connection of components, transfer of information, and tunneling. Organizations should employ network scanning tools, intrusion detection and prevention systems, and endpoint protection technologies, such as firewalls and host-based intrusion detection systems, to identify and prevent the use of prohibited functions, protocols, ports, and services. Least functionality should also be achieved as part of the fundamental design and development of the system."
+            },
+            {
+                "id": "03.04.06.c",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months, when any system functions, ports, protocols, or services changes are made, and after any significant incidents or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.04.08": [
+            {
+                "id": "03.04.08.c",
+                "assignment": "organization-defined frequency",
+                "value": "at least quarterly"
+            }
+        ],
+        "03.04.10": [
+            {
+                "id": "03.04.10.b",
+                "assignment": "organization-defined frequency",
+                "value": "at least quarterly"
+            }
+        ],
+        "03.04.12": [
+            {
+                "id": "03.04.12.a",
+                "assignment": "organization-defined system configurations",
+                "value": "a configuration that has no CUI or FCI stored on the system and prevents the processing, storing, and transmission of CUI and FCI, unless a specific exception is granted in writing by the Contracting Officer"
+            },
+            {
+                "id": "03.04.12.b",
+                "assignment": "organization-defined security requirements",
+                "value": "examine the system for signs of physical tampering and take the appropriate actions, and then either purge and reimage all storage media or destroy the system"
+            }
+        ],
+        "03.05.01": [
+            {
+                "id": "03.05.01.b",
+                "assignment": "organization-defined circumstances or situations requiring re-authentication",
+                "value": "roles, authenticators, or credentials change (including modification of user privilege); when security categories of systems change; when the execution of privileged functions occurs; and after a session termination"
+            }
+        ],
+        "03.05.02": [
+            {
+                "id": "03.05.02",
+                "assignment": "organization-defined devices or types of devices",
+                "value": "all devices for identification, where feasible for authentication, and document when not feasible"
+            }
+        ],
+        "03.05.05": [
+            {
+                "id": "03.05.05.c",
+                "assignment": "organization-defined time period",
+                "value": "at least ten (10) years"
+            },
+            {
+                "id": "03.05.05.d",
+                "assignment": "organization-defined characteristic identifying individual status",
+                "value": "privileged or non-privileged users; contractors, foreign nationals, and/or non-organizational users"
+            }
+        ],
+        "03.05.07": [
+            {
+                "id": "03.05.07.a",
+                "assignment": "organization-defined frequency",
+                "value": "at least quarterly"
+            },
+            {
+                "id": "03.05.07.f",
+                "assignment": "organization-defined composition and complexity rules",
+                "value": "1) Must have a minimum length of 16 characters.\n2) Contains a string of characters that does not include the user’s account name or full name."
+            }
+        ],
+        "03.05.12": [
+            {
+                "id": "03.05.12.e.01",
+                "assignment": "organization-defined frequency",
+                "value": "never for passwords where MFA is employed, at least every five (5) years for hard tokens and identification badges, and at least every three (3) years for all other authenticators"
+            },
+            {
+                "id": "03.05.12.e.02",
+                "assignment": "organization-defined events",
+                "value": "after a relevant security incident or any evidence of compromise or loss"
+            }
+        ],
+        "03.06.02": [
+            {
+                "id": "03.06.02.b",
+                "assignment": "organization-defined time period",
+                "value": "near real time or as soon as practicable upon discovery"
+            },
+            {
+                "id": "03.06.02.c",
+                "assignment": "organization-defined authorities",
+                "value": "all applicable personnel and entities as specified by the contract, and in accordance with any incident response plan notification procedures"
+            }
+        ],
+        "03.06.03": [
+            {
+                "id": "03.06.03",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months"
+            }
+        ],
+        "03.06.04": [
+            {
+                "id": "03.06.04.a.01",
+                "assignment": "organization-defined time period",
+                "value": "ten (10) days for privileged users, thirty (30) days for all other roles"
+            },
+            {
+                "id": "03.06.04.a.03",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months"
+            },
+            {
+                "id": "03.06.04.b.01",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months"
+            },
+            {
+                "id": "03.06.04.b.02",
+                "assignment": "organization-defined events",
+                "value": "significant, novel incidents, or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.08.07": [
+            {
+                "id": "03.08.07.a",
+                "assignment": "organization-defined types of system media",
+                "value": "any removable media not managed by or on behalf of the organization"
+            }
+        ],
+        "03.09.01": [
+            {
+                "id": "03.09.01.b",
+                "assignment": "organization-defined conditions requiring rescreening",
+                "value": "an organizational policy requiring rescreening when there is a significant incident, or change in status, related to an individual",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.09.02": [
+            {
+                "id": "03.09.02.a.01",
+                "assignment": "organization-defined time period",
+                "value": "four (4) hours"
+            }
+        ],
+        "03.10.01": [
+            {
+                "id": "03.10.01.c",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months, or when there are significant incidents or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.10.02": [
+            {
+                "id": "03.10.02.b.01",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 45 days"
+            },
+            {
+                "id": "03.10.02.b.02",
+                "assignment": "organization-defined events or potential indications of events",
+                "value": "significant, novel incidents, or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.10.06": [
+            {
+                "id": "03.10.06.b",
+                "assignment": "organization-defined security requirements",
+                "value": "adequate security, comparable to organizational security requirements at the primary work site where practical, documented in policy, and covered by training"
+            }
+        ],
+        "03.11.01": [
+            {
+                "id": "03.11.01.b",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months, or when there are significant incidents or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.11.02": [
+            {
+                "id": "03.11.02.a",
+                "assignment": "organization-defined frequency",
+                "value": "at least monthly, or when there are significant incidents or significant changes to risks",
+                "footnotes": ["significant"]
+            },
+            {
+                "id": "03.11.02.b",
+                "assignment": "organization-defined response times",
+                "value": "thirty (30) days from date of discovery for high-risk vulnerabilities (including both critical and high); 90 days from date of discovery for moderate-risk vulnerabilities; and 180 days from date of discovery for low-risk vulnerabilities"
+            },
+            {
+                "id": "03.11.02.c",
+                "assignment": "organization-defined frequency",
+                "value": "no more than 24 hours prior to running the scans"
+            }
+        ],
+        "03.12.01": [
+            {
+                "id": "03.12.01",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months, or when there are significant incidents or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.12.05": [
+            {
+                "id": "03.12.05.a",
+                "assignment": "Selection (one or more): interconnection security agreements; information exchange security agreements; memoranda of understanding or agreement; service-level agreements; user agreements; nondisclosure agreements; other types of agreements",
+                "value": "requirements as described in the contract"
+            },
+            {
+                "id": "03.12.05.c",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months"
+            }
+        ],
+        "03.13.09": [
+            {
+                "id": "03.13.09",
+                "assignment": "organization-defined time period",
+                "value": "no longer than 15 minutes"
+            }
+        ],
+        "03.13.10": [
+            {
+                "id": "03.13.10",
+                "assignment": "organization-defined requirements for key generation, distribution, storage, access, and destruction",
+                "guidance": true,
+                "value": "At a minimum, establish a policy and procedure in line with the latest Cryptographic key management guidance"
+            }
+        ],
+        "03.13.11": [
+            {
+                "id": "03.13.11",
+                "assignment": "organization-defined types of cryptography",
+                "value": "FIPS Validated Cryptography (https://csrc.nist.gov/Projects/Cryptographic-Module-Validation-Program/Validated-Modules)"
+            }
+        ],
+        "03.13.12": [
+            {
+                "id": "03.13.12.a",
+                "assignment": "organization-defined exceptions where remote activation is to be allowed",
+                "value": "only as enumerated and justified in the System Security Plan before such remote activation occurs, and only when there are no other options, and the remote activation is operationally critical"
+            }
+        ],
+        "03.14.01": [
+            {
+                "id": "03.14.01.b",
+                "assignment": "organization-defined time period",
+                "value": "thirty (30) days for high-risk flaws (including both critical and high), 90 days for moderate-risk flaws, and 180 days for low-risk flaws"
+            }
+        ],
+        "03.14.02": [
+            {
+                "id": "03.14.02.c.01",
+                "assignment": "organization-defined frequency",
+                "value": "at least weekly"
+            }
+        ],
+        "03.15.01": [
+            {
+                "id": "03.15.01.b",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months, or when there are significant incidents or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.15.02": [
+            {
+                "id": "03.15.02.b",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months, or when there are significant incidents or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.15.03": [
+            {
+                "id": "03.15.03.d",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months, or when there are significant incidents or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.16.01": [
+            {
+                "id": "03.16.01",
+                "assignment": "organization-defined systems security engineering principles",
+                "guidance": true,
+                "value": "At a minimum, documentation that provides user and administrator guidance for the implementation and operation of controls. The level of detail required in such documentation should be based on the degree to which organizations depend on the capabilities, functions, or mechanisms to meet risk response expectations. Requirements can include mandated configuration settings that specify allowed functions, ports, protocols, and services. Acceptance criteria for systems, system components, and system services are defined in the same manner as the criteria for any organizational acquisition or procurement."
+            }
+        ],
+        "03.16.03": [
+            {
+                "id": "03.16.03.a",
+                "assignment": "organization-defined security requirements",
+                "value": "1. For cloud service providers:\n(i) FedRAMP Authorized at the FedRAMP Moderate (or higher) baseline in accordance with the FedRAMP Marketplace; or\n(ii) meets security requirements established by the government equivalent to the FedRAMP Moderate (or higher) baseline.\n2. All other external service providers must meet NIST SP 800-171 R2.",
+                "footnotes": ["esp"]
+            }
+        ],
+        "03.17.01": [
+            {
+                "id": "03.17.01.b",
+                "assignment": "organization-defined frequency",
+                "value": "at least every 12 months, or when there are significant incidents or significant changes to risks",
+                "footnotes": ["significant"]
+            }
+        ],
+        "03.17.03": [
+            {
+                "id": "03.17.03.b",
+                "assignment": "organization-defined security requirements",
+                "value": "at a minimum, integrate Supply Chain Risk Management (SCRM) into acquisition/procurement policies, provide adequate SCRM resources, define the SCRM control baseline, establish processes to ensure suppliers disclose significant vulnerabilities and significant incidents",
+                "footnotes": ["significant"]
+            }
+        ]
+    }
+}
