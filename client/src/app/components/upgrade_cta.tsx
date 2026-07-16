@@ -6,8 +6,10 @@ import type { ReactNode } from "react";
 import { IconInfo, IconLock } from "./icons";
 import { Badge, buttonClasses } from "./ui";
 
-export const MARKETING_URL =
-    "https://getcmmc.consulting/download?utm_source=cmmc-app&utm_medium=upgrade";
+export const marketingUrl = (medium: string) =>
+    `https://getcmmc.consulting/download?utm_source=cmmc-app&utm_medium=${medium}`;
+
+export const MARKETING_URL = marketingUrl("upgrade");
 
 /** Small marker on locked requirement/family rows in list views. */
 export const LockedBadge = () => (

@@ -13,7 +13,7 @@ import { Button, menuItemClasses } from "./ui";
 // component on the next page picks the tour back up.
 const STEP_KEY = "cmmc.tour.step";
 const ARRIVED_KEY = "cmmc.tour.arrived";
-const SEEN_KEY = "cmmc.tour.seen";
+export const SEEN_KEY = "cmmc.tour.seen";
 const START_EVENT = "cmmc:tour-start";
 
 /** Requirement used for the walkthrough; present in both Rev 2 and Rev 3. */
