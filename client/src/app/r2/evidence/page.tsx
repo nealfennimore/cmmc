@@ -7,6 +7,7 @@ import { ManifestV2Component } from "@/app/context/manifest";
 import { ToastNotificationProvider } from "@/app/context/notification";
 import { RevisionV2Component } from "@/app/context/revision";
 import { social } from "@/app/seo";
+import { Suspense } from "react";
 
 import type { Metadata } from "next";
 
@@ -28,7 +29,11 @@ export default async function Page() {
                     <ToastContainer />
                     <Navigation />
                     <Main>
-                        <EvidenceTable />
+                        {/* Suspense for useSearchParams (?q= content filter)
+                            under static export. */}
+                        <Suspense>
+                            <EvidenceTable />
+                        </Suspense>
                     </Main>
                     <Footer />
                 </ToastNotificationProvider>

@@ -63,6 +63,26 @@ export const useGlobalEvidence = () => {
     }, [families, requirementsById, idbEvidenceRequirements]);
 };
 
+/**
+ * Count of linked evidence artifacts per requirement id. Requirement ids
+ * share one key space across revisions, so no revision filtering is needed —
+ * the manifest drives which ids render.
+ */
+export const useEvidenceCounts = (): Record<string, number> | undefined => {
+    const idbEvidenceRequirements = useDBEvidenceRequirements();
+    return useMemo(
+        () =>
+            idbEvidenceRequirements?.reduce(
+                (acc, { requirement_id }) => {
+                    acc[requirement_id] = (acc[requirement_id] ?? 0) + 1;
+                    return acc;
+                },
+                {} as Record<string, number>,
+            ),
+        [idbEvidenceRequirements],
+    );
+};
+
 export const useFamilyEvidence = (familyId: string) => {
     const globalStatus = useGlobalEvidence();
     return globalStatus?.[familyId];
