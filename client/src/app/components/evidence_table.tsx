@@ -12,12 +12,21 @@ import {
     Table,
 } from "@/app/components/table";
 import { toPath, useRevisionContext } from "@/app/context/revision";
-import { IDB, IDBEvidenceV2, removeEvidenceExamineTags } from "@/app/db";
+import {
+    IDB,
+    IDBEvidenceV2,
+    removeEvidenceExamineTags,
+    TABLE_CHANGED_EVENT,
+} from "@/app/db";
 import { useHoverCard } from "@/app/hooks/hoverCard";
+import { evidenceMatchIds } from "@/app/search/evidence_index";
+import { startEvidenceTextSync } from "@/app/search/evidence_text_store";
 import { hashType, mimeLabel } from "@/app/utils/file";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Input } from "./ui";
 
 interface Requirements {
     requirements: string[];
@@ -142,6 +151,15 @@ export const EvidenceTable = () => {
     // Set by clicking a type stat card; narrows the rows fed to the table
     // (the table's own column filters then apply on top).
     const [typeFilter, setTypeFilter] = useState<string | null>(null);
+    // Ranked content search over filenames, extracted file text, and linked
+    // requirement ids; null means no content filter.
+    const [contentQuery, setContentQuery] = useState("");
+    const [contentMatchIds, setContentMatchIds] = useState<Set<string> | null>(
+        null,
+    );
+    // Bumped when extracted text lands so an active query picks up files the
+    // background extractor has just finished indexing.
+    const [textVersion, setTextVersion] = useState(0);
     const formRef = useRef<HTMLFormElement>(null);
 
     const refresh = async () =>
@@ -149,7 +167,46 @@ export const EvidenceTable = () => {
 
     useEffect(() => {
         refresh();
+        startEvidenceTextSync();
     }, []);
+
+    // Seed from ?q= — evidence hits in the global search and the Ctrl+K
+    // palette navigate here pre-filtered. useSearchParams (requires the
+    // page-level Suspense wrapper) also reacts to client-side navigations
+    // that only change the query, e.g. the palette used on this very page.
+    const searchParams = useSearchParams();
+    useEffect(() => {
+        const q = searchParams.get("q");
+        if (q !== null) {
+            setContentQuery(q);
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
+        const onTableChanged = (event: Event) => {
+            const detail = (event as CustomEvent<{ table?: string }>).detail;
+            if (detail?.table === IDB.evidenceText.table) {
+                setTextVersion((version) => version + 1);
+            }
+        };
+        window.addEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+        return () =>
+            window.removeEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+    }, []);
+
+    useEffect(() => {
+        let stale = false;
+        const timer = window.setTimeout(async () => {
+            const ids = await evidenceMatchIds(contentQuery);
+            if (!stale) {
+                setContentMatchIds(ids);
+            }
+        }, 250);
+        return () => {
+            stale = true;
+            window.clearTimeout(timer);
+        };
+    }, [contentQuery, textVersion]);
 
     // The table has no requirement context, so deletion removes the artifact
     // and all of its requirement links.
@@ -261,15 +318,18 @@ export const EvidenceTable = () => {
         ];
     }, [evidenceWithRequirements, typeFilter]);
 
-    const visibleEvidence = useMemo(
-        () =>
-            typeFilter
-                ? evidenceWithRequirements.filter(
-                      (artifact) => mimeLabel(artifact.type) === typeFilter,
-                  )
-                : evidenceWithRequirements,
-        [evidenceWithRequirements, typeFilter],
-    );
+    const visibleEvidence = useMemo(() => {
+        let rows = evidenceWithRequirements;
+        if (typeFilter) {
+            rows = rows.filter(
+                (artifact) => mimeLabel(artifact.type) === typeFilter,
+            );
+        }
+        if (contentMatchIds) {
+            rows = rows.filter((artifact) => contentMatchIds.has(artifact.id));
+        }
+        return rows;
+    }, [evidenceWithRequirements, typeFilter, contentMatchIds]);
 
     const tableBody = useMemo(
         () =>
@@ -403,6 +463,14 @@ export const EvidenceTable = () => {
         >
             <section className="w-full flex flex-col">
                 <Stats stats={stats} />
+                <div className="mb-3">
+                    <Input
+                        value={contentQuery}
+                        onChange={(e) => setContentQuery(e.target.value)}
+                        placeholder="Search evidence content, filenames, and linked requirements…"
+                        aria-label="Search evidence content"
+                    />
+                </div>
                 <div className="relative overflow-x-auto rounded-lg border border-border shadow-sm">
                     <Table
                         sorters={sorters}

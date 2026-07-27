@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
+import { CommandPalette } from "./components/command_palette";
 import { ExternalLinkHandler } from "./components/external_link_handler";
 import { LicenseGate } from "./components/license_gate";
 import { LoaderHost } from "./components/loader";
@@ -67,6 +68,7 @@ export default function RootLayout({
                 </LicenseProvider>
                 <LoaderHost />
                 <UpgradePrompt />
+                <CommandPalette />
             </body>
         </html>
     );

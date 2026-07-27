@@ -110,3 +110,20 @@ const guidanceByRequirement: Record<string, AssessmentGuidance> =
 export const getAssessmentGuidance = (
     requirementId: string,
 ): AssessmentGuidance | undefined => guidanceByRequirement[requirementId];
+
+/** Assessment objective prose per Rev 2 requirement, joined for the search
+ *  index (the objectives are the assessable statements — searching them
+ *  should surface the requirement). */
+export const assessmentObjectivesByRequirement: Readonly<
+    Record<string, string>
+> = Object.freeze(
+    guideV2.requirements.reduce(
+        (acc, requirement) => {
+            acc[requirement.export_id] = Object.values(
+                requirement.assessment_objectives,
+            ).join(" ");
+            return acc;
+        },
+        {} as Record<string, string>,
+    ),
+);

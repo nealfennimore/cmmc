@@ -5,10 +5,16 @@ import { Input } from "./ui";
 export interface Option {
     label: string;
     value: any;
+    /** Muted second line under the label (e.g. "Matched in discussion"). */
+    sublabel?: string;
 }
 
 interface SearchDropdownProps {
-    options: Promise<Option[]>;
+    /** Static option list, filtered by label substring (legacy mode). */
+    options?: Promise<Option[]>;
+    /** Ranked search provider; when set it replaces the substring filter and
+     *  controls its own result count. */
+    search?: (query: string) => Promise<Option[]>;
     debounceMs?: number;
     placeholder?: string;
     onSelect?: (option: Option, fn: CallableFunction) => void;
@@ -16,6 +22,7 @@ interface SearchDropdownProps {
 
 export function SearchDropdown({
     options,
+    search,
     debounceMs = 250,
     placeholder = "Search...",
     onSelect,
@@ -28,6 +35,8 @@ export function SearchDropdown({
 
     const debounceTimer = useRef<number | undefined>(undefined);
     const containerRef = useRef<HTMLDivElement>(null);
+    // Guards against a slow earlier search resolving after a newer one.
+    const requestId = useRef(0);
 
     useEffect(() => {
         window.clearTimeout(debounceTimer.current);
@@ -47,17 +56,26 @@ export function SearchDropdown({
                 return;
             }
 
-            const q = debouncedQuery.toLowerCase();
-            const filtered = (await options)
-                .filter((o) => o.label.toLowerCase().includes(q))
-                .slice(0, 5);
+            const current = ++requestId.current;
+            let filtered: Option[];
+            if (search) {
+                filtered = await search(debouncedQuery);
+            } else {
+                const q = debouncedQuery.toLowerCase();
+                filtered = ((await options) ?? [])
+                    .filter((o) => o.label.toLowerCase().includes(q))
+                    .slice(0, 5);
+            }
+            if (current !== requestId.current) {
+                return;
+            }
 
             setResults(filtered);
             setOpen(true);
             setActiveIndex(-1);
         }
         filterResults();
-    }, [debouncedQuery, options]);
+    }, [debouncedQuery, options, search]);
 
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
@@ -131,6 +149,11 @@ export function SearchDropdown({
                             }`}
                         >
                             {item.label}
+                            {item.sublabel && (
+                                <span className="block text-xs text-muted-foreground">
+                                    {item.sublabel}
+                                </span>
+                            )}
                         </li>
                     ))}
                 </ul>

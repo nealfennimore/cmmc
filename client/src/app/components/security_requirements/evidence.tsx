@@ -21,6 +21,8 @@ import {
     IDBEvidenceV2,
     removeEvidenceExamineTags,
 } from "@/app/db";
+import { searchEvidence } from "@/app/search/evidence_index";
+import { startEvidenceTextSync } from "@/app/search/evidence_text_store";
 import { isImage } from "@/app/utils/file";
 import {
     ChangeEvent,
@@ -1118,20 +1120,23 @@ export const Evidence = ({
         };
     }, [requirementId, setEvidence, setUploading, locked]);
 
-    const evidenceOptions = useMemo(async () => {
-        const evidence = await IDB.evidence.getAll();
-        return evidence.reduce(
-            (acc, artifact) => {
-                if (!evidenceById[artifact.id]) {
-                    acc.push({
-                        label: artifact.filename,
-                        value: artifact.id,
-                    });
-                }
-                return acc;
-            },
-            [] as Record<string, string>[],
-        );
+    useEffect(() => {
+        // Extraction feeds the ranked attach search below; starting it here
+        // (not the root layout) keeps pages without evidence free of it.
+        startEvidenceTextSync();
+    }, []);
+
+    // Ranked search over filenames and extracted file content, excluding
+    // evidence already attached to this requirement.
+    const evidenceSearch = useMemo(() => {
+        return async (query: string) =>
+            (await searchEvidence(query, 8))
+                .filter((hit) => !evidenceById[hit.id])
+                .slice(0, 5)
+                .map((hit) => ({
+                    label: hit.filename,
+                    value: hit.id,
+                }));
     }, [evidenceById]);
 
     const onEvidenceSelect = useMemo(() => {
@@ -1188,7 +1193,7 @@ export const Evidence = ({
                         <div className="relative w-full mt-4">
                             <SearchDropdown
                                 placeholder={`Attach other requirement evidence to ${requirementId}`}
-                                options={evidenceOptions}
+                                search={evidenceSearch}
                                 onSelect={onEvidenceSelect}
                             />
                         </div>

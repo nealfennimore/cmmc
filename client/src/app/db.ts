@@ -2,7 +2,7 @@
 import { examineIdsForStoredItem } from "@/api/entities/ExamineItemIds";
 import { showLoader } from "@/app/components/loader";
 import { Status } from "@/app/components/status";
-export const version = 9;
+export const version = 10;
 let loader: Promise<IDBDatabase> | undefined;
 
 enum Table {
@@ -14,6 +14,7 @@ enum Table {
     EXAMINE_EVIDENCE = "examine_evidence",
     EVIDENCE_EXAMINE_ITEMS = "evidence_examine_items",
     REQUIREMENT_EXAMINE_ITEMS = "requirement_examine_items",
+    EVIDENCE_TEXT = "evidence_text",
 }
 
 const migrations = {
@@ -253,6 +254,18 @@ const migrations = {
             await putTick(tick);
         }
     },
+    "10": async (event: IDBVersionChangeEvent) => {
+        const db = event.target.result as IDBDatabase;
+
+        // Text extracted from evidence artifacts for content search. Derived
+        // data: rebuilt by the reconciler in search/evidence_text_store.ts,
+        // never exported. Only the store is created here — extraction is
+        // async (pdf.js worker round-trips) and would auto-commit the
+        // upgrade transaction, so it runs after the open settles.
+        db.createObjectStore(Table.EVIDENCE_TEXT, {
+            keyPath: "id",
+        });
+    },
 };
 
 if (typeof window !== "undefined") {
@@ -350,6 +363,22 @@ export interface IDBEvidenceExamineItem {
     examine_id: string;
 }
 
+/** Text extracted from an evidence artifact for content search. Derived from
+ *  the artifact's bytes — never exported; regenerated whenever missing. */
+export interface IDBEvidenceText {
+    /** Evidence id (sha256 of content) this text was extracted from. */
+    id: string;
+    /** Extracted text; empty unless status is "ok". */
+    text: string;
+    /** Why text may be empty: skipped (too large), unsupported (no extractor
+     *  for the type), or error (extractor threw). */
+    status: "ok" | "skipped" | "unsupported" | "error";
+    /** EXTRACTOR_VERSION at extraction time; bumping it forces re-extraction. */
+    extractor: number;
+    /** Source artifact size, for the "content not indexed" badge. */
+    bytes: number;
+}
+
 enum Permission {
     READONLY = "readonly",
     READWRITE = "readwrite",
@@ -406,6 +435,21 @@ export const getAll =
             };
             request.onerror = () => {
                 reject();
+            };
+        });
+    };
+
+export const getAllKeys =
+    (table: string, tx?: IDBTransaction) =>
+    async (): Promise<IDBValidKey[]> => {
+        const store = await getStore(table, Permission.READONLY, tx);
+        const request = (store as IDBObjectStore).getAllKeys();
+        return new Promise<IDBValidKey[]>((resolve, reject) => {
+            request.onsuccess = () => {
+                resolve(request.result);
+            };
+            request.onerror = () => {
+                reject(request.error);
             };
         });
     };
@@ -644,6 +688,7 @@ class StoreWrapper<T> {
         index?: string,
         count?: number,
     ) => Promise<T[]>;
+    getAllKeys: () => Promise<IDBValidKey[]>;
     delete: (query: IDBKeyRange | IDBValidKey) => Promise<boolean>;
     put: (data: T, key?: Array<string>) => Promise<T[]>;
     clear: () => Promise<boolean>;
@@ -652,6 +697,7 @@ class StoreWrapper<T> {
     constructor(table: Table) {
         this.table = table;
         this.getAll = getAll<T>(table);
+        this.getAllKeys = getAllKeys(table);
         this.put = put<T>(table);
         this.clear = clear(table);
         this.delete = remove(table);
@@ -675,6 +721,9 @@ export class IDB {
         );
     static evidenceExamineItems = new StoreWrapper<IDBEvidenceExamineItem>(
         Table.EVIDENCE_EXAMINE_ITEMS,
+    );
+    static evidenceText = new StoreWrapper<IDBEvidenceText>(
+        Table.EVIDENCE_TEXT,
     );
 
     static version = version;
