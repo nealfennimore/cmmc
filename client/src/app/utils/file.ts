@@ -212,6 +212,30 @@ export const isWord = (type: string) => {
     }
 };
 
+// Modern zip-of-XML office formats only — text extraction can read these.
+// The legacy OLE binaries (.doc/.ppt) grouped into isWord/isPowerpoint above
+// cannot be parsed without a heavy dependency and stay unsupported.
+export const isDocx = (type: string) =>
+    type ===
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+export const isPptx = (type: string) =>
+    type ===
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+
+export const isOpenDocument = (type: string) => {
+    switch (type) {
+        case "application/vnd.oasis.opendocument.text":
+        case "application/vnd.oasis.opendocument.presentation":
+        case "application/vnd.oasis.opendocument.spreadsheet":
+            return true;
+        default:
+            return false;
+    }
+};
+
+export const isRTF = (type: string) => type === "application/rtf";
+
 export const isVideo = (type: string) => {
     switch (type) {
         case "video/mp4":
