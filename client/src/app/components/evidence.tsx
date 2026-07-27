@@ -6,12 +6,16 @@ import {
     IconPaperclip,
 } from "@/app/components/icons";
 import { viewFile } from "@/app/components/security_requirements/utils";
-import { IDBEvidenceV2 } from "@/app/db";
+import { IDB, IDBEvidenceV2 } from "@/app/db";
 import { useHoverCard } from "@/app/hooks/hoverCard";
 import {
     embeddable,
     formatBytes,
+    isDocx,
+    isOpenDocument,
     isPDF,
+    isPptx,
+    isRTF,
     mimeLabel,
     snippetable,
 } from "@/app/utils/file";
@@ -58,6 +62,71 @@ export const EvidenceState = ({ evidence, size }: EvidenceStateProps) => {
         );
     }
     return <EvidenceSpan evidence={evidence as boolean} size={size} />;
+};
+
+// Formats the browser can't render but the search extractor already reads
+// (office documents) — previewed via their stored extracted text instead.
+const hasExtractedPreview = (artifact: IDBEvidenceV2) =>
+    isDocx(artifact.type) ||
+    isPptx(artifact.type) ||
+    isOpenDocument(artifact.type) ||
+    isRTF(artifact.type);
+
+/**
+ * Plain-text preview for office documents, read from the evidence_text store
+ * the search extractor maintains. No layout — it answers "is this the right
+ * document?", not "what does it look like?". Unavailable until the idle
+ * extractor has processed the file (or when extraction failed).
+ */
+const ExtractedTextPreview = ({
+    artifact,
+    maxChars,
+    className,
+}: {
+    artifact: IDBEvidenceV2;
+    /** Cap for the hover card; omit for the full text in the modal. */
+    maxChars?: number;
+    className?: string;
+}) => {
+    const [state, setState] = useState<"loading" | "ready" | "missing">(
+        "loading",
+    );
+    const [text, setText] = useState("");
+
+    useEffect(() => {
+        let active = true;
+        setState("loading");
+        IDB.evidenceText
+            .getAll(IDBKeyRange.only(artifact.id))
+            .then(([row]) => {
+                if (!active) {
+                    return;
+                }
+                if (row?.status === "ok" && row.text.trim()) {
+                    setText(
+                        maxChars ? row.text.slice(0, maxChars) : row.text,
+                    );
+                    setState("ready");
+                } else {
+                    setState("missing");
+                }
+            })
+            .catch(() => active && setState("missing"));
+        return () => {
+            active = false;
+        };
+    }, [artifact, maxChars]);
+
+    if (state !== "ready") {
+        return (
+            <span className="text-xs font-normal text-muted-foreground">
+                {state === "loading"
+                    ? "Loading preview…"
+                    : "Preview unavailable."}
+            </span>
+        );
+    }
+    return <span className={className}>{text}</span>;
 };
 
 /**
@@ -169,6 +238,7 @@ const PreviewCard = ({
     const isImg = embeddable(artifact);
     const isPdf = isPDF(artifact.type);
     const isSheet = sheetKind(artifact) !== null;
+    const isOffice = hasExtractedPreview(artifact);
     const [imageSrc, setImageSrc] = useState<string | null>(null);
 
     useEffect(() => {
@@ -185,7 +255,7 @@ const PreviewCard = ({
     // A truncated slice can split a multibyte character; TextDecoder swaps
     // in a replacement character, which is fine for a preview.
     const snippet =
-        isImg || isPdf || isSheet
+        isImg || isPdf || isSheet || isOffice
             ? null
             : new TextDecoder().decode(artifact.data.slice(0, 500));
 
@@ -224,6 +294,19 @@ const PreviewCard = ({
                         firstSheetOnly
                     />
                 </span>
+            ) : isOffice ? (
+                <>
+                    <span className="block max-h-48 w-64 overflow-hidden whitespace-pre-wrap break-words text-xs font-normal text-foreground">
+                        <ExtractedTextPreview
+                            artifact={artifact}
+                            maxChars={500}
+                        />
+                    </span>
+                    <span className="text-xs font-normal italic text-muted-foreground">
+                        Extracted text only — click the file name to open the
+                        document.
+                    </span>
+                </>
             ) : (
                 <span className="block max-h-48 overflow-hidden whitespace-pre-wrap break-all font-mono text-xs font-normal text-foreground">
                     {snippet}
@@ -342,13 +425,14 @@ const SheetPreview = ({
     );
 };
 
-// Artifacts the previews can actually render (URL evidence and types like
-// zip/docx are excluded).
+// Artifacts the previews can render (URL evidence and types like zip are
+// excluded). Office documents preview as their extracted text.
 const isPreviewable = (artifact: IDBEvidenceV2) =>
     embeddable(artifact) ||
     snippetable(artifact) ||
     isPDF(artifact.type) ||
-    sheetKind(artifact) !== null;
+    sheetKind(artifact) !== null ||
+    hasExtractedPreview(artifact);
 
 // Full-size preview modal, opened by clicking the hover card. Portaled to
 // <body> so the dialog markup escapes the badge <button>; the wrapper stops
@@ -376,6 +460,7 @@ const ExpandedPreview = ({
     const isImg = embeddable(current);
     const isPdf = isPDF(current.type);
     const isSheet = sheetKind(current) !== null;
+    const isOffice = hasExtractedPreview(current);
     const [imageSrc, setImageSrc] = useState<string | null>(null);
 
     useEffect(() => {
@@ -404,7 +489,7 @@ const ExpandedPreview = ({
     }, [list.length]);
 
     const text =
-        isImg || isPdf || isSheet
+        isImg || isPdf || isSheet || isOffice
             ? null
             : new TextDecoder().decode(current.data);
 
@@ -478,12 +563,25 @@ const ExpandedPreview = ({
                                 />
                             ) : isSheet ? (
                                 <SheetPreview artifact={current} />
+                            ) : isOffice ? (
+                                <ExtractedTextPreview
+                                    artifact={current}
+                                    className="block w-full max-w-3xl whitespace-pre-wrap break-words text-sm text-foreground"
+                                />
                             ) : (
                                 <pre className="w-full whitespace-pre-wrap break-all font-mono text-xs text-foreground">
                                     {text}
                                 </pre>
                             )}
                         </div>
+                        {isOffice && (
+                            <p className="mt-3 text-xs italic text-muted-foreground">
+                                Extracted text only — open the file from its
+                                evidence link to view the original document
+                                (opens in your system&apos;s viewer on
+                                desktop).
+                            </p>
+                        )}
                         <p
                             className="mt-3 text-xs text-muted-foreground"
                             title={current.type}
