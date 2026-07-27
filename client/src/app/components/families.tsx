@@ -7,7 +7,6 @@ import { useGlobalEvidence } from "../hooks/evidence";
 import { useGlobalStatus } from "../hooks/status";
 import { Breadcrumbs } from "./breadcrumbs";
 import { EvidenceState } from "./evidence";
-import { GlobalSearch } from "./global_search";
 import { IconInfo } from "./icons";
 import { Popover } from "./popover";
 import { StatusState } from "./status";
@@ -28,7 +27,6 @@ export const Families = () => {
     return (
         <>
             <Breadcrumbs />
-            <GlobalSearch />
             <Heading level={2} className="flex flex-wrap items-center gap-2">
                 SP NIST 800-171 Families {revision}
                 <button
