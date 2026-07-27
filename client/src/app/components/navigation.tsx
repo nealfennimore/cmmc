@@ -2,6 +2,8 @@
 import { toPath, useRevisionContext } from "@/app/context/revision";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ClearDB } from "./clear_db";
+import { openCommandPalette } from "./command_palette";
+import { IconSearch } from "./icons";
 import { ExportEvidence, ViewEvidence } from "./export_evidence";
 import { ExportEvidenceMap } from "./export_evidence_map";
 import { Export, Import } from "./export_import";
@@ -88,6 +90,17 @@ export const Navigation = () => {
                     </span>
                 </a>
                 <div className="flex items-center md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
+                    <button
+                        key="search-open"
+                        type="button"
+                        title="Search (Ctrl+K)"
+                        aria-label="Search requirements and evidence"
+                        className="me-2 inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={openCommandPalette}
+                    >
+                        <span className="hidden md:block">Search</span>
+                        <IconSearch className="w-5 h-5" />
+                    </button>
                     <button
                         key="tree-open"
                         data-tour="overview"

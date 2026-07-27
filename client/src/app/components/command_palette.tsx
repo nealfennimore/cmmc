@@ -16,6 +16,16 @@ import { Option } from "./search_dropdown";
 const revisionFor = (pathname: string | null): Revision =>
     pathname?.startsWith("/r2") ? Revision.V2 : Revision.V3;
 
+// The palette lives in the root layout while its triggers (e.g. the navbar
+// search button) render in unrelated trees, so opening goes through a window
+// event rather than threaded context.
+const OPEN_EVENT = "open-command-palette";
+
+/** Open the global search palette (same as pressing Ctrl/Cmd+K). */
+export const openCommandPalette = (): void => {
+    window.dispatchEvent(new CustomEvent(OPEN_EVENT));
+};
+
 const PaletteDialog = ({
     revision,
     onNavigate,
@@ -144,8 +154,13 @@ export const CommandPalette = () => {
                 setOpen((current) => !current);
             }
         };
+        const onOpen = () => setOpen(true);
         window.addEventListener("keydown", onKeyDown);
-        return () => window.removeEventListener("keydown", onKeyDown);
+        window.addEventListener(OPEN_EVENT, onOpen);
+        return () => {
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener(OPEN_EVENT, onOpen);
+        };
     }, []);
 
     if (!open) {
