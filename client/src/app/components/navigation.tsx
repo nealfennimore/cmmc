@@ -5,6 +5,7 @@ import { ClearDB } from "./clear_db";
 import { ExportEvidence, ViewEvidence } from "./export_evidence";
 import { ExportEvidenceMap } from "./export_evidence_map";
 import { Export, Import } from "./export_import";
+import { ViewHeatmap } from "./heatmap";
 import { LicenseMenuItem } from "./license_settings";
 import { Markdown } from "./markdown";
 import { POAM } from "./poam";
@@ -147,6 +148,7 @@ export const Navigation = () => {
                                 ref={menuRef}
                             >
                                 <div className="py-1" role="none">
+                                    <ViewHeatmap path={path} />
                                     <Markdown />
                                     <POAM />
                                 </div>

@@ -23,6 +23,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             lastModified: new Date().toISOString(),
             priority: 0.5,
         },
+        {
+            url: `${URL}/r3/heatmap`,
+            lastModified: new Date().toISOString(),
+            priority: 0.5,
+        },
         ...manifestV3.families.elements.map((element) => ({
             url: `${URL}/r3/family/${element.element_identifier}`,
             lastModified: new Date().toISOString(),
@@ -40,6 +45,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
         {
             url: `${URL}/r2/evidence`,
+            lastModified: new Date().toISOString(),
+            priority: 0.5,
+        },
+        {
+            url: `${URL}/r2/heatmap`,
             lastModified: new Date().toISOString(),
             priority: 0.5,
         },

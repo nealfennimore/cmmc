@@ -41,6 +41,29 @@ export const StatusIcon: Record<
     [Status._NOT_STARTED_DEFAULT]: IconBlank,
 };
 
+// Background classes for heatmap cells. Static literals so Tailwind can see
+// the full class names; hues mirror the StatusSpan text colors below.
+export const StatusCellClasses: Record<ValueOf<typeof Status>, string> = {
+    [Status.IMPLEMENTED]: "bg-green-600 text-white",
+    [Status.NOT_IMPLEMENTED]: "bg-red-600 text-white",
+    [Status.NOT_APPLICABLE]: "bg-slate-400 text-white",
+    [Status.PARTIALLY_IMPLEMENTED]: "bg-amber-500 text-white",
+    [Status.NEEDS_WORK]: "bg-amber-800 text-white",
+    [Status.NOT_STARTED]: "bg-secondary text-muted-foreground border border-border",
+    [Status._NOT_STARTED_DEFAULT]:
+        "bg-secondary text-muted-foreground border border-border",
+};
+
+export const StatusLabel: Record<ValueOf<typeof Status>, string> = {
+    [Status.IMPLEMENTED]: "Implemented",
+    [Status.NOT_IMPLEMENTED]: "Not implemented",
+    [Status.NOT_APPLICABLE]: "Not applicable",
+    [Status.PARTIALLY_IMPLEMENTED]: "Partially implemented",
+    [Status.NEEDS_WORK]: "Has work remaining",
+    [Status.NOT_STARTED]: "Not started",
+    [Status._NOT_STARTED_DEFAULT]: "Not started",
+};
+
 const isNotStarted = (status: Status) =>
     status === Status._NOT_STARTED_DEFAULT || status === Status.NOT_STARTED;
 const hasNotStarted = (statuses: Status[]) =>
