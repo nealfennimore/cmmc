@@ -29,6 +29,7 @@ export const ClearDB = () => {
             await IDB.requirementExamineItems.clear();
             await IDB.evidenceExamineItems.clear();
             await IDB.evidenceText.clear();
+            await IDB.evidenceData.clear();
         } catch (error) {
             hideLoader();
             throw error;

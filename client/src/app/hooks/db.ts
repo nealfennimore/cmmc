@@ -2,7 +2,7 @@
 import {
     IDB,
     IDBEvidenceRequirement,
-    IDBEvidenceV2,
+    IDBEvidenceV3,
     IDBRequirement,
     IDBSecurityRequirement,
 } from "@/app/db";
@@ -40,7 +40,7 @@ export const useDBSecurityRequirements = () => {
 };
 export const useDBEvidence = () => {
     const [dbEvidence, setDBEvidence] = useState(
-        undefined as IDBEvidenceV2[] | undefined,
+        undefined as IDBEvidenceV3[] | undefined,
     );
 
     useEffect(() => {

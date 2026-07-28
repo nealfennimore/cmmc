@@ -2,7 +2,7 @@
 import { examineIdsForStoredItem } from "@/api/entities/ExamineItemIds";
 import { showLoader } from "@/app/components/loader";
 import { Status } from "@/app/components/status";
-export const version = 10;
+export const version = 11;
 let loader: Promise<IDBDatabase> | undefined;
 
 enum Table {
@@ -15,6 +15,7 @@ enum Table {
     EVIDENCE_EXAMINE_ITEMS = "evidence_examine_items",
     REQUIREMENT_EXAMINE_ITEMS = "requirement_examine_items",
     EVIDENCE_TEXT = "evidence_text",
+    EVIDENCE_DATA = "evidence_data",
 }
 
 const migrations = {
@@ -266,6 +267,49 @@ const migrations = {
             keyPath: "id",
         });
     },
+    "11": async (event: IDBVersionChangeEvent) => {
+        const db = event.target.result as IDBDatabase;
+        const tx = event.target.transaction as IDBTransaction;
+
+        // Split evidence bytes into their own store so metadata reads (the
+        // evidence table, the search index) stop deserializing every blob.
+        // The evidence store keeps { id, filename, type } and gains `bytes`
+        // (the size, for labels that previously read data.byteLength); the
+        // payload moves to evidence_data under the same id. A cursor moves
+        // one record at a time so the migration never holds the whole
+        // evidence set in memory; every operation is IndexedDB-native, so
+        // the upgrade transaction stays alive throughout.
+        const evidenceData = db.createObjectStore(Table.EVIDENCE_DATA, {
+            keyPath: "id",
+        });
+        const evidence = tx.objectStore(Table.EVIDENCE);
+        // The blob index from migration 4 indexed whole payloads; nothing
+        // ever queried it, and the field it indexes is leaving the store.
+        evidence.deleteIndex("data");
+
+        await new Promise<void>((resolve, reject) => {
+            const request = evidence.openCursor();
+            request.onsuccess = () => {
+                const cursor = request.result;
+                if (!cursor) {
+                    resolve();
+                    return;
+                }
+                const record = cursor.value as IDBEvidenceV2;
+                if (record.data !== undefined) {
+                    evidenceData.put({ id: record.id, data: record.data });
+                    cursor.update({
+                        id: record.id,
+                        filename: record.filename,
+                        type: record.type,
+                        bytes: record.data.byteLength,
+                    } satisfies IDBEvidenceV3);
+                }
+                cursor.continue();
+            };
+            request.onerror = () => reject(request.error);
+        });
+    },
 };
 
 if (typeof window !== "undefined") {
@@ -331,12 +375,35 @@ export interface IDBEvidence {
     data: ArrayBuffer;
 }
 
+/** Pre-v11 evidence record with the payload inline. Still the shape carried
+ *  by v4-v10 export payloads and handled by migrations. */
 export interface IDBEvidenceV2 {
     id: string;
     filename: string;
     type: string;
     data: ArrayBuffer;
 }
+
+/** Evidence metadata (v11+). The payload lives in evidence_data under the
+ *  same id — fetch it via getEvidenceData() only where bytes are actually
+ *  needed (previews, opens, exports), so listing evidence never
+ *  deserializes blobs. */
+export interface IDBEvidenceV3 {
+    /** sha256 of the content. */
+    id: string;
+    filename: string;
+    type: string;
+    /** Payload size, so size labels don't need the payload. */
+    bytes: number;
+}
+
+export interface IDBEvidenceData {
+    id: string;
+    data: ArrayBuffer;
+}
+
+/** Metadata joined with its payload, for the few paths that need both. */
+export type IDBEvidenceWithData = IDBEvidenceV3 & { data: ArrayBuffer };
 
 export interface IDBEvidenceRequirement {
     requirement_id: string;
@@ -583,12 +650,19 @@ const migrateLegacyEvidenceIds = async (db: IDBDatabase): Promise<void> => {
     const readTx = db.transaction(
         [
             Table.EVIDENCE,
+            Table.EVIDENCE_DATA,
             Table.EVIDENCE_REQUIREMENTS,
             Table.EVIDENCE_EXAMINE_ITEMS,
         ],
         Permission.READONLY,
     );
-    const evidence = await getAll<IDBEvidenceV2>(Table.EVIDENCE, readTx)();
+    const evidence = await getAll<IDBEvidenceV3>(Table.EVIDENCE, readTx)();
+    // The payloads: the source of the content hashes. Runs after migration
+    // 11, so bytes always live here rather than on the evidence records.
+    const payloads = await getAll<IDBEvidenceData>(
+        Table.EVIDENCE_DATA,
+        readTx,
+    )();
     const links = await getAll<IDBEvidenceRequirement>(
         Table.EVIDENCE_REQUIREMENTS,
         readTx,
@@ -599,24 +673,29 @@ const migrateLegacyEvidenceIds = async (db: IDBDatabase): Promise<void> => {
     )();
 
     // Resolve legacy id -> sha256 up front. Done before any write opens.
+    const dataById = new Map(payloads.map((row) => [row.id, row.data]));
     const newIdByOldId = new Map<string, string>();
     for (const artifact of evidence) {
-        if (SHA256_HEX.test(artifact.id)) {
+        const data = dataById.get(artifact.id);
+        if (SHA256_HEX.test(artifact.id) || !data) {
             continue;
         }
-        newIdByOldId.set(artifact.id, await sha256Hex(artifact.data));
+        newIdByOldId.set(artifact.id, await sha256Hex(data));
     }
 
     const writeTx = db.transaction(
         [
             Table.EVIDENCE,
+            Table.EVIDENCE_DATA,
             Table.EVIDENCE_REQUIREMENTS,
             Table.EVIDENCE_EXAMINE_ITEMS,
         ],
         Permission.READWRITE,
     );
-    const putEvidence = put<IDBEvidenceV2>(Table.EVIDENCE, writeTx);
+    const putEvidence = put<IDBEvidenceV3>(Table.EVIDENCE, writeTx);
     const deleteEvidence = remove(Table.EVIDENCE, writeTx);
+    const putPayload = put<IDBEvidenceData>(Table.EVIDENCE_DATA, writeTx);
+    const deletePayload = remove(Table.EVIDENCE_DATA, writeTx);
     const putLink = put<IDBEvidenceRequirement>(
         Table.EVIDENCE_REQUIREMENTS,
         writeTx,
@@ -628,9 +707,10 @@ const migrateLegacyEvidenceIds = async (db: IDBDatabase): Promise<void> => {
     );
     const deleteTag = remove(Table.EVIDENCE_EXAMINE_ITEMS, writeTx);
 
-    // Re-key the evidence. put() then delete() of the old key; the keys always
-    // differ (legacy vs sha256). Distinct records with identical content collapse
-    // onto the same sha256 key, matching deriveEvidence()'s dedupe-by-content.
+    // Re-key the evidence (metadata and payload). put() then delete() of the
+    // old key; the keys always differ (legacy vs sha256). Distinct records
+    // with identical content collapse onto the same sha256 key, matching
+    // deriveEvidence()'s dedupe-by-content.
     for (const artifact of evidence) {
         const id = newIdByOldId.get(artifact.id);
         if (!id || id === artifact.id) {
@@ -638,6 +718,11 @@ const migrateLegacyEvidenceIds = async (db: IDBDatabase): Promise<void> => {
         }
         await putEvidence({ ...artifact, id });
         await deleteEvidence(artifact.id);
+        const data = dataById.get(artifact.id);
+        if (data) {
+            await putPayload({ id, data });
+            await deletePayload(artifact.id);
+        }
     }
 
     // Repoint the foreign keys. The composite primary keys dedupe any rows
@@ -711,7 +796,10 @@ export class IDB {
     static securityRequirements = new StoreWrapper<IDBSecurityRequirement>(
         Table.SECURITY_REQUIREMENTS,
     );
-    static evidence = new StoreWrapper<IDBEvidenceV2>(Table.EVIDENCE);
+    static evidence = new StoreWrapper<IDBEvidenceV3>(Table.EVIDENCE);
+    static evidenceData = new StoreWrapper<IDBEvidenceData>(
+        Table.EVIDENCE_DATA,
+    );
     static evidenceRequirements = new StoreWrapper<IDBEvidenceRequirement>(
         Table.EVIDENCE_REQUIREMENTS,
     );
@@ -728,6 +816,45 @@ export class IDB {
 
     static version = version;
 }
+
+/** An artifact's payload, or null when absent (corrupt/foreign store). */
+export const getEvidenceData = async (
+    evidenceId: string,
+): Promise<ArrayBuffer | null> => {
+    const [row] = await IDB.evidenceData.getAll(IDBKeyRange.only(evidenceId));
+    return row?.data ?? null;
+};
+
+/** Write an artifact's metadata and payload together (the only correct way
+ *  to create or replace evidence). */
+export const putEvidence = async (
+    artifact: IDBEvidenceWithData,
+): Promise<void> => {
+    const { data, ...meta } = artifact;
+    await IDB.evidenceData.put({ id: artifact.id, data });
+    await IDB.evidence.put({ ...meta, bytes: data.byteLength });
+};
+
+/** Delete an artifact's metadata and payload together. Callers still own
+ *  cleaning up links and examine tags. */
+export const deleteEvidence = async (evidenceId: string): Promise<void> => {
+    await IDB.evidence.delete(IDBKeyRange.only(evidenceId));
+    await IDB.evidenceData.delete(IDBKeyRange.only(evidenceId));
+};
+
+/** Every artifact joined with its payload — only for bulk flows that truly
+ *  need all bytes (database export, evidence download, markdown embeds). */
+export const getAllEvidenceWithData = async (): Promise<
+    IDBEvidenceWithData[]
+> => {
+    const artifacts = await IDB.evidence.getAll();
+    return Promise.all(
+        artifacts.map(async (artifact) => ({
+            ...artifact,
+            data: (await getEvidenceData(artifact.id)) ?? new ArrayBuffer(0),
+        })),
+    );
+};
 
 /** Every examine tag on an artifact. */
 export const evidenceExamineTags = (

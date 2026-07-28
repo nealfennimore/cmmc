@@ -1,14 +1,14 @@
 "use client";
 import { useManifestContext } from "@/app/context/manifest";
 import { Revision, toNum, useRevisionContext } from "@/app/context/revision";
-import { IDB, IDBEvidenceV2 } from "@/app/db";
+import { getEvidenceData, IDB, IDBEvidenceV3 } from "@/app/db";
 import { hashType, HashType, saveBlob, toFSName } from "@/app/utils/file";
 import { useActionState } from "react";
 import { confirm } from "./confirm";
 import { withLoader } from "./loader";
 import { menuItemClasses } from "./ui";
 
-interface ArtifactMapping extends Omit<IDBEvidenceV2, "data" | "filename"> {
+interface ArtifactMapping extends Omit<IDBEvidenceV3, "bytes" | "filename"> {
     url?: string;
     requirements: string[];
     hashType: HashType;
@@ -92,29 +92,29 @@ export const ExportEvidenceMap = () => {
                     {} as Record<string, string[]>,
                 );
 
-                const artifactMapping = evidence.reduce(
-                    (acc, artifact) => {
-                        if (evidenceRequirementsMapping[artifact.id]) {
-                            const item = {
-                                id: artifact.id,
-                                name: artifact.filename,
-                                filename: toFSName(artifact),
-                                type: artifact.type,
-                                requirements:
-                                    evidenceRequirementsMapping[artifact.id],
-                                hashType: hashType(artifact.id),
-                            } as ArtifactMapping;
-                            if (artifact.type === "url") {
-                                item.url = new TextDecoder().decode(
-                                    artifact.data,
-                                );
-                            }
-                            acc[artifact.id] = item;
+                const artifactMapping: Record<string, ArtifactMapping> = {};
+                for (const artifact of evidence) {
+                    if (!evidenceRequirementsMapping[artifact.id]) {
+                        continue;
+                    }
+                    const item = {
+                        id: artifact.id,
+                        name: artifact.filename,
+                        filename: toFSName(artifact),
+                        type: artifact.type,
+                        requirements: evidenceRequirementsMapping[artifact.id],
+                        hashType: hashType(artifact.id),
+                    } as ArtifactMapping;
+                    if (artifact.type === "url") {
+                        // Only URL artifacts need their (tiny) payload — the
+                        // address is the payload.
+                        const data = await getEvidenceData(artifact.id);
+                        if (data) {
+                            item.url = new TextDecoder().decode(data);
                         }
-                        return acc;
-                    },
-                    {} as Record<string, ArtifactMapping>,
-                );
+                    }
+                    artifactMapping[artifact.id] = item;
+                }
 
                 const evidenceMapping: EvidenceMapping = {
                     artifacts: artifactMapping,

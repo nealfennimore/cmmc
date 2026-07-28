@@ -1,5 +1,5 @@
 "use client";
-import { IDBEvidenceText, IDBEvidenceV2 } from "@/app/db";
+import { IDBEvidenceText, IDBEvidenceWithData } from "@/app/db";
 import {
     isDocx,
     isOpenDocument,
@@ -28,7 +28,7 @@ const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
 const MAX_TEXT_CHARS = 500 * 1024;
 const MAX_PDF_PAGES = 200;
 
-const extractPdf = async (artifact: IDBEvidenceV2): Promise<string> => {
+const extractPdf = async (artifact: IDBEvidenceWithData): Promise<string> => {
     const pdfjs = await loadPdfjs();
     // pdf.js transfers the buffer to its worker, which would detach the
     // artifact's in-memory bytes — hand it a copy.
@@ -74,7 +74,7 @@ const xmlText = (bytes: Uint8Array, paragraphTag: string): string => {
         : (doc.documentElement?.textContent ?? "");
 };
 
-const extractDocx = async (artifact: IDBEvidenceV2): Promise<string> => {
+const extractDocx = async (artifact: IDBEvidenceWithData): Promise<string> => {
     const xml = await unzipEntry(artifact.data, "word/document.xml");
     if (!xml) {
         throw new Error("docx has no word/document.xml");
@@ -82,7 +82,7 @@ const extractDocx = async (artifact: IDBEvidenceV2): Promise<string> => {
     return xmlText(xml, "w:p");
 };
 
-const extractPptx = async (artifact: IDBEvidenceV2): Promise<string> => {
+const extractPptx = async (artifact: IDBEvidenceWithData): Promise<string> => {
     const slides = await unzipEntries(artifact.data, (name) =>
         /^ppt\/(slides|notesSlides)\/[^/]+\.xml$/.test(name),
     );
@@ -103,7 +103,7 @@ const extractPptx = async (artifact: IDBEvidenceV2): Promise<string> => {
 };
 
 const extractOpenDocument = async (
-    artifact: IDBEvidenceV2,
+    artifact: IDBEvidenceWithData,
 ): Promise<string> => {
     const xml = await unzipEntry(artifact.data, "content.xml");
     if (!xml) {
@@ -115,7 +115,7 @@ const extractOpenDocument = async (
 // Best-effort RTF-to-text for search indexing: drop header tables and
 // ignorable {\*…} groups (fonts, styles, embedded data), decode \'hh hex
 // escapes, then strip the remaining control words and group braces.
-const extractRtf = (artifact: IDBEvidenceV2): string =>
+const extractRtf = (artifact: IDBEvidenceWithData): string =>
     new TextDecoder()
         .decode(artifact.data)
         .replace(
@@ -131,7 +131,7 @@ const extractRtf = (artifact: IDBEvidenceV2): string =>
         .replace(/\s+/g, " ")
         .trim();
 
-const extractSheet = async (artifact: IDBEvidenceV2): Promise<string> =>
+const extractSheet = async (artifact: IDBEvidenceWithData): Promise<string> =>
     (await loadSheets(artifact))
         .map((sheet) =>
             [sheet.name ?? "", ...sheet.rows.map((row) => row.join(" "))].join(
@@ -146,7 +146,7 @@ const extractSheet = async (artifact: IDBEvidenceV2): Promise<string> =>
  * retried on every load.
  */
 export const extractEvidenceText = async (
-    artifact: IDBEvidenceV2,
+    artifact: IDBEvidenceWithData,
 ): Promise<IDBEvidenceText> => {
     const base = {
         id: artifact.id,

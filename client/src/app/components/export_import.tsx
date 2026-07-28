@@ -3,6 +3,7 @@ import { Status } from "@/app/components/status";
 import { toNum, useRevisionContext } from "@/app/context/revision";
 import { examineIdsForStoredItem } from "@/api/entities/ExamineItemIds";
 import {
+    getEvidenceData,
     IDB,
     IDBEvidence,
     IDBEvidenceExamineItem,
@@ -12,6 +13,7 @@ import {
     IDBRequirement,
     IDBRequirementExamineItem,
     IDBSecurityRequirement,
+    putEvidence,
     resetEvidenceIdMigration,
 } from "@/app/db";
 import { useNotification } from "@/app/context/notification";
@@ -71,12 +73,15 @@ const buildAndSaveExport = async (filenamePrefix: string) => {
     const idbRequirementExamineItems =
         await IDB.requirementExamineItems.getAll();
     const idbEvidenceExamineItems = await IDB.evidenceExamineItems.getAll();
-    // Encode via the engine-native base64 path; a JS spread over the bytes
+    // Join each artifact's payload back in (stored separately since v11) and
+    // encode via the engine-native base64 path; a JS spread over the bytes
     // stalls for minutes on large evidence sets.
     const evidence: PortableIDBEvidenceV3[] = await Promise.all(
         idbEvidence.map(async (artifact) => ({
             ...artifact,
-            data: await toBase64(artifact.data),
+            data: await toBase64(
+                (await getEvidenceData(artifact.id)) ?? new ArrayBuffer(0),
+            ),
         })),
     );
     const validSecurityRequirements = idbSecurityRequirements.filter(
@@ -213,6 +218,7 @@ const importDatabase = async (text: string): Promise<void> => {
         // Derived text is not in the payload; clearing it lets the reconciler
         // rebuild from the imported artifacts after the reload.
         await IDB.evidenceText.clear();
+        await IDB.evidenceData.clear();
 
         const requirements: Record<string, IDBRequirement> = {};
 
@@ -234,15 +240,25 @@ const importDatabase = async (text: string): Promise<void> => {
         }
 
         for (const artifact of payload?.evidence || []) {
-            const _artifact = {
-                ...artifact,
-                // v6 exports carry base64; v3-v5 number arrays.
-                data:
-                    typeof artifact.data === "string"
-                        ? await fromBase64(artifact.data)
-                        : new Uint8Array(artifact.data).buffer,
-            };
-            await IDB.evidence.put(_artifact);
+            // v3 payloads were reshaped to the V2 form above, so every
+            // artifact here carries id/filename/type.
+            const portable = artifact as
+                | PortableIDBEvidenceV2
+                | PortableIDBEvidenceV3;
+            // v6+ exports carry base64; v3-v5 number arrays.
+            const data =
+                typeof portable.data === "string"
+                    ? await fromBase64(portable.data)
+                    : new Uint8Array(portable.data).buffer;
+            // putEvidence splits payload from metadata (and derives `bytes`),
+            // so exports from any version land in the v11 layout.
+            await putEvidence({
+                id: portable.id,
+                filename: portable.filename,
+                type: portable.type,
+                bytes: data.byteLength,
+                data,
+            });
         }
 
         for (const evidenceRequirement of payload?.evidenceRequirements ||

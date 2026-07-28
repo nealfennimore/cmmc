@@ -1,5 +1,5 @@
 "use client";
-import { IDB, TABLE_CHANGED_EVENT } from "@/app/db";
+import { getEvidenceData, IDB, TABLE_CHANGED_EVENT } from "@/app/db";
 import { EXTRACTOR_VERSION, extractEvidenceText } from "./extract_text";
 
 // Keeps the evidence_text store in step with the evidence store by diffing
@@ -35,7 +35,22 @@ const reconcile = async (): Promise<void> => {
         if (!artifact) {
             continue;
         }
-        await IDB.evidenceText.put(await extractEvidenceText(artifact));
+        const data = await getEvidenceData(id);
+        if (!data) {
+            // Metadata without a payload — record it so the row isn't
+            // retried on every load.
+            await IDB.evidenceText.put({
+                id,
+                text: "",
+                status: "error",
+                extractor: EXTRACTOR_VERSION,
+                bytes: artifact.bytes,
+            });
+            continue;
+        }
+        await IDB.evidenceText.put(
+            await extractEvidenceText({ ...artifact, data }),
+        );
     }
 };
 

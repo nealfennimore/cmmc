@@ -1,5 +1,3 @@
-import { IDBEvidenceV2 } from "@/app/db";
-
 export function debounce(func, delay) {
     let timeoutId: NodeJS.Timeout | undefined;
     return function (...args) {
@@ -28,7 +26,11 @@ export const toDataURL = (file: File | Blob) =>
         fr.readAsDataURL(file);
     });
 
-export const viewFile = (artifact: IDBEvidenceV2) => {
+export const viewFile = (artifact: {
+    filename: string;
+    type: string;
+    data: ArrayBuffer;
+}) => {
     const file = new File([artifact.data], artifact.filename, {
         type: artifact.type,
     });

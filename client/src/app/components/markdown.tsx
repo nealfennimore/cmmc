@@ -3,7 +3,7 @@ import { toDataURL } from "@/app/components/security_requirements/utils";
 import { Status } from "@/app/components/status";
 import { useManifestContext } from "@/app/context/manifest";
 import { toNum, toPath, useRevisionContext } from "@/app/context/revision";
-import { IDB, IDBSecurityRequirement } from "@/app/db";
+import { getEvidenceData, IDB, IDBSecurityRequirement } from "@/app/db";
 import { embeddable, saveBlob, snippetable, toFSName } from "@/app/utils/file";
 import { useActionState } from "react";
 import { confirmOptions } from "./confirm";
@@ -60,13 +60,25 @@ export const Markdown = () => {
                         "requirement_id",
                     );
 
-                const artifacts = (
-                    await Promise.all(
-                        evidenceRequirementRecords.map((record) =>
-                            IDB.evidence.getAll(record.evidence_id),
-                        ),
+                // The report inlines URL targets and (optionally) embeds file
+                // contents, so this flow joins each artifact's payload back
+                // in — scoped per requirement rather than all at once.
+                const artifacts = await Promise.all(
+                    (
+                        await Promise.all(
+                            evidenceRequirementRecords.map((record) =>
+                                IDB.evidence.getAll(record.evidence_id),
+                            ),
+                        )
                     )
-                ).flat();
+                        .flat()
+                        .map(async (artifact) => ({
+                            ...artifact,
+                            data:
+                                (await getEvidenceData(artifact.id)) ??
+                                new ArrayBuffer(0),
+                        })),
+                );
 
                 const linkArtifacts = artifacts.filter(
                     (artifact) => artifact.type === "url",

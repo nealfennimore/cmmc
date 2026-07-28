@@ -3,7 +3,11 @@ import {
     examineItemsForRequirement,
     requirementsSharingExamineItem,
 } from "@/api/entities/ExamineItems";
-import { FileBadge, LinkBadge } from "@/app/components/evidence";
+import {
+    FileBadge,
+    LinkBadge,
+    useEvidenceData,
+} from "@/app/components/evidence";
 import { IconLink } from "@/app/components/file_icons";
 import { IconTag } from "@/app/components/icons";
 import { SearchDropdown } from "@/app/components/search_dropdown";
@@ -16,9 +20,12 @@ import {
 } from "@/app/hooks/evidenceTags";
 import {
     copyEvidenceExamineTags,
+    deleteEvidence as deleteEvidenceRecord,
     evidenceExamineTags,
     IDB,
-    IDBEvidenceV2,
+    IDBEvidenceV3,
+    IDBEvidenceWithData,
+    putEvidence,
     removeEvidenceExamineTags,
 } from "@/app/db";
 import { searchEvidence } from "@/app/search/evidence_index";
@@ -56,7 +63,7 @@ const deriveEvidence = async ({
     type: string;
     name?: string;
     data: ArrayBuffer;
-}): Promise<IDBEvidenceV2> => {
+}): Promise<IDBEvidenceWithData> => {
     const id = [
         ...new Uint8Array(await window.crypto.subtle.digest("SHA-256", data)),
     ]
@@ -73,6 +80,7 @@ const deriveEvidence = async ({
         id,
         filename,
         type: type,
+        bytes: data.byteLength,
         data,
     };
 };
@@ -88,7 +96,7 @@ const replaceEvidence = async ({
     data,
     requirementId,
 }: {
-    oldArtifact: IDBEvidenceV2;
+    oldArtifact: IDBEvidenceV3;
     name?: string;
     type: string;
     data: ArrayBuffer;
@@ -98,10 +106,16 @@ const replaceEvidence = async ({
 }): Promise<void> => {
     const newEvidence = await deriveEvidence({ name, type, data });
 
-    // Identical content hashes to the same id; only the name can change.
+    // Identical content hashes to the same id; only the name can change —
+    // metadata-only write, the stored payload is already this content.
     if (newEvidence.id === oldArtifact.id) {
         if (newEvidence.filename !== oldArtifact.filename) {
-            await IDB.evidence.put(newEvidence);
+            await IDB.evidence.put({
+                id: newEvidence.id,
+                filename: newEvidence.filename,
+                type: newEvidence.type,
+                bytes: newEvidence.bytes,
+            });
         }
         return;
     }
@@ -133,7 +147,7 @@ const replaceEvidence = async ({
         }
     }
 
-    await IDB.evidence.put(newEvidence);
+    await putEvidence(newEvidence);
     // The replacement is the same logical document, so it inherits the old
     // artifact's examine tags (e.g. "this is our System security plan").
     await copyEvidenceExamineTags(oldArtifact.id, newEvidence.id);
@@ -154,7 +168,7 @@ const replaceEvidence = async ({
         "evidence_id",
     );
     if (!remaining.length) {
-        await IDB.evidence.delete(IDBKeyRange.only(oldArtifact.id));
+        await deleteEvidenceRecord(oldArtifact.id);
         await removeEvidenceExamineTags(oldArtifact.id);
     }
 };
@@ -177,7 +191,7 @@ export const Files = ({
         setUploading(true);
         for (const file of files) {
             const data = await toBuffer(file);
-            const evidence: IDBEvidenceV2 = await deriveEvidence({
+            const evidence = await deriveEvidence({
                 name: file.name,
                 type: file.type,
                 data,
@@ -186,7 +200,7 @@ export const Files = ({
                 evidence_id: evidence.id,
                 requirement_id: requirementId,
             });
-            await IDB.evidence.put(evidence);
+            await putEvidence(evidence);
         }
         setUploading(false);
     };
@@ -278,7 +292,7 @@ export const EditEvidenceModal = ({
     onDelete,
     onClose,
 }: {
-    artifact: IDBEvidenceV2;
+    artifact: IDBEvidenceV3;
     /** When set, replacing shared evidence prompts for scope (this requirement
      *  vs everywhere); without it, changes apply everywhere. */
     requirementId?: string;
@@ -289,7 +303,6 @@ export const EditEvidenceModal = ({
     onClose: () => void;
 }) => {
     const isUrl = artifact.type === "url";
-    const currentUrl = isUrl ? new TextDecoder().decode(artifact.data) : "";
     const [currentBase, currentSuffix] = isUrl
         ? [artifact.filename, ""]
         : splitSuffix(artifact.filename);
@@ -298,8 +311,18 @@ export const EditEvidenceModal = ({
     const [name, setName] = useState(currentBase);
     // Once the user edits the name, stop auto-filling it from a picked file.
     const [nameDirty, setNameDirty] = useState(false);
-    const [url, setUrl] = useState(currentUrl);
+    const [url, setUrl] = useState("");
     const [file, setFile] = useState<File | null>(null);
+
+    // URL evidence stores the address as its payload; fetch it lazily and
+    // seed the field once, without clobbering anything already typed.
+    const urlPayload = useEvidenceData(isUrl ? artifact : null);
+    useEffect(() => {
+        if (urlPayload) {
+            const decoded = new TextDecoder().decode(urlPayload);
+            setUrl((current) => (current === "" ? decoded : current));
+        }
+    }, [urlPayload]);
     const [busy, setBusy] = useState(false);
     const nameInput = useRef<HTMLInputElement>(null);
 
@@ -485,7 +508,14 @@ export const EditEvidenceModal = ({
                 requirementId,
             });
         } else if (filename !== artifact.filename) {
-            await IDB.evidence.put({ ...artifact, filename });
+            // Metadata-only rename; construct explicitly so caller-side
+            // extras (e.g. the table's joined requirements) don't get stored.
+            await IDB.evidence.put({
+                id: artifact.id,
+                type: artifact.type,
+                bytes: artifact.bytes,
+                filename,
+            });
         }
         await onChanged();
         finish(onClose);
@@ -749,10 +779,10 @@ const Badge = ({
 }: {
     children: ReactNode;
     onDelete: () => Promise<boolean>;
-    artifact: IDBEvidenceV2;
+    artifact: IDBEvidenceV3;
     tagNames: string[];
     requirementId: string;
-    setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
+    setEvidence: Dispatch<SetStateAction<IDBEvidenceV3[]>>;
     readOnly?: boolean;
 }) => {
     const [editing, setEditing] = useState(false);
@@ -833,9 +863,9 @@ export const EvidenceBadge = ({
     requirementId,
     readOnly,
 }: {
-    artifact: IDBEvidenceV2;
-    evidence: IDBEvidenceV2[];
-    setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
+    artifact: IDBEvidenceV3;
+    evidence: IDBEvidenceV3[];
+    setEvidence: Dispatch<SetStateAction<IDBEvidenceV3[]>>;
     requirementId: string;
     readOnly?: boolean;
 }) => {
@@ -866,7 +896,7 @@ export const EvidenceBadge = ({
                         record.requirement_id,
                     ]);
                 }
-                await IDB.evidence.delete(IDBKeyRange.only(artifact.id));
+                await deleteEvidenceRecord(artifact.id);
                 await removeEvidenceExamineTags(artifact.id);
             } else {
                 await IDB.evidenceRequirements.delete([
@@ -884,7 +914,7 @@ export const EvidenceBadge = ({
             if (!shouldDelete) {
                 return false;
             }
-            await IDB.evidence.delete(IDBKeyRange.only(artifact.id));
+            await deleteEvidenceRecord(artifact.id);
             await IDB.evidenceRequirements.delete([artifact.id, requirementId]);
             await removeEvidenceExamineTags(artifact.id);
         }
@@ -925,8 +955,8 @@ export const EvidenceBadges = ({
     requirementId,
     readOnly,
 }: {
-    evidence: IDBEvidenceV2[];
-    setEvidence: Dispatch<SetStateAction<IDBEvidenceV2[]>>;
+    evidence: IDBEvidenceV3[];
+    setEvidence: Dispatch<SetStateAction<IDBEvidenceV3[]>>;
     requirementId: string;
     readOnly?: boolean;
 }) => {
@@ -935,7 +965,7 @@ export const EvidenceBadges = ({
     // so the three groups read separately. Sort is stable, so order within a
     // group is preserved.
     const taggedIds = useTaggedEvidenceIds();
-    const rank = (artifact: IDBEvidenceV2) =>
+    const rank = (artifact: IDBEvidenceV3) =>
         taggedIds.has(artifact.id) ? 0 : artifact.type === "url" ? 1 : 2;
     const sorted = [...(evidence ?? [])].sort((a, b) => rank(a) - rank(b));
 
@@ -1025,13 +1055,13 @@ function pasteImageFromClipboard(requirementId, setEvidence, setUploading) {
             setUploading(true);
             for (const blob of blobs) {
                 const data = await toBuffer(blob);
-                const evidence: IDBEvidenceV2 = await deriveEvidence({
+                const evidence = await deriveEvidence({
                     type: blob.type,
                     data,
                 });
                 const [existing] = await IDB.evidence.getAll(evidence.id);
                 if (!existing) {
-                    await IDB.evidence.put(evidence);
+                    await putEvidence(evidence);
                 }
                 await IDB.evidenceRequirements.put({
                     evidence_id: evidence.id,
@@ -1054,7 +1084,7 @@ export const Evidence = ({
     requirementId: string;
     locked?: boolean;
 }) => {
-    const [evidence, setEvidence] = useState<IDBEvidenceV2[]>([]);
+    const [evidence, setEvidence] = useState<IDBEvidenceV3[]>([]);
     const [uploading, setUploading] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
     const { addNotification } = useNotification();
@@ -1065,7 +1095,7 @@ export const Evidence = ({
                 acc[artifact.id] = artifact;
                 return acc;
             },
-            {} as Record<string, IDBEvidenceV2>,
+            {} as Record<string, IDBEvidenceV3>,
         );
     }, [evidence]);
 
@@ -1078,7 +1108,7 @@ export const Evidence = ({
         }
         const url = new URL(href);
         const data = new TextEncoder().encode(href);
-        const evidence: IDBEvidenceV2 = await deriveEvidence({
+        const evidence = await deriveEvidence({
             name: url.host || url.href,
             type: "url",
             data: data.buffer,
@@ -1087,7 +1117,7 @@ export const Evidence = ({
             evidence_id: evidence.id,
             requirement_id: requirementId,
         });
-        await IDB.evidence.put(evidence);
+        await putEvidence(evidence);
         formRef.current?.reset();
     };
 

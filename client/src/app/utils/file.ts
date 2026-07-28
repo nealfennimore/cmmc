@@ -1,8 +1,7 @@
 "use client";
-import { IDBEvidenceV2 } from "@/app/db";
 import { saveFile } from "./tauri";
 
-export const toFSName = (artifact: IDBEvidenceV2) =>
+export const toFSName = (artifact: { id: string; filename: string }) =>
     `${artifact.id}-${artifact.filename}`;
 
 /**
@@ -264,7 +263,8 @@ export const isZip = (type: string) => {
     }
 };
 
-export const embeddable = (artifact: IDBEvidenceV2) => isImage(artifact.type);
+export const embeddable = (artifact: { type: string }) =>
+    isImage(artifact.type);
 
 const isText = (type: string) => {
     switch (type) {
@@ -281,4 +281,5 @@ const isText = (type: string) => {
     }
 };
 
-export const snippetable = (artifact: IDBEvidenceV2) => isText(artifact.type);
+export const snippetable = (artifact: { type: string }) =>
+    isText(artifact.type);

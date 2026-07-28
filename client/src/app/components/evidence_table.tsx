@@ -13,8 +13,9 @@ import {
 } from "@/app/components/table";
 import { toPath, useRevisionContext } from "@/app/context/revision";
 import {
+    deleteEvidence,
     IDB,
-    IDBEvidenceV2,
+    IDBEvidenceV3,
     removeEvidenceExamineTags,
     TABLE_CHANGED_EVENT,
 } from "@/app/db";
@@ -34,7 +35,7 @@ interface Requirements {
     attachedAs: string[];
 }
 
-interface EvidenceWithRequirements extends IDBEvidenceV2, Requirements {}
+interface EvidenceWithRequirements extends IDBEvidenceV3, Requirements {}
 
 async function fetchEvidence(): Promise<EvidenceWithRequirements[]> {
     const evidenceRequirementRecords = await IDB.evidenceRequirements.getAll();
@@ -236,7 +237,7 @@ export const EvidenceTable = () => {
                 link.requirement_id,
             ]);
         }
-        await IDB.evidence.delete(IDBKeyRange.only(artifact.id));
+        await deleteEvidence(artifact.id);
         await removeEvidenceExamineTags(artifact.id);
         await refresh();
         return true;

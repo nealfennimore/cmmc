@@ -1,7 +1,18 @@
 "use client";
-import { IDBEvidenceV2 } from "@/app/db";
 import { parseCSV } from "@/app/utils/csv";
 import { isCSV, isExcel } from "@/app/utils/file";
+
+/** The slice of an artifact the sheet loaders need; `data` is optional for
+ *  kind checks made before the payload has been fetched. */
+interface SheetSource {
+    type: string;
+    data?: ArrayBuffer;
+}
+
+/** A source whose payload has been fetched. */
+interface SheetSourceWithData extends SheetSource {
+    data: ArrayBuffer;
+}
 
 export interface Sheet {
     name?: string;
@@ -43,7 +54,7 @@ const cellText = (value: unknown): string => {
 // compound files (.xls) start D0 CF 11 E0…, zip containers (.xlsx) start
 // "PK", and anything else under that type is treated as CSV text.
 const OLE_MAGIC = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
-export const sheetKind = (artifact: IDBEvidenceV2): "csv" | "xlsx" | null => {
+export const sheetKind = (artifact: SheetSource): "csv" | "xlsx" | null => {
     if (isCSV(artifact.type)) {
         return "csv";
     }
@@ -52,6 +63,12 @@ export const sheetKind = (artifact: IDBEvidenceV2): "csv" | "xlsx" | null => {
     }
     if (artifact.type !== "application/vnd.ms-excel") {
         return null;
+    }
+    // Without the payload (metadata-only kind checks, e.g. preview gating),
+    // assume CSV — the common case for this type. Real legacy .xls binaries
+    // are caught once the bytes arrive and fall to "preview unavailable".
+    if (!artifact.data) {
+        return "csv";
     }
     const head = new Uint8Array(artifact.data.slice(0, 8));
     if (OLE_MAGIC.every((byte, i) => head[i] === byte)) {
@@ -65,7 +82,9 @@ export const sheetKind = (artifact: IDBEvidenceV2): "csv" | "xlsx" | null => {
 
 // CSV parses locally; .xlsx goes through exceljs, loaded on demand the first
 // time a spreadsheet preview renders (same pattern as pdf.js — never a CDN).
-export const loadSheets = async (artifact: IDBEvidenceV2): Promise<Sheet[]> => {
+export const loadSheets = async (
+    artifact: SheetSourceWithData,
+): Promise<Sheet[]> => {
     if (sheetKind(artifact) === "csv") {
         return [{ rows: parseCSV(new TextDecoder().decode(artifact.data)) }];
     }

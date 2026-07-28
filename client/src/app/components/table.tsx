@@ -337,7 +337,14 @@ function TableHeader({
     );
 }
 
-function TableRow({ columns, classNames, onClick }: TableRowProps) {
+// Memoized: filtering and sorting rebuild the rows array but reuse the row
+// objects, so unchanged rows skip re-rendering (each carries hover-card and
+// portal machinery, which adds up across hundreds of artifacts).
+const TableRow = React.memo(function TableRow({
+    columns,
+    classNames,
+    onClick,
+}: TableRowProps) {
     return (
         <tr className="border-b border-border bg-card transition-colors hover:bg-secondary">
             {columns.map((Element, idx) => (
@@ -354,7 +361,7 @@ function TableRow({ columns, classNames, onClick }: TableRowProps) {
             ))}
         </tr>
     );
-}
+});
 
 interface THProps {
     text: string;
@@ -395,6 +402,12 @@ export const defaultFilter = (search: string) => (value: string) =>
     value.toLocaleLowerCase().includes(search.toLocaleLowerCase());
 
 type Priority = number;
+
+// Rows render in windows of this size: enough to fill any viewport, small
+// enough that a table of thousands mounts instantly. Scrolling near the
+// bottom grows the window (see the sentinel below); filtering and sorting
+// always operate on the full row set before the window applies.
+const ROW_WINDOW = 60;
 
 const processRows = ({
     formRef,
@@ -512,6 +525,33 @@ export function Table({
     // (uncontrolled text inputs and the multi-selects' internal state) to
     // pristine — the simplest way to reset them all at once.
     const [resetNonce, setResetNonce] = useState(0);
+    const [visibleCount, setVisibleCount] = useState(ROW_WINDOW);
+    const sentinelRef = useRef<HTMLTableRowElement>(null);
+
+    // Grow the window when the sentinel row nears the viewport. Recreated
+    // whenever the count changes so the fresh observe() fires immediately if
+    // the sentinel is still in range — chunks cascade until the viewport is
+    // filled without waiting for another scroll event.
+    useEffect(() => {
+        const sentinel = sentinelRef.current;
+        if (!sentinel) {
+            return;
+        }
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    setVisibleCount((count) =>
+                        Math.min(count + ROW_WINDOW, rows.length),
+                    );
+                }
+            },
+            // Start rendering the next window well before it scrolls into
+            // view, so fast scrolling doesn't hit a blank gap.
+            { rootMargin: "1000px 0px" },
+        );
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [rows, visibleCount]);
 
     const handleChange = () => {
         const nextRows = processRows({
@@ -523,6 +563,9 @@ export function Table({
             filters,
         });
         setRows(nextRows);
+        // Filter/sort changes jump back to the top of the result set, so the
+        // window resets with them.
+        setVisibleCount(ROW_WINDOW);
 
         // Count columns with an active filter so the toggle can flag them
         // even while the filter row is collapsed. Multi-select columns can
@@ -645,9 +688,20 @@ export function Table({
                     )}
                 </thead>
                 <tbody>
-                    {rows.map((rowProps, index) => (
+                    {rows.slice(0, visibleCount).map((rowProps, index) => (
                         <TableRow key={index} {...rowProps} />
                     ))}
+                    {visibleCount < rows.length && (
+                        <tr ref={sentinelRef}>
+                            <td
+                                colSpan={tableHeaders.length}
+                                className="px-6 py-4 text-xs text-muted-foreground"
+                            >
+                                {visibleCount} of {rows.length} rows — scroll
+                                for more
+                            </td>
+                        </tr>
+                    )}
                 </tbody>
             </table>
         </>

@@ -6,7 +6,12 @@ import {
     IconPaperclip,
 } from "@/app/components/icons";
 import { viewFile } from "@/app/components/security_requirements/utils";
-import { IDB, IDBEvidenceV2 } from "@/app/db";
+import {
+    getEvidenceData,
+    IDB,
+    IDBEvidenceV3,
+    IDBEvidenceWithData,
+} from "@/app/db";
 import { useHoverCard } from "@/app/hooks/hoverCard";
 import {
     embeddable,
@@ -66,11 +71,41 @@ export const EvidenceState = ({ evidence, size }: EvidenceStateProps) => {
 
 // Formats the browser can't render but the search extractor already reads
 // (office documents) — previewed via their stored extracted text instead.
-const hasExtractedPreview = (artifact: IDBEvidenceV2) =>
+const hasExtractedPreview = (artifact: { type: string }) =>
     isDocx(artifact.type) ||
     isPptx(artifact.type) ||
     isOpenDocument(artifact.type) ||
     isRTF(artifact.type);
+
+/**
+ * Lazily fetch an artifact's payload from evidence_data. Evidence listings
+ * carry metadata only; previews and opens mount on demand, so the bytes are
+ * read exactly when needed and released with the component. Pass null to
+ * skip the fetch (e.g. office previews, which read extracted text instead).
+ */
+export const useEvidenceData = (
+    artifact: { id: string } | null,
+): ArrayBuffer | null => {
+    const [data, setData] = useState<ArrayBuffer | null>(null);
+    const id = artifact?.id ?? null;
+
+    useEffect(() => {
+        if (!id) {
+            setData(null);
+            return;
+        }
+        let active = true;
+        getEvidenceData(id).then(
+            (payload) => active && setData(payload),
+            () => active && setData(null),
+        );
+        return () => {
+            active = false;
+        };
+    }, [id]);
+
+    return data;
+};
 
 /**
  * Plain-text preview for office documents, read from the evidence_text store
@@ -83,7 +118,7 @@ const ExtractedTextPreview = ({
     maxChars,
     className,
 }: {
-    artifact: IDBEvidenceV2;
+    artifact: IDBEvidenceV3;
     /** Cap for the hover card; omit for the full text in the modal. */
     maxChars?: number;
     className?: string;
@@ -140,7 +175,7 @@ const PdfPages = ({
     width,
     maxPages,
 }: {
-    artifact: IDBEvidenceV2;
+    artifact: IDBEvidenceWithData;
     width: number;
     maxPages?: number;
 }) => {
@@ -229,7 +264,7 @@ const PreviewCard = ({
     onMouseEnter,
     onMouseLeave,
 }: {
-    artifact: IDBEvidenceV2;
+    artifact: IDBEvidenceV3;
     position: { top: number; left: number };
     onExpand: () => void;
     onMouseEnter: () => void;
@@ -239,25 +274,29 @@ const PreviewCard = ({
     const isPdf = isPDF(artifact.type);
     const isSheet = sheetKind(artifact) !== null;
     const isOffice = hasExtractedPreview(artifact);
+    // Office previews read extracted text; everything else needs the bytes,
+    // fetched only while the card is mounted (i.e. actually hovered).
+    const data = useEvidenceData(isOffice ? null : artifact);
+    const withData = data ? { ...artifact, data } : null;
     const [imageSrc, setImageSrc] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!isImg) {
+        if (!isImg || !data) {
             return;
         }
         const url = URL.createObjectURL(
-            new Blob([artifact.data], { type: artifact.type }),
+            new Blob([data], { type: artifact.type }),
         );
         setImageSrc(url);
         return () => URL.revokeObjectURL(url);
-    }, [artifact, isImg]);
+    }, [artifact.type, data, isImg]);
 
     // A truncated slice can split a multibyte character; TextDecoder swaps
     // in a replacement character, which is fine for a preview.
     const snippet =
-        isImg || isPdf || isSheet || isOffice
+        isImg || isPdf || isSheet || isOffice || !data
             ? null
-            : new TextDecoder().decode(artifact.data.slice(0, 500));
+            : new TextDecoder().decode(data.slice(0, 500));
 
     return createPortal(
         <span
@@ -273,28 +312,7 @@ const PreviewCard = ({
             style={position}
             className="fixed z-50 flex w-max max-w-72 -translate-y-full cursor-zoom-in flex-col gap-1 rounded-md border border-border bg-card p-2 text-left font-normal normal-case shadow-md"
         >
-            {isImg ? (
-                imageSrc && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={imageSrc}
-                        alt={artifact.filename}
-                        className="max-h-48 max-w-full rounded object-contain"
-                    />
-                )
-            ) : isPdf ? (
-                <span className="block max-h-48 w-64 overflow-hidden">
-                    <PdfPages artifact={artifact} width={256} maxPages={1} />
-                </span>
-            ) : isSheet ? (
-                <span className="block max-h-48 overflow-hidden">
-                    <SheetPreview
-                        artifact={artifact}
-                        maxRows={10}
-                        firstSheetOnly
-                    />
-                </span>
-            ) : isOffice ? (
+            {isOffice ? (
                 <>
                     <span className="block max-h-48 w-64 overflow-hidden whitespace-pre-wrap break-words text-xs font-normal text-foreground">
                         <ExtractedTextPreview
@@ -307,6 +325,31 @@ const PreviewCard = ({
                         document.
                     </span>
                 </>
+            ) : !withData ? (
+                <span className="text-xs font-normal text-muted-foreground">
+                    Loading preview…
+                </span>
+            ) : isImg ? (
+                imageSrc && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        src={imageSrc}
+                        alt={artifact.filename}
+                        className="max-h-48 max-w-full rounded object-contain"
+                    />
+                )
+            ) : isPdf ? (
+                <span className="block max-h-48 w-64 overflow-hidden">
+                    <PdfPages artifact={withData} width={256} maxPages={1} />
+                </span>
+            ) : isSheet ? (
+                <span className="block max-h-48 overflow-hidden">
+                    <SheetPreview
+                        artifact={withData}
+                        maxRows={10}
+                        firstSheetOnly
+                    />
+                </span>
             ) : (
                 <span className="block max-h-48 overflow-hidden whitespace-pre-wrap break-all font-mono text-xs font-normal text-foreground">
                     {snippet}
@@ -316,8 +359,7 @@ const PreviewCard = ({
                 className="text-xs font-normal text-muted-foreground"
                 title={artifact.type}
             >
-                {formatBytes(artifact.data.byteLength)} |{" "}
-                {mimeLabel(artifact.type)}
+                {formatBytes(artifact.bytes)} | {mimeLabel(artifact.type)}
             </span>
         </span>,
         document.body,
@@ -376,7 +418,7 @@ const SheetPreview = ({
     maxRows,
     firstSheetOnly,
 }: {
-    artifact: IDBEvidenceV2;
+    artifact: IDBEvidenceWithData;
     maxRows?: number;
     firstSheetOnly?: boolean;
 }) => {
@@ -427,7 +469,7 @@ const SheetPreview = ({
 
 // Artifacts the previews can render (URL evidence and types like zip are
 // excluded). Office documents preview as their extracted text.
-const isPreviewable = (artifact: IDBEvidenceV2) =>
+const isPreviewable = (artifact: IDBEvidenceV3) =>
     embeddable(artifact) ||
     snippetable(artifact) ||
     isPDF(artifact.type) ||
@@ -447,8 +489,8 @@ const ExpandedPreview = ({
     artifacts,
     onClose,
 }: {
-    artifact: IDBEvidenceV2;
-    artifacts?: IDBEvidenceV2[];
+    artifact: IDBEvidenceV3;
+    artifacts?: IDBEvidenceV3[];
     onClose: () => void;
 }) => {
     const list = artifacts?.length ? artifacts : [artifact];
@@ -461,19 +503,23 @@ const ExpandedPreview = ({
     const isPdf = isPDF(current.type);
     const isSheet = sheetKind(current) !== null;
     const isOffice = hasExtractedPreview(current);
+    // Paging re-fetches per artifact; the previous payload is released with
+    // its preview.
+    const data = useEvidenceData(isOffice ? null : current);
+    const withData = data ? { ...current, data } : null;
     const [imageSrc, setImageSrc] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!isImg) {
+        if (!isImg || !data) {
             setImageSrc(null);
             return;
         }
         const url = URL.createObjectURL(
-            new Blob([current.data], { type: current.type }),
+            new Blob([data], { type: current.type }),
         );
         setImageSrc(url);
         return () => URL.revokeObjectURL(url);
-    }, [current, isImg]);
+    }, [current.type, data, isImg]);
 
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
@@ -489,9 +535,9 @@ const ExpandedPreview = ({
     }, [list.length]);
 
     const text =
-        isImg || isPdf || isSheet || isOffice
+        isImg || isPdf || isSheet || isOffice || !data
             ? null
-            : new TextDecoder().decode(current.data);
+            : new TextDecoder().decode(data);
 
     return createPortal(
         <span
@@ -543,7 +589,16 @@ const ExpandedPreview = ({
                             )}
                         </div>
                         <div className="mt-3 flex max-h-[80vh] justify-center overflow-auto">
-                            {isImg ? (
+                            {isOffice ? (
+                                <ExtractedTextPreview
+                                    artifact={current}
+                                    className="block w-full max-w-3xl whitespace-pre-wrap break-words text-sm text-foreground"
+                                />
+                            ) : !withData ? (
+                                <span className="text-xs font-normal text-muted-foreground">
+                                    Loading preview…
+                                </span>
+                            ) : isImg ? (
                                 imageSrc && (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
@@ -558,16 +613,11 @@ const ExpandedPreview = ({
                                 // otherwise pile up under the next document.
                                 <PdfPages
                                     key={current.id}
-                                    artifact={current}
+                                    artifact={withData}
                                     width={960}
                                 />
                             ) : isSheet ? (
-                                <SheetPreview artifact={current} />
-                            ) : isOffice ? (
-                                <ExtractedTextPreview
-                                    artifact={current}
-                                    className="block w-full max-w-3xl whitespace-pre-wrap break-words text-sm text-foreground"
-                                />
+                                <SheetPreview artifact={withData} />
                             ) : (
                                 <pre className="w-full whitespace-pre-wrap break-all font-mono text-xs text-foreground">
                                     {text}
@@ -586,7 +636,7 @@ const ExpandedPreview = ({
                             className="mt-3 text-xs text-muted-foreground"
                             title={current.type}
                         >
-                            {formatBytes(current.data.byteLength)} |{" "}
+                            {formatBytes(current.bytes)} |{" "}
                             {mimeLabel(current.type)}
                         </p>
                     </div>
@@ -603,10 +653,10 @@ export const FileBadge = ({
     hideIcon,
     className = "text-primary hover:underline",
 }: {
-    artifact: IDBEvidenceV2;
+    artifact: IDBEvidenceV3;
     /** Evidence in the same view; the expanded preview's arrows page through
      *  its previewable members. */
-    siblings?: IDBEvidenceV2[];
+    siblings?: IDBEvidenceV3[];
     hideIcon?: boolean;
     className?: string;
 }) => {
@@ -623,24 +673,24 @@ export const FileBadge = ({
             title={
                 previewable
                     ? undefined
-                    : `${formatBytes(artifact.data.byteLength)} | ${mimeLabel(artifact.type)}`
+                    : `${formatBytes(artifact.bytes)} | ${mimeLabel(artifact.type)}`
             }
             onMouseEnter={(e) => previewable && preview.show(e.currentTarget)}
             onMouseLeave={preview.scheduleHide}
             onFocus={(e) => previewable && preview.show(e.currentTarget)}
             onBlur={preview.scheduleHide}
             onClick={async () => {
-                // In the desktop shell, open via the OS default app; the blob
-                // URL in viewFile is the browser fallback.
-                if (
-                    await openFileInSystemViewer(
-                        artifact.filename,
-                        artifact.data,
-                    )
-                ) {
+                // Bytes are fetched only when the file is actually opened.
+                const data = await getEvidenceData(artifact.id);
+                if (!data) {
                     return;
                 }
-                viewFile(artifact);
+                // In the desktop shell, open via the OS default app; the blob
+                // URL in viewFile is the browser fallback.
+                if (await openFileInSystemViewer(artifact.filename, data)) {
+                    return;
+                }
+                viewFile({ ...artifact, data });
             }}
         >
             {!hideIcon && Icon}
@@ -675,13 +725,19 @@ export const LinkBadge = ({
     hideIcon,
     className = "text-primary hover:underline",
 }: {
-    artifact: IDBEvidenceV2;
+    artifact: IDBEvidenceV3;
     hideIcon?: boolean;
     className?: string;
 }) => {
-    const url = new TextDecoder().decode(artifact.data);
+    // URL evidence stores the address as its payload; tiny, but still
+    // fetched lazily so listings stay metadata-only.
+    const data = useEvidenceData(artifact);
+    const url = data ? new TextDecoder().decode(data) : "";
 
     const onClick = async () => {
+        if (!url) {
+            return;
+        }
         // In the desktop shell this opens the system browser; the detached
         // anchor below is the browser fallback.
         if (await openExternal(url)) {

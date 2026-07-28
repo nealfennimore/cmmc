@@ -1,5 +1,5 @@
 "use client";
-import { IDB, IDBEvidenceV2 } from "@/app/db";
+import { getAllEvidenceWithData, IDBEvidenceWithData } from "@/app/db";
 import { saveBlob, toFSName } from "@/app/utils/file";
 import { saveFilesToDirectory } from "@/app/utils/tauri";
 import Link from "next/link";
@@ -8,10 +8,10 @@ import { confirm } from "./confirm";
 import { withLoader } from "./loader";
 import { menuItemClasses } from "./ui";
 
-const toFile = (artifact: IDBEvidenceV2) =>
+const toFile = (artifact: IDBEvidenceWithData) =>
     new File([artifact.data], artifact.filename, { type: artifact.type });
 
-const exportEvidence = async (artifacts: IDBEvidenceV2[]) => {
+const exportEvidence = async (artifacts: IDBEvidenceWithData[]) => {
     // In the desktop shell, write the whole set into one chosen folder rather
     // than firing a save dialog per file.
     if (
@@ -39,7 +39,9 @@ const exportEvidence = async (artifacts: IDBEvidenceV2[]) => {
 // stay context-free.
 export const exportAllEvidenceFiles = () =>
     withLoader("Downloading evidence files…", async () => {
-        const evidence = await IDB.evidence.getAll();
+        // A bulk download genuinely needs every payload; the join is scoped
+        // to this flow instead of living on the evidence listing.
+        const evidence = await getAllEvidenceWithData();
         await exportEvidence(
             evidence.filter((artifact) => artifact.type !== "url"),
         );
