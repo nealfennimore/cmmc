@@ -252,28 +252,32 @@ export const EvidenceTable = () => {
                 text: "Filename",
                 filterable: true,
             },
+            // Fixed table layout: these widths define their whole column;
+            // Filename (no width) absorbs the remaining space.
             {
                 text: "Type",
                 filterable: true,
                 filterKind: "select" as const,
-                className: "min-w-[195px] max-md:hidden",
+                className: "w-[195px] max-md:hidden",
             },
             {
                 text: "Requirements",
                 filterable: true,
                 filterKind: "select" as const,
-                className: "min-w-[250px] max-w-[250px]",
+                className: "w-[250px]",
             },
             {
                 text: "Attached as",
                 filterable: true,
                 filterKind: "select" as const,
-                className: "min-w-[120px]",
+                className: "w-[120px]",
             },
+            // Wide enough that the edit button stays comfortably clickable
+            // inside the scroll viewport's scrollbar gutter.
             {
                 text: "",
                 filterable: false,
-                className: "w-10",
+                className: "w-16",
             },
         ],
         [],
@@ -425,7 +429,9 @@ export const EvidenceTable = () => {
                         key={artifact.id}
                         type="button"
                         onClick={() => setEditing(artifact)}
-                        className="text-muted-foreground transition-colors hover:text-foreground"
+                        // Padded hit area (with the visual offset cancelled)
+                        // so the target is bigger than the pencil itself.
+                        className="-m-2 rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                         aria-label="Edit evidence"
                     >
                         <svg
@@ -472,7 +478,10 @@ export const EvidenceTable = () => {
                         aria-label="Search evidence content"
                     />
                 </div>
-                <div className="relative overflow-x-auto rounded-lg border border-border shadow-sm">
+                {/* The table manages its own bounded scroll viewport (both
+                    axes); this wrapper just draws the frame and clips the
+                    corners. */}
+                <div className="relative overflow-hidden rounded-lg border border-border shadow-sm">
                     <Table
                         sorters={sorters}
                         filters={filters}

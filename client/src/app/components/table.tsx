@@ -1,7 +1,13 @@
 "use client";
 import { debounce } from "./security_requirements/utils";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { IconChevronDown, IconFunnel } from "./icons";
 import { Input } from "./ui";
@@ -346,12 +352,15 @@ const TableRow = React.memo(function TableRow({
     onClick,
 }: TableRowProps) {
     return (
-        <tr className="border-b border-border bg-card transition-colors hover:bg-secondary">
+        <tr
+            data-virtual-row
+            className="border-b border-border bg-card transition-colors hover:bg-secondary"
+        >
             {columns.map((Element, idx) => (
                 <td
                     key={idx}
                     scope="row"
-                    className={`px-6 py-4 whitespace-pre-line ${
+                    className={`px-6 py-4 whitespace-pre-line break-words ${
                         classNames?.[idx] ?? ""
                     }`}
                     onClick={onClick}
@@ -403,11 +412,20 @@ export const defaultFilter = (search: string) => (value: string) =>
 
 type Priority = number;
 
-// Rows render in windows of this size: enough to fill any viewport, small
-// enough that a table of thousands mounts instantly. Scrolling near the
-// bottom grows the window (see the sentinel below); filtering and sorting
-// always operate on the full row set before the window applies.
-const ROW_WINDOW = 60;
+// The table scrolls inside its own bounded viewport and only the rows that
+// intersect it (plus this overscan on each side) are mounted; spacer rows
+// stand in for everything above and below. Row heights vary (wrapping
+// filenames, requirement chips), so positions use a running average measured
+// from whatever is currently rendered — the scrollbar mapping is
+// approximate, which is the standard trade for variable-height
+// virtualization. Filtering and sorting always operate on the full row set
+// before the window applies.
+const OVERSCAN_ROWS = 8;
+const DEFAULT_ROW_HEIGHT = 53;
+const INITIAL_RANGE = { start: 0, end: 40 };
+/** Never shrink the table viewport below this, however far down the page
+ *  the table starts. */
+const MIN_VIEWPORT_HEIGHT = 280;
 
 const processRows = ({
     formRef,
@@ -525,33 +543,90 @@ export function Table({
     // (uncontrolled text inputs and the multi-selects' internal state) to
     // pristine — the simplest way to reset them all at once.
     const [resetNonce, setResetNonce] = useState(0);
-    const [visibleCount, setVisibleCount] = useState(ROW_WINDOW);
-    const sentinelRef = useRef<HTMLTableRowElement>(null);
+    const [range, setRange] = useState(INITIAL_RANGE);
+    // The scroll viewport's max height, sized to the space between the
+    // table's top edge and the bottom of the window so the stats, search,
+    // and filter controls above stay in view while rows scroll.
+    const [viewportHeight, setViewportHeight] = useState<number>();
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const tbodyRef = useRef<HTMLTableSectionElement>(null);
+    const rowHeightRef = useRef(DEFAULT_ROW_HEIGHT);
+    // Measurement may trigger at most one window recompute per external
+    // event (scroll, resize, data change). Without this cap, adjusting the
+    // estimate re-renders a different row slice whose average differs,
+    // which adjusts the estimate again — an unbounded update loop when row
+    // heights vary.
+    const heightCorrections = useRef(1);
 
-    // Grow the window when the sentinel row nears the viewport. Recreated
-    // whenever the count changes so the fresh observe() fires immediately if
-    // the sentinel is still in range — chunks cascade until the viewport is
-    // filled without waiting for another scroll event.
-    useEffect(() => {
-        const sentinel = sentinelRef.current;
-        if (!sentinel) {
+    const updateRange = () => {
+        const viewport = scrollRef.current;
+        if (!viewport) {
             return;
         }
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries.some((entry) => entry.isIntersecting)) {
-                    setVisibleCount((count) =>
-                        Math.min(count + ROW_WINDOW, rows.length),
-                    );
-                }
-            },
-            // Start rendering the next window well before it scrolls into
-            // view, so fast scrolling doesn't hit a blank gap.
-            { rootMargin: "1000px 0px" },
+        const rowHeight = rowHeightRef.current;
+        const start = Math.max(
+            0,
+            Math.floor(viewport.scrollTop / rowHeight) - OVERSCAN_ROWS,
         );
-        observer.observe(sentinel);
-        return () => observer.disconnect();
-    }, [rows, visibleCount]);
+        const visible =
+            Math.ceil(viewport.clientHeight / rowHeight) + OVERSCAN_ROWS * 2;
+        setRange((current) => {
+            const next = {
+                start,
+                end: Math.min(rows.length, start + visible),
+            };
+            return next.start === current.start && next.end === current.end
+                ? current
+                : next;
+        });
+    };
+
+    // Refine the row-height estimate from the rows actually on screen; when
+    // it drifts (e.g. a filter leaves only tall rows), recompute the window
+    // so the spacers stay honest — but at most once per external event (see
+    // heightCorrections above).
+    useLayoutEffect(() => {
+        const rendered = tbodyRef.current?.querySelectorAll(
+            "tr[data-virtual-row]",
+        );
+        if (!rendered?.length) {
+            return;
+        }
+        let total = 0;
+        rendered.forEach((row) => {
+            total += (row as HTMLElement).offsetHeight;
+        });
+        const average = total / rendered.length;
+        if (
+            heightCorrections.current > 0 &&
+            Math.abs(average - rowHeightRef.current) > 4
+        ) {
+            heightCorrections.current -= 1;
+            rowHeightRef.current = average;
+            updateRange();
+        }
+    });
+
+    // Fit the viewport to the window: measured once at mount and again on
+    // resize. maxHeight (not height) so short tables don't leave a void.
+    useEffect(() => {
+        const measure = () => {
+            const top =
+                scrollRef.current?.getBoundingClientRect().top ?? 0;
+            setViewportHeight(
+                Math.max(
+                    MIN_VIEWPORT_HEIGHT,
+                    window.innerHeight - top - 16,
+                ),
+            );
+            heightCorrections.current = 1;
+            updateRange();
+        };
+        measure();
+        window.addEventListener("resize", measure);
+        return () => window.removeEventListener("resize", measure);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleChange = () => {
         const nextRows = processRows({
@@ -564,8 +639,13 @@ export function Table({
         });
         setRows(nextRows);
         // Filter/sort changes jump back to the top of the result set, so the
-        // window resets with them.
-        setVisibleCount(ROW_WINDOW);
+        // scroll position and window reset with them.
+        scrollRef.current?.scrollTo({ top: 0 });
+        heightCorrections.current = 1;
+        setRange({
+            ...INITIAL_RANGE,
+            end: Math.min(nextRows.length, INITIAL_RANGE.end),
+        });
 
         // Count columns with an active filter so the toggle can flag them
         // even while the filter row is collapsed. Multi-select columns can
@@ -633,11 +713,24 @@ export function Table({
                     </button>
                 </div>
             )}
-            <table
-                className="w-full text-left text-sm text-foreground rtl:text-right"
-                onChange={debouncedHandleChange}
+            <div
+                ref={scrollRef}
+                onScroll={() => {
+                    heightCorrections.current = 1;
+                    updateRange();
+                }}
+                style={{ maxHeight: viewportHeight }}
+                className="overflow-auto"
             >
-                <thead className="border-b border-border bg-secondary text-xs uppercase text-muted-foreground">
+                <table
+                    // Fixed layout: column widths come from the header cells
+                    // alone, so they can't fluctuate as virtualization swaps
+                    // which rows are mounted. The min width keeps narrow
+                    // screens x-scrolling instead of crushing the columns.
+                    className="w-full min-w-[640px] table-fixed text-left text-sm text-foreground rtl:text-right"
+                    onChange={debouncedHandleChange}
+                >
+                    <thead className="sticky top-0 z-10 border-b border-border bg-secondary text-xs uppercase text-muted-foreground">
                     <tr>
                         {tableHeaders.map((headerProps, index) => (
                             <TableHeader
@@ -686,24 +779,42 @@ export function Table({
                             ))}
                         </tr>
                     )}
-                </thead>
-                <tbody>
-                    {rows.slice(0, visibleCount).map((rowProps, index) => (
-                        <TableRow key={index} {...rowProps} />
-                    ))}
-                    {visibleCount < rows.length && (
-                        <tr ref={sentinelRef}>
-                            <td
-                                colSpan={tableHeaders.length}
-                                className="px-6 py-4 text-xs text-muted-foreground"
-                            >
-                                {visibleCount} of {rows.length} rows — scroll
-                                for more
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody ref={tbodyRef}>
+                        {(() => {
+                            const end = Math.min(range.end, rows.length);
+                            const start = Math.min(range.start, end);
+                            const rowHeight = rowHeightRef.current;
+                            const topPad = start * rowHeight;
+                            const bottomPad = (rows.length - end) * rowHeight;
+                            return (
+                                <>
+                                    {topPad > 0 && (
+                                        <tr
+                                            aria-hidden
+                                            style={{ height: topPad }}
+                                        />
+                                    )}
+                                    {rows
+                                        .slice(start, end)
+                                        .map((rowProps, index) => (
+                                            <TableRow
+                                                key={start + index}
+                                                {...rowProps}
+                                            />
+                                        ))}
+                                    {bottomPad > 0 && (
+                                        <tr
+                                            aria-hidden
+                                            style={{ height: bottomPad }}
+                                        />
+                                    )}
+                                </>
+                            );
+                        })()}
+                    </tbody>
+                </table>
+            </div>
         </>
     );
 }
