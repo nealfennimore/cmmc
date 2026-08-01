@@ -1,7 +1,7 @@
 "use client";
 import { useManifestContext } from "@/app/context/manifest";
 import { toPath, useRevisionContext } from "@/app/context/revision";
-import { isFreeTier, isLockedRequirement, isUnlocked } from "@/app/utils/tier";
+import { isFreeTier, isLockedRequirement } from "@/app/utils/tier";
 import Link from "next/link";
 import { useEvidenceCounts } from "../hooks/evidence";
 import { useGlobalStatus } from "../hooks/status";
@@ -10,7 +10,7 @@ import { IconInfo, IconLock } from "./icons";
 import { Popover } from "./popover";
 import { Status, StatusCellClasses, StatusLabel } from "./status";
 import { Heading, menuItemClasses } from "./ui";
-import { LockedBadge, UpgradeLink } from "./upgrade_cta";
+import { UpgradeLink } from "./upgrade_cta";
 
 const LEGEND: Status[] = [
     Status.NOT_STARTED,
@@ -124,12 +124,6 @@ export const Heatmap = () => {
                                 title={family.title}
                             >
                                 {family.element_identifier}
-                                {isFreeTier() &&
-                                    !requirements.some((requirement) =>
-                                        isUnlocked(
-                                            requirement.element_identifier,
-                                        ),
-                                    ) && <LockedBadge />}
                             </Link>
                             <ul className="flex flex-wrap gap-2">
                                 {requirements.map((requirement) => {
