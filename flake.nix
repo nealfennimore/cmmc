@@ -136,10 +136,10 @@
         # macOS machine with Nix still gets its files from the store.
         modelWeights = weightsTree "cmmc-model-weights-${appVersion}" pinnedModels;
         # What the Linux desktop package actually bundles: bundlePlatforms
-        # absent or containing "linux". Every Llama entry carries an empty
-        # list — installers ship only the lite model (GitHub caps release
-        # assets below 2 GiB), and users add a Llama through the verified
-        # download/import (docs/model-download-plan.md).
+        # absent or containing "linux". Every entry carries an empty list:
+        # installers ship no model weights (GitHub caps release assets below
+        # 2 GiB), and users add a model through the verified download/import
+        # (docs/model-download-plan.md). The tree is then empty.
         linuxBundledModels = builtins.filter
           (model:
             !(model ? bundlePlatforms)
@@ -199,6 +199,8 @@
             pkgs.ripgrep
             pkgs.jq
             pkgs.curl
+            # models/finetune/pipeline runs through uv.
+            pkgs.uv
           ] ++ buildTools
           # Let the sandbox compile and test the full src-tauri crate: a C
           # toolchain (cc/ld; its wrapper also rpaths -L dirs so test
@@ -211,7 +213,20 @@
             "crates.io" = "*";
             "keygen.sh" = "*";
             "defense.gov" = "*";
-            "huggingface.co" = "*";
+            "huggingface.co" = "*";        
+            "buzz.54rockybrook.house" = "*";
+            "fwdesktop.54rockybrook.house" = "*";
+            "gomodel.54rockybrook.house" = "*";
+            # Hindsight agent memory over MCP (modules/linux/machines/x86_64/hindsight).
+            "hindsight.54rockybrook.house" = "*";
+            "opencode.ai" = "*";
+
+          };
+          extraEnv = {
+          ANTHROPIC_BASE_URL = "https://gomodel.54rockybrook.house";
+          ANTHROPIC_AUTH_TOKEN = "$(/run/wrappers/bin/op read -n op://Private/GoModel/credential)";
+          HINDSIGHT_MCP_TOKEN = "$(/run/wrappers/bin/op read -n op://Private/Hindsight/credential)";
+          CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS = "1";
           };
         };
       in
@@ -354,8 +369,20 @@
               ++ lib.optionals isLinux linuxLibs
               ++ [ (pkgs.python312.withPackages (pp: [ pp.jupyter ])) ];
             nativeBuildInputs = lib.optionals isLinux linuxNativeTools;
-            packages = [claude];
-            shellHook = lib.optionalString isLinux linuxEnv + ''
+            packages = [claude pkgs.uv];
+            shellHook = lib.optionalString isLinux (linuxEnv + ''
+              # PyPI wheels (torch in models/finetune/pipeline) need the C++
+              # runtime and zlib, which NixOS does not expose globally.
+              export LD_LIBRARY_PATH=${lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib pkgs.zlib ]}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+              # The NVIDIA driver library (libcuda.so) lives here on NixOS.
+              if [ -d /run/opengl-driver/lib ]; then
+                export LD_LIBRARY_PATH=/run/opengl-driver/lib:$LD_LIBRARY_PATH
+              fi
+              # PyTorch needs /dev/nvidia-uvm, which does not load on its own after an eGPU hot-plug.
+              if [ -e /dev/nvidia0 ] && [ ! -e /dev/nvidia-uvm ]; then
+                echo "GPU attached but /dev/nvidia-uvm is missing. Run: sudo modprobe nvidia_uvm" >&2
+              fi
+            '') + ''
               [[ ! -d .venv ]] && python -m venv .venv
               source .venv/bin/activate
               if [[ -f requirements.txt ]]; then

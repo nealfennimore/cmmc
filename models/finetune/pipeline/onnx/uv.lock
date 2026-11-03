@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -174,6 +174,7 @@ dependencies = [
     { name = "onnx-ir" },
     { name = "onnxconverter-common" },
     { name = "onnxruntime" },
+    { name = "onnxruntime-genai" },
     { name = "onnxslim" },
     { name = "optimum-onnx", extra = ["onnxruntime"] },
     { name = "torch" },
@@ -186,6 +187,7 @@ requires-dist = [
     { name = "onnx-ir" },
     { name = "onnxconverter-common" },
     { name = "onnxruntime" },
+    { name = "onnxruntime-genai" },
     { name = "onnxslim" },
     { name = "optimum-onnx", extras = ["onnxruntime"] },
     { name = "torch" },
@@ -242,40 +244,40 @@ wheels = [
 
 [package.optional-dependencies]
 cublas = [
-    { name = "nvidia-cublas", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-cuda-nvrtc", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cublas", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-cuda-nvrtc", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cudart = [
-    { name = "nvidia-cuda-runtime", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cuda-runtime", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cufft = [
-    { name = "nvidia-cufft", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-nvjitlink", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cufft", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-nvjitlink", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cufile = [
-    { name = "nvidia-cufile", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "nvidia-cufile", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cupti = [
-    { name = "nvidia-cuda-cupti", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cuda-cupti", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cusolver = [
-    { name = "nvidia-cublas", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-cusolver", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-cusparse", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-nvjitlink", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cublas", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-cusolver", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-cusparse", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-nvjitlink", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 cusparse = [
-    { name = "nvidia-cusparse", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
-    { name = "nvidia-nvjitlink", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cusparse", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
+    { name = "nvidia-nvjitlink", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 nvjitlink = [
-    { name = "nvidia-nvjitlink", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-nvjitlink", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 nvrtc = [
-    { name = "nvidia-cuda-nvrtc", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-cuda-nvrtc", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 nvtx = [
-    { name = "nvidia-nvtx", marker = "(platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32')" },
+    { name = "nvidia-nvtx", marker = "platform_machine == 'aarch64' or platform_machine == 'x86_64'" },
 ]
 
 [[package]]
@@ -504,7 +506,7 @@ resolution-markers = [
     "python_full_version >= '3.14'",
 ]
 dependencies = [
-    { name = "numpy", marker = "python_full_version >= '3.14'" },
+    { name = "numpy" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0e/4a/c27b42ed9b1c7d13d9ba8b6905dece787d6259152f2309338aed29b2447b/ml_dtypes-0.5.4.tar.gz", hash = "sha256:8ab06a50fb9bf9666dd0fe5dfb4676fa2b0ac0f31ecff72a6c3af8e22c063453", size = 692314, upload-time = "2025-11-17T22:32:31.031Z" }
 wheels = [
@@ -550,7 +552,7 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 dependencies = [
-    { name = "numpy", marker = "python_full_version < '3.14'" },
+    { name = "numpy" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/12/72/307d7c4bd0600601c7133fba5cb78af7db968152951c1cd473abb1cda782/ml_dtypes-0.6.0.tar.gz", hash = "sha256:5e60251d32ced5598972e4d5e06a2f044341f9291402551a3f6f0ec44f9299b0", size = 3032327, upload-time = "2026-08-13T14:14:40.215Z" }
 wheels = [
@@ -929,6 +931,37 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ed/ee/b69384d9b94c6bf3beb030bcba25dc573e490d3136117be0f78d79078d35/onnxruntime-1.31.1-cp314-cp314-win_arm64.whl", hash = "sha256:fc01b4e7c0a81778fb741bcf5c16b7871d196275f6240720a8b8bfd9f0c0af14", size = 15153930, upload-time = "2026-10-26T19:27:06.159Z" },
     { url = "https://files.pythonhosted.org/packages/2b/5b/beeb6acb5a9e17311b4ebc36fe91ac4893200ddb290257fb072509a7c26b/onnxruntime-1.31.1-cp314-cp314t-manylinux_2_28_aarch64.whl", hash = "sha256:564d7b83fb3e94fb3d18629c6b339e9bce10966dd29a8442c433175aac3d60fd", size = 21432341, upload-time = "2026-10-26T19:27:09.131Z" },
     { url = "https://files.pythonhosted.org/packages/c6/3d/a5b15c4ab9d67a384da5a2c10fb569e643076c28179fe1a265af7d8f1b87/onnxruntime-1.31.1-cp314-cp314t-manylinux_2_28_x86_64.whl", hash = "sha256:4d5f5fcc01f0c334d282a8991eab44e7752ad01c47b336d848ba43eb38084958", size = 23772582, upload-time = "2026-10-26T19:27:12.025Z" },
+]
+
+[[package]]
+name = "onnxruntime-genai"
+version = "0.19.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "onnxruntime" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/46/882fceaebfefe26d158794e145a441a3b1382236ab30cc44d75df5125bfc/onnxruntime_genai-0.19.0-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:302251fbb402ec910d7cb03d9a3407c2283c8f6c886db116ca0731a5cf0eb059", size = 4481402, upload-time = "2026-11-03T06:16:49.43Z" },
+    { url = "https://files.pythonhosted.org/packages/49/6e/5d37963b6e419d6b545a9721925d382595ad36af48717a3e1a483373a564/onnxruntime_genai-0.19.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:0cf0447a31fec7b0bf77e838393011cb784af40a02f1936352dd1776ddd650d9", size = 11468228, upload-time = "2026-11-03T06:16:51.694Z" },
+    { url = "https://files.pythonhosted.org/packages/06/34/70c95cf915b424a8c9560a23f7ff48f26812a0615f9c92ef8994c93cd59c/onnxruntime_genai-0.19.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:ea1cef6a4f5712322b2b3df7760fdae49b8d164ba1e5d6cbf5b09fbc45baa6cb", size = 11833095, upload-time = "2026-11-03T06:16:54.511Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/fd/69c4d4c9a109c649418f501c5a3ea819665753adc9cc838afabbd7125858/onnxruntime_genai-0.19.0-cp311-cp311-win_amd64.whl", hash = "sha256:12443bded3a8eab005d03c653968493699caeee3bf07727cf5ab7df60f5e7fd8", size = 4702106, upload-time = "2026-11-03T06:16:56.975Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/d8/07032b7083a3f4d59e1a27080298757afbbc511f90f507aaee154014ba2d/onnxruntime_genai-0.19.0-cp311-cp311-win_arm64.whl", hash = "sha256:75d0d2ab0ddb44f274c188362bc7ac0e9fd8c137bef772b2fda60bd6eab43f0d", size = 4532894, upload-time = "2026-11-03T06:16:59.044Z" },
+    { url = "https://files.pythonhosted.org/packages/92/5f/65d701e8b69e9ae5893a798c10b36aeb9c4c4e464846be68899717d75934/onnxruntime_genai-0.19.0-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:4df57b403354124ecbd0c852c2c3d057ffc36af6302a6e0fadb3a5f475e3df7e", size = 4484048, upload-time = "2026-11-03T06:17:00.962Z" },
+    { url = "https://files.pythonhosted.org/packages/79/30/380d048df524b3e8bdd4ab5965425354e079be4297880139eaf62c8b755a/onnxruntime_genai-0.19.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:0123c1bdbe6b56317b8691bf01dd425c53c5732b8dc8f5520a0d97b6da410fe4", size = 11475266, upload-time = "2026-11-03T06:17:03.028Z" },
+    { url = "https://files.pythonhosted.org/packages/28/30/96cb619ba307464bd094817a2332e65e44c9780144df6ca9dfb885677047/onnxruntime_genai-0.19.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:b4afca2289e40073ead9a81105b25a2a609c3135bd098485282756bc4a37b6b7", size = 11840535, upload-time = "2026-11-03T06:17:06.386Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/ef/fe15dedc91009759f020e395bb564353fe4456a8fbcace373b10331c2b97/onnxruntime_genai-0.19.0-cp312-cp312-win_amd64.whl", hash = "sha256:a97a8711d4f9304acbd3097444fca0db91a1c42431a45e299f413fe919cc6951", size = 4704682, upload-time = "2026-11-03T06:17:10.968Z" },
+    { url = "https://files.pythonhosted.org/packages/f2/39/21f99811d50055813a49a2ccd4454be15b7dd595f695873aa26de46e3c68/onnxruntime_genai-0.19.0-cp312-cp312-win_arm64.whl", hash = "sha256:5ede4808a3469ffc38ed7953340551076c1db558d4868db75c7d2546b2522ee9", size = 4530956, upload-time = "2026-11-03T06:17:12.933Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/54/9c64fd039ce9fda9ec6e69ee671acaceee124ee6948f9902ec10aa732113/onnxruntime_genai-0.19.0-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:5c97f2ab7158bffecae942edcb7eefeca597e6612abb3bd9faccc657d11b4a25", size = 4484063, upload-time = "2026-11-03T06:17:14.88Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/dd/05c74ed1f0a4b81962222e0220ba2991445c28a83d62c8478a93bf1ede5d/onnxruntime_genai-0.19.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:428296ef774d8bd6002bdabaa9aaa5626a43d968a95843d231b70dffc8c31382", size = 11475274, upload-time = "2026-11-03T06:17:20.458Z" },
+    { url = "https://files.pythonhosted.org/packages/80/c6/cf06c685ebf4fc875a693d170cf966c25de550f8d7271ab4666cda43e738/onnxruntime_genai-0.19.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:843f953b6cf55c3590702f93008665df142a5c6d5049c040e170d5dd207f00b4", size = 11840441, upload-time = "2026-11-03T06:17:24.359Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/01/118a2d3b2a63aedde7b0b2a58d8b17475a588b072cae3a81560d6619deac/onnxruntime_genai-0.19.0-cp313-cp313-win_amd64.whl", hash = "sha256:74bb323e57716c96a0ac2affa7fb87214175a7d2d3d17a983538372e91a07f53", size = 4704698, upload-time = "2026-11-03T06:17:28.13Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/9c/c2d0a8c0dc803a5d63bc3a3bff2338d09159b0636dcfe1c4b09ef6f6dfb7/onnxruntime_genai-0.19.0-cp313-cp313-win_arm64.whl", hash = "sha256:472d8e994c643900f9e19fe81a6805ecbe1a1c539677c67532349edf9861c4a4", size = 4530968, upload-time = "2026-11-03T06:17:30.5Z" },
+    { url = "https://files.pythonhosted.org/packages/87/aa/72f43b72316d9de017067a8c3dab064d7f3e59027dea8ea71e1c82bdd2ef/onnxruntime_genai-0.19.0-cp314-cp314-macosx_12_0_arm64.whl", hash = "sha256:9deffd7828996c606ed2e11cb010c397badc43b5465f8a27b2ce297f4613d680", size = 4484693, upload-time = "2026-11-03T06:17:33.347Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/b2/2a69b4fd4524cbc879034d40978e194cf5cbb958fa7bfc49ce55d4744bff/onnxruntime_genai-0.19.0-cp314-cp314-manylinux_2_28_aarch64.whl", hash = "sha256:1c1501014631dcf450d9345cbc778059c30edd02cba4f53b175e27a01187f307", size = 11476379, upload-time = "2026-11-03T06:17:35.943Z" },
+    { url = "https://files.pythonhosted.org/packages/21/0b/93c079d59f0feec22a12b8cb7ab04147fc1c959a17001b3b4613f16bcb0a/onnxruntime_genai-0.19.0-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:f9cf1c908f20313b4b7ea047aa5c9d5a237c4a11c10ff1e30e7e7c8113040c1a", size = 11841195, upload-time = "2026-11-03T06:17:38.434Z" },
+    { url = "https://files.pythonhosted.org/packages/f5/41/dd2a45517731f8e0a9e938e00bc2ec2a1dfdc74f6f880b349d780e03d84f/onnxruntime_genai-0.19.0-cp314-cp314-win_amd64.whl", hash = "sha256:ada6a2f09e8442a137a71167704b90ecb4715f1f7dcb0e917c34a20df342904c", size = 4860171, upload-time = "2026-11-03T06:17:40.866Z" },
+    { url = "https://files.pythonhosted.org/packages/03/31/2ceef982fa142d775e88481f1d55d642e0d56efd5761db94919888e16815/onnxruntime_genai-0.19.0-cp314-cp314-win_arm64.whl", hash = "sha256:c6bb66edca8233ae26f4d0e2e368f9a8de46d1eb83ec020f83cecde1a247e357", size = 4681555, upload-time = "2026-11-03T06:17:43.439Z" },
 ]
 
 [[package]]

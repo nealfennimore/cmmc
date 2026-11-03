@@ -71,9 +71,10 @@ const pinned = manifest.models.filter(
             !model.bundlePlatforms ||
             model.bundlePlatforms.some((tag) => tags.includes(tag))),
 );
+// No early exit when nothing is bundled: the prune pass below must still
+// remove the weights of a dropped model from the target tree.
 if (!pinned.length) {
-    console.log("fetch-model-weights: no pinned models in the manifest, skipping");
-    process.exit(0);
+    console.log("fetch-model-weights: no models to bundle for this platform");
 }
 
 // First pass: find what is missing or stale, so an up-to-date tree costs

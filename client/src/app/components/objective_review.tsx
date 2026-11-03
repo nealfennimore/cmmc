@@ -146,7 +146,7 @@ export const ObjectiveReview = ({
         let cancelled = false;
         (async () => {
             const capabilities = await getDeviceCapabilities();
-            // The selection falls back to the lite model when this device
+            // The selection falls back to the default model when this device
             // cannot run it — the review must stay available either way.
             const resolved = resolveUsableModel(
                 getSelectedModelId(),

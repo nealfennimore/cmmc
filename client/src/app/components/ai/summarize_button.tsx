@@ -75,9 +75,9 @@ export const SummarizeButton = ({
         }
         let cancelled = false;
         (async () => {
-            // The selection falls back to the lite model when this device
-            // cannot run it; only a device with no usable model disables
-            // the feature.
+            // The selection falls back to the default model when this
+            // device cannot run it; only a device with no usable model
+            // disables the feature.
             const model = resolveUsableModel(
                 getSelectedModelId(),
                 await getDeviceCapabilities(),

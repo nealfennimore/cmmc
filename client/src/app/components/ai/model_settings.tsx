@@ -170,7 +170,7 @@ export const AiSettingsModal = () => {
         status.modelId === model.id &&
         (status.phase === "ready" || status.phase === "generating");
 
-    // Installers bundle only the lite model; the Llamas arrive through the
+    // Installers bundle no model; every model arrives through the
     // verified store. Download works for any pinned model on a desktop
     // build (multi-file ONNX downloads file by file); the offline import
     // picker stays single-file, so it is offered for GGUF models only.
@@ -275,10 +275,9 @@ export const AiSettingsModal = () => {
                     Drafts control narratives from your attached evidence and
                     reviews it against the assessment objectives. Every model
                     runs entirely on this device — your evidence and notes are
-                    never uploaded anywhere. The lite model ships with the
-                    app; a larger model downloads only when you request it
-                    here, and is verified against a pinned checksum before
-                    use.
+                    never uploaded anywhere. The model downloads only when you
+                    request it here, and is verified against a pinned
+                    checksum before use.
                 </p>
                 <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                     These features are in beta. A small on-device model can
@@ -347,9 +346,11 @@ export const AiSettingsModal = () => {
                         <Badge variant="neutral">Detecting…</Badge>
                     ) : capabilities.device === "webgpu" ? (
                         <Badge variant="success">WebGPU</Badge>
+                    ) : capabilities.native ? (
+                        <Badge variant="success">Native</Badge>
                     ) : (
                         <Badge variant="warning">
-                            WASM — slow; lite model only
+                            No WebGPU — no model runs here
                         </Badge>
                     )}
                 </div>

@@ -4,7 +4,7 @@
 // generate one answer. A file that fails here would fail in the app.
 //
 //   node verify_onnx.mjs llama-3.2-1b-instruct
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,7 +22,10 @@ if (!existsSync(join(here, "runs", id, "onnx", "config.json"))) {
 }
 env.allowRemoteModels = false;
 env.localModelPath = join(here, "runs", id) + "/";
-const opts = { dtype: dtypes[id], use_external_data_format: 1 };
+// The app passes the count of .onnx_data shards in the manifest (config.ts
+// externalDataChunks). The 3B q4f16 has two: each shard stays under 2 GB.
+const shards = readdirSync(join(here, "runs", id, "onnx", "onnx")).filter((f) => f.includes(".onnx_data")).length;
+const opts = { dtype: dtypes[id], use_external_data_format: shards };
 const tokenizer = await AutoTokenizer.from_pretrained("onnx");
 const model = await AutoModelForCausalLM.from_pretrained("onnx", opts);
 

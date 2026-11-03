@@ -47,11 +47,13 @@ export interface LlmModel {
 
 export const MODELS: LlmModel[] = manifest.models;
 
-export const DEFAULT_MODEL_ID = "llama-3.2-1b-instruct";
-export const LITE_MODEL_ID = "gemma-3-270m-it";
+/** The CMMC fine-tune of Llama 3.2 1B (models/finetune/pipeline). The
+ *  manifest holds no other model: the base Llamas and the Gemma 270M lite
+ *  model were removed, so no WASM-capable model exists. */
+export const DEFAULT_MODEL_ID = "llama-3.2-1b-instruct-cmmc";
 /** First fallback on devices with the native path (Linux desktop): the 1B
  *  as a GGUF, tried before the ONNX default in resolveUsableModel. */
-export const NATIVE_DEFAULT_MODEL_ID = "llama-3.2-1b-instruct-gguf";
+export const NATIVE_DEFAULT_MODEL_ID = "llama-3.2-1b-instruct-cmmc-gguf";
 
 export const getModel = (id: string): LlmModel | undefined =>
     MODELS.find((model) => model.id === id);
@@ -125,9 +127,8 @@ export const MAX_CONTEXT_TOKENS = 6144;
 /** fp32 logit row per input token, from each repo's config.json vocab_size.
  *  Unknown ids get the larger vocab, which only under-sizes the window. */
 const LOGIT_BYTES_PER_TOKEN: Record<string, number> = {
-    "llama-3.2-1b-instruct": 128256 * 4,
-    "gemma-3-270m-it": 262144 * 4,
-    "llama-3.2-3b-instruct": 128256 * 4,
+    "llama-3.2-1b-instruct-cmmc": 128256 * 4,
+    "llama-3.2-3b-instruct-cmmc": 128256 * 4,
 };
 const FALLBACK_LOGIT_BYTES = 262144 * 4;
 export const logitBytesPerToken = (model: LlmModel): number =>
@@ -227,7 +228,7 @@ export const usableDevice = (
 
 /** The model this device will actually run: the user's selection when it
  *  is pinned and usable here, else the native 1B (Linux desktop), else the
- *  default model, else the pinned lite model. Null when nothing fits —
+ *  default model. Null when nothing fits —
  *  only then do the AI features hide. The stored preference is never
  *  rewritten, so a later session on stronger hardware honors it again.
  *  Every feature gate and load path must resolve through this, or a
@@ -245,7 +246,6 @@ export const resolveUsableModel = (
         selectedId,
         NATIVE_DEFAULT_MODEL_ID,
         DEFAULT_MODEL_ID,
-        LITE_MODEL_ID,
     ]) {
         const model = getModel(id);
         if (model && isPinned(model) && usableDevice(model, capabilities)) {

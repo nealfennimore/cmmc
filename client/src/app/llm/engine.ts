@@ -5,7 +5,7 @@
 //
 // Bundled weights are a build-time input (flake.nix for the Nix desktop
 // package, scripts/fetch-model-weights.mjs for non-Nix desktop builds);
-// installers carry only the lite model. Desktop builds can add a pinned
+// installers carry no model weights. Desktop builds can add a pinned
 // model through the verified store (model_store.rs: explicit download or
 // offline import, sha256-checked) — this module never fetches anything
 // itself and just probes for whichever weights exist.
@@ -394,8 +394,8 @@ export const ensureLoaded = async (model: LlmModel): Promise<void> => {
     if (!device) {
         throw new Error(
             capabilities.device === "webgpu"
-                ? `${model.label} needs more GPU memory than this device provides. Choose the lite model instead.`
-                : `${model.label} needs WebGPU, which this browser does not provide. Choose the lite model instead.`,
+                ? `${model.label} needs more GPU memory than this device provides.`
+                : `${model.label} needs WebGPU, which this browser does not provide.`,
         );
     }
     const source = await resolveWeightSource(model);

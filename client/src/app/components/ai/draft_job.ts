@@ -170,7 +170,7 @@ const run = async () => {
         }
     });
     try {
-        // The selection falls back to the lite model when this device
+        // The selection falls back to the default model when this device
         // cannot run it. Summaries below are stamped with the resolved
         // model's id, and review.ts looks them up the same way.
         const model = resolveUsableModel(

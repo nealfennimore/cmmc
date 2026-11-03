@@ -29,7 +29,7 @@ The app uses these models to draft narratives from evidence, not to answer looku
 | `merge.py` | Merges the adapter into the base weights: `runs/<model>/merged` |
 | `evaluate.py` | Three suites: `mcq`, `recall` (held-out phrasings), `draft` (the app task) |
 | `compare.py` | Prints base and tuned scores and the ship verdict. Exits with 1 on FAIL. |
-| `export_onnx.sh`, `quantize_onnx.py`, `inline_chat_template.py` | ONNX export in the onnx-community layout that the app pins |
+| `export_onnx.sh`, `quantize_onnx.py`, `build_q4f16.py`, `inline_chat_template.py` | ONNX export in the onnx-community layout that the app pins. Gemma q8 uses optimum and `quantize_onnx.py`. Llama q4f16 uses the ONNX Runtime GenAI model builder (`build_q4f16.py`), the same tool as upstream. |
 | `verify_onnx.mjs` | Loads the ONNX export with the transformers.js version in `client/node_modules` |
 | `export_gguf.sh` | GGUF Q4_K_M for the native desktop path |
 | `publish_hf.sh` | Uploads the exports, the model card, and the license files |
@@ -189,6 +189,8 @@ For each published repo:
 
 - Verified on the 4070 Ti: Gemma 270M training at batch 1, merge, ONNX q8 export, and `verify_onnx.mjs`.
 - Verified without a GPU: `gen_drafts.py` against a mock endpoint (generation, rewrites, resume, splits), `build_mix.py`, and `checks.py`.
-- Not run: draft-data generation with a real teacher, any Llama training, the q4f16 and GGUF exports.
 - The ONNX environment (`onnx/pyproject.toml`) has no version pins. Commit `onnx/uv.lock` now that the Gemma export passed.
-- The 3B q4f16 export holds more than 2 GB of tensors in memory during the fp16 conversion. If the conversion fails, ship the 3B as GGUF only. Only the Intel macOS webview build uses the ONNX Llamas.
+- Trained on `data/mix` (2026-11-03): the 1B and 3B pass `compare.py`. Gemma fails on invented details per draft (0.45 to 0.65).
+- The first q4f16 export (optimum plus `onnx_float16.py`) failed. ONNX Runtime 1.24 in `client/node_modules` did not load the 1B graph at the default optimization level, and the 3B export ran out of memory. `build_q4f16.py` replaces it. It is not run yet.
+- `build_q4f16.py` refuses op types that the upstream graphs do not use, because the app runs them on WebGPU. `verify_onnx.mjs` runs on CPU only. Load a new q4f16 export in the app before you ship it.
+- If the q4f16 export fails, ship the Llama as GGUF only. Only the Intel macOS webview build uses the ONNX Llamas.

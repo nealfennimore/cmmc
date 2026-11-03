@@ -11,6 +11,9 @@ dependencies = [
     "onnx",
     "onnxruntime",
     "onnxconverter-common",
+    # The model builder for the q4f16 Llama exports (build_q4f16.py), the
+    # tool behind the onnx-community Llama 3.2 q4f16 files.
+    "onnxruntime-genai",
     # onnxruntime.quantization.matmul_nbits_quantizer (q4f16) imports it, but
     # onnxruntime does not declare it as a dependency.
     "onnx-ir",

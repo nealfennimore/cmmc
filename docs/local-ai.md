@@ -2,11 +2,11 @@
 
 ## Overview
 
-The app can draft a control narrative from the evidence that is attached to a requirement. A small language model runs fully on the user's device. The models are US-developed (Meta Llama, Google Gemma). Evidence and notes never leave the machine.
+The app can draft a control narrative from the evidence that is attached to a requirement. A small language model runs fully on the user's device. The model is US-developed (Meta Llama). Evidence and notes never leave the machine.
 
-Three models exist: Llama 3.2 1B (default), Gemma 3 270M (lite, WASM fallback), and Llama 3.2 3B (opt-in large model). Every installer bundles only the lite model (~0.6 GB of weights). The Llamas are added in the AI settings: a one-click verified download, or an offline import of the exact pinned file (see "Adding a model" below). The reason is size: GitHub caps release assets below 2 GiB, the NSIS installer has the same limit, and an installer with a Llama pushes toward or past that cap on every platform. On Linux, Apple Silicon macOS, and Windows an added Llama GGUF runs natively (llama.cpp); Intel macOS stays on the in-webview runtime and uses the ONNX Llamas. See "Native inference (desktop)" below.
+One model exists in two formats: Llama 3.2 1B Instruct CMMC, a LoRA fine-tune of Llama 3.2 1B for the draft task (`models/finetune/pipeline`). The ONNX entry (`llama-3.2-1b-instruct-cmmc`) runs in the webview on WebGPU. The GGUF entry (`llama-3.2-1b-instruct-cmmc-gguf`) runs natively (llama.cpp) on Linux, Apple Silicon macOS, and Windows. The weights come from `nealfennimore/Llama-3.2-1B-Instruct-CMMC-ONNX` and `-GGUF` on Hugging Face. No installer bundles model weights. The user adds the model in the AI settings: a one-click verified download, or an offline import of the exact pinned file (see "Adding a model" below). The reason is size: GitHub caps release assets below 2 GiB, and the NSIS installer has the same limit. Intel macOS stays on the in-webview runtime and uses the ONNX entry. See "Native inference (desktop)" below.
 
-The lite model's weights ship in the installer as static assets. A user can explicitly download or import an additional pinned model in the AI settings; every byte is verified against the manifest (size and sha256) before use. Nothing downloads without a user action, and evidence and notes never leave the machine. A build without bundled weights shows the feature as unavailable. The free web tier does not include the feature at all.
+A user can explicitly download or import a pinned model in the AI settings. The app verifies every byte against the manifest (size and sha256) before use. Nothing downloads without a user action, and evidence and notes never leave the machine. Until the user adds a model, the feature shows as unavailable. The free web tier does not include the feature at all.
 
 ## Architecture
 
@@ -58,22 +58,22 @@ Build note: `onnxruntime-node` (a transformers.js dependency, Linux x64 only) tr
 
 ## Device policy
 
-- The 1B and 3B models require WebGPU. Chromium, WebView2, and recent WKWebView provide it.
-- The context window is adaptive (`contextTokensFor` in `client/src/app/llm/config.ts`). It scales with the adapter's reported buffer limit and the model's vocabulary: floor 2,560 tokens, cap 6,144. The prefill logits tensor (sequence x vocab, fp32) is the binding allocation. The 1B and 3B share a 128k vocabulary, so they get the same window on any adapter.
+- The ONNX model requires WebGPU. Chromium, WebView2, and recent WKWebView provide it. No model runs on WASM: the Gemma 3 270M lite model was removed.
+- The context window is adaptive (`contextTokensFor` in `client/src/app/llm/config.ts`). It scales with the adapter's reported buffer limit and the model's vocabulary: floor 2,560 tokens, cap 6,144. The prefill logits tensor (sequence x vocab, fp32) is the binding allocation.
 - The buffer limit is per browser engine, not per GPU. The same AMD 780M reports 1 GiB in webkitgtk and 4 GiB−4 in Chromium with Vulkan enabled. An adapter whose limit cannot hold a working window (below `MIN_CONTEXT_TOKENS`) marks WebGPU models unusable there.
-- When the selected model cannot run, `resolveUsableModel` falls back: selection, then the native 1B (desktop), then the ONNX 1B default, then the lite model. The settings modal names the substitution. Only a device with no usable model hides the AI features.
-- Linux webkitgtk reports no WebGPU or a 1 GiB limit. In the browser those machines run the lite model on WASM; the Linux desktop app runs the native path instead.
+- When the selected model cannot run, `resolveUsableModel` falls back: selection, then the native 1B (desktop), then the ONNX 1B default. The settings modal names the substitution. Only a device with no usable model hides the AI features.
+- Linux webkitgtk reports no WebGPU or a 1 GiB limit. In the browser those machines have no usable model. The Linux desktop app runs the native path instead.
 
 ## Native inference (desktop)
 
 The Linux, Apple Silicon macOS, and Windows desktop apps run Llama through llama.cpp inside the Rust process (`src-tauri/src/native.rs`), not the webview — the webview only renders UI. Backends: Vulkan on Linux and Windows (with a CPU fallback that still beats WASM; on Windows `vulkan-1.dll` is delay-loaded so driverless machines launch), Metal on Apple Silicon. Intel Macs stay on the webview path — ggml-metal does not support them. Design and rationale: `docs/native-inference-plan.md`.
 
-- Models: GGUF entries in the manifest (`format: "gguf"`, `minDevice: "native"`; both Llama GGUFs have `bundlePlatforms: []` — no installer carries them, the user downloads or imports one). One file per model; tokenizer and chat template ship inside it.
+- Models: GGUF entries in the manifest (`format: "gguf"`, `minDevice: "native"`, `bundlePlatforms: []`). No installer carries them. The user downloads or imports one. One file per model. The tokenizer and the chat template ship inside it.
 - Transport: `client/src/app/llm/native_worker.ts` speaks the worker protocol over Tauri invoke commands (`native_probe/load/generate/poll/abort/unload`), polling for streamed tokens. The engine picks it per resolved device; everything above the transport is shared with the webview path.
 - Window: `MAX_CONTEXT_TOKENS` (6,144) as `n_ctx`. No adapter-limit math applies.
 - Build: Rust features `native-llm-vulkan` (Linux via the Nix package's `tauriBuildFlags`; Windows CI, which installs a pinned LunarG Vulkan SDK) and `native-llm-metal` (aarch64 macOS CI leg). Default builds compile stubs, so `cargo check` needs no cmake/Vulkan. The .deb/.rpm declare the Vulkan loader dependency; Windows delay-loads `vulkan-1.dll` instead (src-tauri build.rs).
-- Adding a model: the AI Assistant settings offer "Download" and "Import model file…" for any pinned model the installer excluded (every Llama). Download streams the manifest's pinned https URL in the Rust process (`model_store.rs`), hashes in flight, and renames into `app_data_dir()/models/` only on a verified sha256 — a cancel or mismatch removes the partial file, and exactly one host (huggingface.co, plus its CDN redirect) is contacted, only on the user's confirmation. Import verifies a user-supplied file the same way, fully offline — the supported path for air-gapped environments (GGUF models only; the picker is single-file). Bundle resources win when both copies exist; a "Remove" button reclaims the disk. Design: `docs/model-download-plan.md`.
-- Dev note: `npm run models` filters weights by platform (`bundlePlatforms`), so a Linux machine fetches GGUF and prunes the ONNX Llamas. Browser testing of the ONNX path on Linux needs `MODELS_PLATFORM=all npm run models`.
+- Adding a model: the AI Assistant settings offer "Download" and "Import model file…" for any pinned model that the installer excluded (every model). Download streams the manifest's pinned https URL in the Rust process (`model_store.rs`), hashes in flight, and renames into `app_data_dir()/models/` only on a verified sha256 — a cancel or mismatch removes the partial file, and exactly one host (huggingface.co, plus its CDN redirect) is contacted, only on the user's confirmation. Import verifies a user-supplied file the same way, fully offline — the supported path for air-gapped environments (GGUF models only; the picker is single-file). Bundle resources win when both copies exist; a "Remove" button reclaims the disk. Design: `docs/model-download-plan.md`.
+- Dev note: `npm run models` filters weights by platform (`bundlePlatforms`). Every entry has an empty list, so the script only prunes. To stage weights for browser testing of the ONNX path, run `MODELS_PLATFORM=all npm run models`.
 - Linux memory: webkitgtk's memory-pressure monitor kills the web process at conservative thresholds, which model loading trips. The app sets `WEBKIT_DISABLE_MEMORY_PRESSURE_MONITOR=1` at startup (src-tauri `run()`), and the desktop IPC path streams one weight file at a time so peak memory stays near a single copy per file plus the ONNX Runtime heap.
 - IPC transport: `read_model_file` returns base64 strings in 32 MB binary slices (`offset`/`len`), the same pattern as the app's other large payloads. A raw-bytes `tauri::ipc::Response` of a 300 MB weight file crashed the webkitgtk web process outright — do not switch back without testing that exact case on Linux.
 
@@ -82,7 +82,7 @@ The Linux, Apple Silicon macOS, and Windows desktop apps run Llama through llama
 1. Privacy audit (critical). Open the app, attach evidence, and run a full summarize with DevTools network open. Zero network requests must occur at any point — the weights load from the app's own origin or local resources. Repeat once inside Tauri behind a proxy such as mitmproxy. Model import must also work with the network fully disabled. Trigger a model download and confirm that exactly one host is contacted (huggingface.co plus its CDN redirect), and only after the confirmation dialog. Confirm that a cancel removes the `.partial` file and that a tampered byte fails the checksum.
 2. Nix. Run `nix build .#model-weights`. It must fetch and verify the pinned files. Run `nix build`. The desktop app must summarize with no network access. Corrupt one hash in the manifest and confirm that the build fails with a hash mismatch.
 3. Flow. Generate a draft, insert it, reload, and confirm that the note persisted through autosave. Stop mid-generation and confirm that the partial draft is insertable.
-4. Matrix. Test Chrome with WebGPU, Chrome with `--disable-features=WebGPU` (WASM plus lite model), the free-tier build (feature absent), and Tauri on each OS.
+4. Matrix. Test Chrome with WebGPU, Chrome with `--disable-features=WebGPU` (feature hidden, no usable model), the free-tier build (feature absent), and Tauri on each OS.
 5. Regression. Confirm that evidence attach, text extraction, search, and exports are unaffected. The feature is additive and lazy.
 
 ## Debugging a web-process crash (Linux)
@@ -101,7 +101,7 @@ The webview console is invisible in release builds. The AI path therefore logs b
    - `JSC_useWebAssemblySIMD=0` — a clean "validation failed" error instead of a crash confirms the SIMD path.
    - `WEBKIT_FORCE_SANDBOX=0` — rule out the web-process sandbox.
 
-If a JIT tier is the culprit, the fix is to pin that option in the app wrapper for webkitgtk until the upstream JSC fix ships. The 270M lite model is the only model this affects — WebGPU platforms never run the WASM path.
+If a JIT tier is the culprit, the fix is to pin that option in the app wrapper for webkitgtk until the upstream JSC fix ships. No current model runs on WASM, so this section applies only if a WASM model returns.
 
 Case history (2026-08-27): session creation aborted with a messageless C++ exception on BOTH webkitgtk and Chrome after all files transferred correctly. The worker's abort decoder recovered the real text: `Unrecognized attribute: bits for operator GatherBlockQuantized` — the upstream q4 export required a newer ONNX Runtime than the one transformers.js bundled. Lesson: a numeric ORT abort usually has a real message in the WASM heap (the worker decodes it now), and a model revision can require a newer runtime than the pinned `@huggingface/transformers` — check both sides of that version pair when bumping either. Along the way, CPU-only sessions were switched to the plain (non-JSEP) `ort-wasm-simd-threaded` pair (`copy-ort-assets.mjs` ships both variants) — kept, since CPU sessions need none of the JSEP machinery.
 
@@ -110,4 +110,4 @@ Case history (2026-08-27): session creation aborted with a messageless C++ excep
 - The summarizer reads extracted text only. Image-only evidence appears in the panel as "no readable text".
 - A stopped generation keeps the partial draft. The user can still insert or regenerate.
 - One generation runs at a time. The engine rejects a second concurrent request.
-- Desktop installers grow by the bundled weight size (roughly the manifest's `totalBytes` per included model). Every platform bundles only the lite model (~0.6 GB), so installers stay well under GitHub's 2 GiB release-asset cap (the deploy workflow fails fast on any oversized Linux bundle). The lite model is an in-webview model, so every desktop build keeps the lite fallback; an added Llama GGUF runs natively.
+- Desktop installers carry no model weights, so they stay well under GitHub's 2 GiB release-asset cap (the deploy workflow fails fast on any oversized Linux bundle). A device without WebGPU and without the native path has no usable model.

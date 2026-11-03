@@ -11,8 +11,8 @@
 // The app itself never downloads weights: they are a build-time input only.
 //
 // Run inside `nix develop` (needs node >= 18 and network access):
-//   node scripts/update-model-manifest.mjs --id llama-3.2-1b-instruct
-//   node scripts/update-model-manifest.mjs --id gemma-3-270m-it --revision <sha>
+//   node scripts/update-model-manifest.mjs --id llama-3.2-1b-instruct-cmmc
+//   node scripts/update-model-manifest.mjs --id llama-3.2-1b-instruct-cmmc-gguf --revision <sha>
 //   node scripts/update-model-manifest.mjs --verify
 //
 // With --id, the script resolves the repo's current revision through the
