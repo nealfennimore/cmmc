@@ -27,9 +27,12 @@
   outputs = { self, nixpkgs, flake-utils, rust-overlay, agentbox }:
     flake-utils.lib.eachDefaultSystem (system:
       let
+        claudeCodeOverlay = final: prev: {
+          claude-code = final.callPackage ./overlays/claude-code/package.nix { };
+        };
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ rust-overlay.overlays.default ];
+          overlays = [ rust-overlay.overlays.default claudeCodeOverlay ];
           config.allowUnfree = true;
         };
         inherit (pkgs) lib;
@@ -191,6 +194,7 @@
         '';
 
         claude = agentbox.lib.${system}.mkClaudeSandbox {
+          pkg = pkgs.claude-code;
           extraPackages = [
             pkgs.ripgrep
             pkgs.jq
