@@ -50,22 +50,29 @@ const run = (script, scriptArgs) => {
 };
 
 const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf8"));
-const models = manifest.models.filter(
-    (model) => !onlyId || model.id === onlyId,
-);
+// LLM entries re-pin with --id, the retrieval embedder with --embedder.
+// An embedder with no revision is not published yet (models/embedder/
+// publish_hf.sh): its repo does not exist, so it is skipped.
+const entries = [
+    ...manifest.models.map((model) => ({ model, flag: "--id" })),
+    ...(manifest.embedders ?? [])
+        .filter((model) => model.revision || onlyId === model.id)
+        .map((model) => ({ model, flag: "--embedder" })),
+];
+const models = entries.filter(({ model }) => !onlyId || model.id === onlyId);
 if (!models.length) {
-    const known = manifest.models.map((model) => model.id).join(", ");
+    const known = entries.map(({ model }) => model.id).join(", ");
     console.error(`sync-models: no model matches "${onlyId}". Known: ${known}`);
     process.exit(1);
 }
 
-for (const model of models) {
+for (const { model, flag } of models) {
     const revisionArgs =
         !latest && model.revision ? ["--revision", model.revision] : [];
     console.log(
         `\n=== ${model.id} (${latest || !model.revision ? "latest revision" : model.revision}) ===`,
     );
-    run("update-model-manifest.mjs", ["--id", model.id, ...revisionArgs]);
+    run("update-model-manifest.mjs", [flag, model.id, ...revisionArgs]);
 }
 
 if (noFetch) {

@@ -18,8 +18,22 @@ A user can explicitly download or import a pinned model in the AI settings. The 
   - `client/src/app/llm/config.ts` — sizes and license notices in the UI.
 - Desktop delivery: the weights are Tauri **bundle resources** (`tauri.conf.json` maps `../public/models` to `resource_dir()/models`), NOT embedded frontend assets. Tauri's `generate_context!` compiles everything in `out/` into the binary, and gigabytes of weights there make rustc run out of memory (OOM SIGKILL) — so `scripts/strip-model-assets.mjs` (npm postbuild) removes `out/models` after every static export. At runtime the engine reads each file over IPC (`read_model_file` in `src-tauri/src/lib.rs`, raw-byte responses) and transfers the buffers into the worker, which serves them to transformers.js through a custom cache. In `next dev` the files are simply fetched from the dev server origin instead.
 - Consumers reach the model through the `LocalModel` seam in `client/src/app/ai/model.ts`. The engine registers itself there when the weights load. The RAG review layer (`docs/rag-review-plan.md`) builds on the same seam.
-- Prompt assembly (`client/src/app/llm/prompt.ts`): evidence text comes from the `evidence_text` IndexedDB store. Chunks are ranked with the hand-rolled BM25 index (`TextIndex.searchAny`). The budget is 4,096 context tokens with 512 reserved for output.
+- Prompt assembly (`client/src/app/llm/prompt.ts`): evidence text comes from the `evidence_text` IndexedDB store. Chunks are ranked by embedding similarity (see "Embedding retrieval" below), or with the hand-rolled BM25 index (`TextIndex.searchAny`) alone when the embedder is not available. The budget is 4,096 context tokens with 512 reserved for output.
 - UI: a "Draft from evidence" button on the requirement page opens the draft panel (`client/src/app/components/ai/draft_panel.tsx`). The user reviews the streamed draft, then inserts it into a description field. Insertion goes through the normal autosave path. Nothing persists until the user inserts. The "AI Assistant" menu entry shows the model choice, the engine status, and the master switch.
+
+## Embedding retrieval
+
+Reviews and drafts rank evidence chunks by meaning, with a local embedding model (a dense ranking, `client/src/app/ai/hybrid.ts`). When the embedder is not available, BM25 ranks them, as before. A fusion of the two rankings (RRF) ranked below dense alone on the eval, so the app does not fuse. The plan, the eval results, and the decisions are in `docs/embedding-retrieval-plan.md`.
+
+- Model: IBM `granite-embedding-small-english-r2` (Apache-2.0, 47M parameters, 384 dimensions, CLS pooling). We export the ONNX files ourselves from the IBM weights (`models/embedder`) and publish them as `nealfennimore/granite-embedding-small-english-r2-ONNX`. No third-party conversion is in the supply chain.
+- Manifest: the top-level `embedders` array, not `models`. The LLM picker never shows the embedder. Every installer ships it, because it is small (about 50 MB at q8).
+- Runtime: a separate WASM-only worker (`client/src/app/llm/embed_worker.ts`) with the plain ONNX Runtime build. It never uses WebGPU memory, and it also runs on native builds.
+- Vectors: a background job (`client/src/app/llm/embed_sync.ts`) embeds every readable document when its text lands. The `chunk_vectors` IndexedDB store keeps one vector for each chunk text and embedder. A change of LLM does not change the vectors. A review or a draft then embeds only its query.
+- Fallback: if the weights are missing, or the worker fails, retrieval is BM25 only. A failure never blocks a review or a draft. The AI settings show the state on the "Semantic search" line.
+- Staleness: with the embedder, the review fingerprint includes the embedder id and `RETRIEVAL_VERSION`. A BM25-only run has the same fingerprint as before. Stored reviews show as stale when the embedder first loads.
+- Gate: `node scripts/eval-retrieval.mjs` reports recall@4, recall@8, and MRR for BM25, dense, and fused variants on `models/finetune/pipeline/fixtures/retrieval_cases.json`.
+
+Summaries no longer depend on the LLM. The summary fingerprint holds the content, the extractor, and `SUMMARY_VERSION` only. A model switch keeps every stored summary. Use "Re-summarize" on a file to regenerate its summary with the current model.
 
 ## Manifest maintenance
 
@@ -110,4 +124,4 @@ Case history (2026-08-27): session creation aborted with a messageless C++ excep
 - The summarizer reads extracted text only. Image-only evidence appears in the panel as "no readable text".
 - A stopped generation keeps the partial draft. The user can still insert or regenerate.
 - One generation runs at a time. The engine rejects a second concurrent request.
-- Desktop installers carry no model weights, so they stay well under GitHub's 2 GiB release-asset cap (the deploy workflow fails fast on any oversized Linux bundle). A device without WebGPU and without the native path has no usable model.
+- Desktop installers carry no LLM weights (only the small embedder), so they stay well under GitHub's 2 GiB release-asset cap (the deploy workflow fails fast on any oversized Linux bundle). A device without WebGPU and without the native path has no usable model.

@@ -5,7 +5,9 @@
 // only — verbatim excerpts remain the quotable grounding, because a 1B
 // model's summaries blur specifics and nothing can be quote-verified
 // against them. Expensive on first run (one generation per chunk), then
-// cached until the file, extractor, model, or this pipeline changes.
+// cached until the file, the extractor, or this pipeline changes. A change
+// of LLM does not make a summary stale: the per-file "Re-summarize" action
+// regenerates one on request.
 
 import { IDB, IDBEvidenceSummary } from "@/app/db";
 import { EXTRACTOR_VERSION } from "@/app/search/extract_text";
@@ -128,7 +130,21 @@ const reduceSummaries = async (
     );
 };
 
-export const summaryFingerprint = (evidenceId: string, modelId: string) =>
+/** What a summary depends on: the content, the extractor, and this
+ *  pipeline. Not the model: summaries are prompt context only, and a model
+ *  switch must not force a re-summarization of every document. */
+export const summaryFingerprint = (evidenceId: string) =>
+    sha256Hex(
+        [
+            evidenceId,
+            `extractor:${EXTRACTOR_VERSION}`,
+            `summary:${SUMMARY_VERSION}`,
+        ].join("\n"),
+    );
+
+/** The fingerprint before the model left it. Rows written then stay
+ *  current: they match this formula for the model that wrote them. */
+const legacySummaryFingerprint = (evidenceId: string, modelId: string) =>
     sha256Hex(
         [
             evidenceId,
@@ -137,6 +153,17 @@ export const summaryFingerprint = (evidenceId: string, modelId: string) =>
             `model:${modelId}`,
         ].join("\n"),
     );
+
+/** True when a stored row matches the current inputs, whichever model
+ *  wrote it. Says nothing about completeness. */
+export const isCurrentSummary = async (
+    row: Pick<IDBEvidenceSummary, "fingerprint" | "model">,
+    evidenceId: string,
+): Promise<boolean> =>
+    row.fingerprint === (await summaryFingerprint(evidenceId)) ||
+    (!!row.model &&
+        row.fingerprint ===
+            (await legacySummaryFingerprint(evidenceId, row.model)));
 
 export interface DocSummary {
     evidenceId: string;
@@ -156,17 +183,15 @@ export interface DocSummary {
  *  flow owns creating summaries. */
 export const freshDocSummaries = async (
     docs: EvidenceDoc[],
-    modelId: string,
 ): Promise<DocSummary[]> => {
     const summaries: DocSummary[] = [];
     for (const doc of docs) {
-        const fingerprint = await summaryFingerprint(doc.evidenceId, modelId);
         const [cached] = await IDB.evidenceSummaries.getAll(
             IDBKeyRange.only(doc.evidenceId),
         );
         if (
             cached &&
-            cached.fingerprint === fingerprint &&
+            (await isCurrentSummary(cached, doc.evidenceId)) &&
             cached.complete !== false &&
             cached.summary
         ) {
@@ -190,7 +215,8 @@ export interface SummarizeProgress {
 }
 
 /** The cached summary for a document, or a fresh map-reduce run when the
- *  cache is missing or stale. The model must already be loaded. */
+ *  cache is missing or stale. The model must already be loaded. modelId
+ *  only stamps the row: it is not part of the freshness check. */
 export const ensureDocSummary = async (
     doc: EvidenceDoc,
     modelId: string,
@@ -202,17 +228,15 @@ export const ensureDocSummary = async (
         onProgress?: (progress: SummarizeProgress) => void;
     } = {},
 ): Promise<IDBEvidenceSummary> => {
-    const fingerprint = await summaryFingerprint(doc.evidenceId, modelId);
+    const fingerprint = await summaryFingerprint(doc.evidenceId);
     const [cached] = await IDB.evidenceSummaries.getAll(
         IDBKeyRange.only(doc.evidenceId),
     );
+    const current =
+        !!cached && (await isCurrentSummary(cached, doc.evidenceId));
     // `!== false` keeps rows from before the `complete` field valid — they
     // were only ever written complete.
-    if (
-        cached &&
-        cached.fingerprint === fingerprint &&
-        cached.complete !== false
-    ) {
+    if (cached && current && cached.complete !== false) {
         return cached;
     }
 
@@ -221,7 +245,7 @@ export const ensureDocSummary = async (
     // extractor version, and chunkDoc is deterministic, so the stored
     // summaries line up with the chunk list index for index.
     const chunkSummaries: string[] =
-        cached?.fingerprint === fingerprint
+        cached && current
             ? cached.chunk_summaries.slice(0, chunks.length)
             : [];
     const partial = (): IDBEvidenceSummary => ({

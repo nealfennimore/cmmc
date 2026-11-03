@@ -2,7 +2,7 @@
 import { examineIdsForStoredItem } from "@/api/entities/ExamineItemIds";
 import { showLoader } from "@/app/components/loader";
 import { Status } from "@/app/components/status";
-export const version = 13;
+export const version = 14;
 let loader: Promise<IDBDatabase> | undefined;
 
 enum Table {
@@ -18,6 +18,7 @@ enum Table {
     EVIDENCE_DATA = "evidence_data",
     OBJECTIVE_REVIEWS = "objective_reviews",
     EVIDENCE_SUMMARIES = "evidence_summaries",
+    CHUNK_VECTORS = "chunk_vectors",
 }
 
 const migrations = {
@@ -336,6 +337,19 @@ const migrations = {
             keyPath: "evidence_id",
         });
     },
+    "14": async (event: IDBVersionChangeEvent) => {
+        const db = event.target.result as IDBDatabase;
+
+        // Embedding vectors of evidence chunks for hybrid retrieval
+        // (docs/embedding-retrieval-plan.md), keyed by embedder id and the
+        // sha256 of the chunk text. Derived data (evidence + model output):
+        // never exported, cleared on import. A new embedder id or chunk
+        // text gives a new key, so no fingerprint field is needed.
+        const vectors = db.createObjectStore(Table.CHUNK_VECTORS, {
+            keyPath: "key",
+        });
+        vectors.createIndex("evidence_id", "evidence_id", { unique: false });
+    },
 };
 
 if (typeof window !== "undefined") {
@@ -474,6 +488,20 @@ export interface IDBEvidenceSummary {
      *  model id; see llm/summarize.ts. */
     fingerprint: string;
     model: string;
+    created: number;
+}
+
+/** Embedding of one evidence chunk. Derived data: never exported; cleared
+ *  on import. */
+export interface IDBChunkVector {
+    /** "{embedder id}:{sha256 of the chunk text}". */
+    key: string;
+    /** The artifact the chunk came from, for orphan cleanup. Two artifacts
+     *  with an identical chunk share one row; the last writer owns it. */
+    evidence_id: string;
+    embedder: string;
+    /** Float32 unit vector, as raw bytes. */
+    vector: ArrayBuffer;
     created: number;
 }
 
@@ -900,6 +928,9 @@ export class IDB {
     );
     static evidenceSummaries = new StoreWrapper<IDBEvidenceSummary>(
         Table.EVIDENCE_SUMMARIES,
+    );
+    static chunkVectors = new StoreWrapper<IDBChunkVector>(
+        Table.CHUNK_VECTORS,
     );
 
     static version = version;

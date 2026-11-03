@@ -26,7 +26,7 @@ import {
     weightsAvailable,
 } from "./engine";
 import { EvidenceDoc } from "./prompt";
-import { ensureDocSummary, summaryFingerprint } from "./summarize";
+import { ensureDocSummary, isCurrentSummary } from "./summarize";
 import {
     getSelectedModelId,
     isAiEnabled,
@@ -247,11 +247,10 @@ const reconcile = async (): Promise<void> => {
         if (manualIds instanceof Set && !manualIds.has(row.id)) {
             continue;
         }
-        const fingerprint = await summaryFingerprint(row.id, model.id);
         const cached = summaryRows.get(row.id);
         if (
             cached &&
-            cached.fingerprint === fingerprint &&
+            (await isCurrentSummary(cached, row.id)) &&
             cached.complete !== false &&
             cached.summary
         ) {

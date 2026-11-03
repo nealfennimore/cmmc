@@ -13,6 +13,7 @@
 // Run inside `nix develop` (needs node >= 18 and network access):
 //   node scripts/update-model-manifest.mjs --id llama-3.2-1b-instruct-cmmc
 //   node scripts/update-model-manifest.mjs --id llama-3.2-1b-instruct-cmmc-gguf --revision <sha>
+//   node scripts/update-model-manifest.mjs --embedder granite-embedding-small-english-r2
 //   node scripts/update-model-manifest.mjs --verify
 //
 // With --id, the script resolves the repo's current revision through the
@@ -22,7 +23,8 @@
 // so the pinned bytes land in the Nix store and later builds reuse them.
 // Treat the diff like a lockfile change. With --verify, the script
 // re-downloads every file in the manifest and confirms the recorded hashes
-// still match.
+// still match. --embedder does the same for an entry of the `embedders`
+// array (the retrieval embedding model, never shown in the LLM picker).
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -162,11 +164,22 @@ const nixAvailable = (() => {
 })();
 const hashRemote = nixAvailable ? hashViaNixStore : hashRemoteDirect;
 
-const updateModel = async (id) => {
-    const model = manifest.models.find((entry) => entry.id === id);
+// The embedder (feature-extraction, models/embedder/export.sh) has no
+// generation_config.json, and its q8 graph is one self-contained file.
+const EMBEDDER_FILES = [
+    "config.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+    "special_tokens_map.json",
+    "onnx/model_quantized.onnx",
+];
+
+const updateModel = async (id, kind = "models") => {
+    const entries = manifest[kind] ?? [];
+    const model = entries.find((entry) => entry.id === id);
     if (!model) {
-        const known = manifest.models.map((entry) => entry.id).join(", ");
-        throw new Error(`Unknown model id "${id}". Known ids: ${known}`);
+        const known = entries.map((entry) => entry.id).join(", ");
+        throw new Error(`Unknown ${kind} id "${id}". Known ids: ${known}`);
     }
 
     const revision =
@@ -184,12 +197,14 @@ const updateModel = async (id) => {
     console.log(`${model.repo} @ ${revision}`);
 
     const files = [];
-    for (const path of await requiredFiles(
-        model.repo,
-        revision,
-        model.dtype,
-        model.format,
-    )) {
+    for (const path of kind === "embedders"
+        ? EMBEDDER_FILES
+        : await requiredFiles(
+              model.repo,
+              revision,
+              model.dtype,
+              model.format,
+          )) {
         const url = resolveUrl(model.repo, revision, path);
         process.stdout.write(`  ${path} ... `);
         const { size, sha256 } = await hashRemote(url);
@@ -206,7 +221,7 @@ const updateModel = async (id) => {
 
 const verify = async () => {
     let failures = 0;
-    for (const model of manifest.models) {
+    for (const model of [...manifest.models, ...(manifest.embedders ?? [])]) {
         for (const file of model.files) {
             if (!file.sha256) {
                 console.log(`MISSING HASH ${model.id} ${file.path}`);
@@ -229,13 +244,16 @@ const verify = async () => {
 };
 
 const id = getArg("id");
+const embedderId = getArg("embedder");
 if (args.includes("--verify")) {
     await verify();
 } else if (id) {
     await updateModel(id);
+} else if (embedderId) {
+    await updateModel(embedderId, "embedders");
 } else {
     console.error(
-        "Usage: update-model-manifest.mjs --id <model-id> [--revision <sha>] | --verify",
+        "Usage: update-model-manifest.mjs --id <model-id> | --embedder <embedder-id> [--revision <sha>] | --verify",
     );
     process.exit(1);
 }

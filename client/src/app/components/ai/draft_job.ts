@@ -13,6 +13,7 @@ import {
     getAssessmentGuidance,
 } from "@/api/entities/AssessmentGuide";
 import { expectedReviewState } from "@/app/ai/review";
+import { rankDraftChunks } from "@/app/ai/retrieval";
 import { IDB } from "@/app/db";
 import {
     DRAFT_MAX_NEW_TOKENS,
@@ -31,6 +32,7 @@ import {
     EvidenceChunk,
     ReviewFinding,
     buildMessages,
+    chunkDoc,
     gatherEvidence,
     selectChunks,
     summarizeQuery,
@@ -308,21 +310,39 @@ const run = async () => {
                 4,
             0,
         );
-        const selected = selectChunks(
-            docs,
-            [
-                summarizeQuery({ title, statement, objectives }),
-                ...considerations,
-                ...verifiedQuotes,
-            ].join(" "),
-            {
-                budget: Math.max(
-                    1200,
-                    evidenceCharBudget(getContextTokens()) - overviewChars,
-                ),
-                pinnedQuotes: verifiedQuotes,
-            },
-        );
+        const bm25Query = [
+            summarizeQuery({ title, statement, objectives }),
+            ...considerations,
+            ...verifiedQuotes,
+        ].join(" ");
+        // Dense (embedding) order when the embedder is available;
+        // undefined keeps the BM25 order. The pinned-quote chunks still
+        // come first inside selectChunks.
+        patch({ statusNote: "Finding relevant excerpts…" });
+        let ranked: string[] | undefined;
+        try {
+            ranked = await rankDraftChunks(
+                docs.flatMap(chunkDoc),
+                `${title} ${requirement.text}`,
+                aborter.signal,
+            );
+        } catch (error) {
+            if (thisRun !== runId || aborter.signal.aborted) {
+                return;
+            }
+            throw error;
+        }
+        if (thisRun !== runId) {
+            return;
+        }
+        const selected = selectChunks(docs, bm25Query, {
+            budget: Math.max(
+                1200,
+                evidenceCharBudget(getContextTokens()) - overviewChars,
+            ),
+            pinnedQuotes: verifiedQuotes,
+            ranked,
+        });
         patch({ chunks: selected });
 
         if (thisRun !== runId) {

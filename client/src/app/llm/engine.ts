@@ -125,7 +125,7 @@ const IPC_CHUNK_BYTES = 32 * 1024 * 1024;
 
 /** Read a resource file over IPC, chunked when the manifest knows it is
  *  large. onChunk reports bytes as they arrive (for progress). */
-const readResourceFile = async (
+export const readResourceFile = async (
     repo: string,
     path: string,
     size: number | undefined,

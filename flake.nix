@@ -111,11 +111,15 @@
         # skipped — the app then falls back to its verified runtime download.
         modelManifest = builtins.fromJSON
           (builtins.readFile ./client/src/app/llm/models.manifest.json);
-        pinnedModels = builtins.filter
-          (model:
-            model.revision != "" && model.files != [ ]
-            && builtins.all (file: file.sha256 != "") model.files)
-          modelManifest.models;
+        isPinnedEntry = model:
+          model.revision != "" && model.files != [ ]
+          && builtins.all (file: file.sha256 != "") model.files;
+        pinnedModels = builtins.filter isPinnedEntry modelManifest.models;
+        # The retrieval embedder (manifest "embedders",
+        # docs/embedding-retrieval-plan.md). About 50 MB, so every desktop
+        # bundle ships it: no bundlePlatforms filter applies.
+        pinnedEmbedders =
+          builtins.filter isPinnedEntry (modelManifest.embedders or [ ]);
 
         # Laid out as {repo}/{path} — exactly what transformers.js requests
         # under env.localModelPath ("/models/") in the bundled desktop app.
@@ -134,12 +138,14 @@
         # Every pinned model: the .#model-weights cache that CI and
         # fetch-model-weights.mjs copy from — deliberately unfiltered, so a
         # macOS machine with Nix still gets its files from the store.
-        modelWeights = weightsTree "cmmc-model-weights-${appVersion}" pinnedModels;
+        modelWeights = weightsTree "cmmc-model-weights-${appVersion}"
+          (pinnedModels ++ pinnedEmbedders);
         # What the Linux desktop package actually bundles: bundlePlatforms
         # absent or containing "linux". Every entry carries an empty list:
-        # installers ship no model weights (GitHub caps release assets below
+        # installers ship no LLM weights (GitHub caps release assets below
         # 2 GiB), and users add a model through the verified download/import
-        # (docs/model-download-plan.md). The tree is then empty.
+        # (docs/model-download-plan.md). The tree then holds only the
+        # embedder.
         linuxBundledModels = builtins.filter
           (model:
             !(model ? bundlePlatforms)
@@ -147,7 +153,7 @@
           pinnedModels;
         linuxModelWeights =
           weightsTree "cmmc-model-weights-linux-${appVersion}"
-            linuxBundledModels;
+            (linuxBundledModels ++ pinnedEmbedders);
 
         # WebKitGTK on NixOS: avoid GPU-compositing crashes and make TLS modules
         # resolvable so the Tauri webview can render and reach the network.

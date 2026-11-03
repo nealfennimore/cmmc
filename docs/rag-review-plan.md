@@ -212,7 +212,7 @@ New `client/src/app/components/objective_review.tsx` — `<ObjectiveReview requi
 
 - **Phase 1:** Rev 2 with the stub model (steps 1–9 above).
 - **Phase 2:** Rev 3 branch of `objectives.ts` (determinations + ODP substitution). Nothing else changes.
-- **Phase 3 (after the embedded model lands):** register the real `LocalModel`; optionally an embedding re-ranker via `setReranker`.
+- **Phase 3 (after the embedded model lands):** register the real `LocalModel`; optionally an embedding re-ranker via `setReranker`. The embedding part is replaced by embedding retrieval (`docs/embedding-retrieval-plan.md`): the embedder ranks all chunks, and BM25 is the fallback. `setReranker` stays as the hook for a cross-encoder.
 
 ## Risks
 

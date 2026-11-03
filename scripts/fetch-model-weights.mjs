@@ -62,15 +62,22 @@ const override = process.env.MODELS_PLATFORM;
 const tags = override
     ? [override]
     : [process.platform, `${process.platform}-${process.arch}`];
-const pinned = manifest.models.filter(
-    (model) =>
-        model.revision !== "" &&
-        model.files.length > 0 &&
-        model.files.every((file) => file.sha256 !== "") &&
-        (override === "all" ||
-            !model.bundlePlatforms ||
-            model.bundlePlatforms.some((tag) => tags.includes(tag))),
-);
+const isPinnedEntry = (model) =>
+    model.revision !== "" &&
+    model.files.length > 0 &&
+    model.files.every((file) => file.sha256 !== "");
+// The retrieval embedder (manifest "embedders") ships on every platform:
+// it is about 50 MB, so no bundlePlatforms pruning applies to it.
+const pinned = [
+    ...manifest.models.filter(
+        (model) =>
+            isPinnedEntry(model) &&
+            (override === "all" ||
+                !model.bundlePlatforms ||
+                model.bundlePlatforms.some((tag) => tags.includes(tag))),
+    ),
+    ...(manifest.embedders ?? []).filter(isPinnedEntry),
+];
 // No early exit when nothing is bundled: the prune pass below must still
 // remove the weights of a dropped model from the target tree.
 if (!pinned.length) {

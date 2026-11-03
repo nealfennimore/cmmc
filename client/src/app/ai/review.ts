@@ -8,6 +8,7 @@ import { Revision } from "@/app/context/revision";
 import { IDB, IDBObjectiveReview } from "@/app/db";
 import { getDeviceCapabilities } from "@/app/llm/capabilities";
 import { resolveUsableModel } from "@/app/llm/config";
+import { activeEmbedderId } from "@/app/llm/embedder";
 import { EvidenceDoc, gatherEvidence } from "@/app/llm/prompt";
 import { getSelectedModelId } from "@/app/llm/settings";
 import { DocSummary, freshDocSummaries } from "@/app/llm/summarize";
@@ -23,16 +24,21 @@ import {
     buildReviewPrompt,
     parseReviewResponse,
 } from "./prompt";
+import { RETRIEVAL_VERSION } from "./hybrid";
 import { buildChunkIndex, retrieveForObjective } from "./retrieval";
 
 /** What a stored verdict depends on: the reviewed evidence set, every
- *  version in the pipeline, and the document summaries that entered the
- *  prompt (a summary appearing or changing later must flag the row stale).
- *  A mismatch with the current state means the row is stale. */
+ *  version in the pipeline, the document summaries that entered the
+ *  prompt (a summary appearing or changing later must flag the row stale),
+ *  and, with the embedder, the embedder id and RETRIEVAL_VERSION. A
+ *  BM25-only run adds neither part, so its fingerprint is the same as
+ *  before the embedder existed. A mismatch with the current state
+ *  means the row is stale. */
 export const reviewFingerprint = (
     evidenceIds: string[],
     modelId: string,
     summaryFingerprints: string[] = [],
+    embedderId?: string,
 ): Promise<string> =>
     sha256Hex(
         [
@@ -41,6 +47,9 @@ export const reviewFingerprint = (
             `extractor:${EXTRACTOR_VERSION}`,
             `chunker:${CHUNKER_VERSION}`,
             `prompt:${PROMPT_VERSION}`,
+            ...(embedderId
+                ? [`retrieval:${RETRIEVAL_VERSION}`, `embedder:${embedderId}`]
+                : []),
             `model:${modelId}`,
         ].join("\n"),
     );
@@ -55,7 +64,7 @@ const storedSummaries = async (docs: EvidenceDoc[]): Promise<DocSummary[]> => {
         getSelectedModelId(),
         await getDeviceCapabilities(),
     );
-    return model ? freshDocSummaries(docs, model.id) : [];
+    return model ? freshDocSummaries(docs) : [];
 };
 
 export interface ExpectedReviewState {
@@ -79,6 +88,7 @@ export const expectedReviewState = async (
                   docs.map((doc) => doc.evidenceId),
                   model.id,
                   summaries.map((summary) => summary.fingerprint),
+                  await activeEmbedderId(),
               )
             : undefined,
         unreadable: unreadable.length,
@@ -160,13 +170,15 @@ const reviewObjectives = async (
     onProgress?.({ ...progress });
 
     // Chunk and index once — all objectives of the requirement share it.
-    // Stored chunk summaries join the index as retrieval vocabulary.
+    // Stored chunk summaries join the index as retrieval vocabulary. The
+    // chunk vectors load on the first objective and are shared too.
     const summaries = await storedSummaries(docs);
     const chunkIndex = buildChunkIndex(docs, summaries);
     const fingerprint = await reviewFingerprint(
         docs.map((doc) => doc.evidenceId),
         model.id,
         summaries.map((summary) => summary.fingerprint),
+        await activeEmbedderId(),
     );
 
     // Sequential on purpose: one generation at a time is all the engine
@@ -175,7 +187,20 @@ const reviewObjectives = async (
         if (signal?.aborted) {
             return;
         }
-        const retrieved = retrieveForObjective(objective, chunkIndex);
+        let retrieved;
+        try {
+            retrieved = await retrieveForObjective(
+                objective,
+                chunkIndex,
+                8,
+                signal,
+            );
+        } catch (error) {
+            if (signal?.aborted) {
+                return;
+            }
+            throw error;
+        }
         const { prompt, included } = buildReviewPrompt(
             objective,
             retrieved,

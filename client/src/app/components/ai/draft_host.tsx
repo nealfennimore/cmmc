@@ -16,6 +16,7 @@ import {
     startSummarySync,
     subscribeSummarySync,
 } from "@/app/llm/summary_sync";
+import { startEmbedSync } from "@/app/llm/embed_sync";
 import {
     DraftJobState,
     closeDraftJob,
@@ -121,7 +122,10 @@ export const DraftHost = () => {
         getSummarySync,
         getSummarySync,
     );
-    useEffect(() => startSummarySync(), []);
+    useEffect(() => {
+        startSummarySync();
+        startEmbedSync();
+    }, []);
     return (
         <>
             {job && !job.minimized && (

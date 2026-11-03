@@ -255,6 +255,7 @@ const importDatabase = async (text: string): Promise<void> => {
         // being replaced.
         await IDB.objectiveReviews.clear();
         await IDB.evidenceSummaries.clear();
+        await IDB.chunkVectors.clear();
         await IDB.evidenceData.clear();
 
         const requirements: Record<string, IDBRequirement> = {};

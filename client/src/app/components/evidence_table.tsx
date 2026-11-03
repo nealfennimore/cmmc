@@ -30,6 +30,7 @@ import {
     startSummarySync,
     subscribeSummarySync,
 } from "@/app/llm/summary_sync";
+import { startEmbedSync } from "@/app/llm/embed_sync";
 import { evidenceMatchIds } from "@/app/search/evidence_index";
 import { startEvidenceTextSync } from "@/app/search/evidence_text_store";
 import { hashType, mimeLabel } from "@/app/utils/file";
@@ -252,6 +253,7 @@ export const EvidenceTable = () => {
         refresh();
         startEvidenceTextSync();
         startSummarySync();
+        startEmbedSync();
     }, []);
 
     // Seed from ?q= — evidence hits in the global search and the Ctrl+K

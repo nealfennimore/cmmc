@@ -47,6 +47,42 @@ export interface LlmModel {
 
 export const MODELS: LlmModel[] = manifest.models;
 
+/** The retrieval embedding model (manifest "embedders",
+ *  docs/embedding-retrieval-plan.md). It runs in its own WASM-only worker
+ *  (embed_worker.ts) and never appears in the LLM picker. */
+export interface EmbedderModel {
+    id: string;
+    label: string;
+    repo: string;
+    revision: string;
+    /** transformers.js dtype key; "q8" = onnx/model_quantized.onnx. */
+    dtype: string;
+    /** The source weights that models/embedder/export.sh converts. */
+    upstream: string;
+    upstreamRevision: string;
+    pooling: "cls" | "mean";
+    dimensions: number;
+    /** Tokenizer truncation length for one text. */
+    maxTokens: number;
+    queryPrefix: string;
+    passagePrefix: string;
+    license: string;
+    licenseUrl: string;
+    totalBytes: number;
+    files: ManifestFile[];
+}
+
+const EMBEDDERS = (manifest.embedders ?? []) as EmbedderModel[];
+
+/** The first pinned embedder, or undefined when none is pinned yet — then
+ *  retrieval is BM25 only. */
+export const EMBEDDER: EmbedderModel | undefined = EMBEDDERS.find(
+    (embedder) =>
+        embedder.revision !== "" &&
+        embedder.files.length > 0 &&
+        embedder.files.every((file) => file.sha256 !== ""),
+);
+
 /** The CMMC fine-tune of Llama 3.2 1B (models/finetune/pipeline). The
  *  manifest holds no other model: the base Llamas and the Gemma 270M lite
  *  model were removed, so no WASM-capable model exists. */
@@ -85,7 +121,9 @@ export const LOCAL_MODEL_PATH = "/models/";
 /** True when the weights are fetchable from the app's own origin (dev
  *  server, or any hosting that serves public/models). Probes the smallest
  *  manifest file. Production desktop uses the IPC path instead. */
-export const hasBundledWeights = async (model: LlmModel): Promise<boolean> => {
+export const hasBundledWeights = async (
+    model: Pick<LlmModel, "repo">,
+): Promise<boolean> => {
     try {
         const response = await fetch(
             `${LOCAL_MODEL_PATH}${model.repo}/config.json`,

@@ -1,0 +1,851 @@
+{
+  "note": "Labeled retrieval cases for scripts/eval-retrieval.mjs (docs/embedding-retrieval-plan.md). Synthetic evidence for a fictional company, written by hand. Each chunk lists the objective ids it is relevant to (an assessor would cite it). Chunks with no labels are distractors: boilerplate that restates the requirement, other controls, and terms with a different meaning. The objective fields are a snapshot of objectivesForRequirement (client/src/app/ai/objectives.ts) on 2026-11-03, so the queries match the app.",
+  "requirements": [
+    {
+      "requirementId": "03.01.01",
+      "objectives": [
+        {
+          "id": "03.01.01.a",
+          "citation": "AC.L2-3.1.1[a]",
+          "text": "authorized users are identified",
+          "requirementStatement": "Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems).",
+          "methodTerms": [
+            "Access control policy",
+            "Procedures addressing account management",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "List of active system accounts and the name of the individual associated with each account",
+            "Notifications or records of recently transferred, separated, or terminated employees",
+            "List of conditions for group and role membership",
+            "List of recently disabled system accounts along with the name of the individual associated with each account",
+            "Access authorization records",
+            "Account management compliance reviews",
+            "System monitoring records",
+            "System audit logs and records",
+            "List of devices and systems authorized to connect to organizational systems",
+            "Other relevant documents or records"
+          ],
+          "considerations": [
+            "Is a list of authorized users maintained that defines their identities and roles [a]?"
+          ],
+          "relevant": [
+            "ac02",
+            "ac03"
+          ]
+        },
+        {
+          "id": "03.01.01.b",
+          "citation": "AC.L2-3.1.1[b]",
+          "text": "processes acting on behalf of authorized users are identified",
+          "requirementStatement": "Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems).",
+          "methodTerms": [
+            "Access control policy",
+            "Procedures addressing account management",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "List of active system accounts and the name of the individual associated with each account",
+            "Notifications or records of recently transferred, separated, or terminated employees",
+            "List of conditions for group and role membership",
+            "List of recently disabled system accounts along with the name of the individual associated with each account",
+            "Access authorization records",
+            "Account management compliance reviews",
+            "System monitoring records",
+            "System audit logs and records",
+            "List of devices and systems authorized to connect to organizational systems",
+            "Other relevant documents or records"
+          ],
+          "considerations": [],
+          "relevant": [
+            "ac04",
+            "ac05"
+          ]
+        },
+        {
+          "id": "03.01.01.c",
+          "citation": "AC.L2-3.1.1[c]",
+          "text": "devices (and other systems) authorized to connect to the system are identified",
+          "requirementStatement": "Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems).",
+          "methodTerms": [
+            "Access control policy",
+            "Procedures addressing account management",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "List of active system accounts and the name of the individual associated with each account",
+            "Notifications or records of recently transferred, separated, or terminated employees",
+            "List of conditions for group and role membership",
+            "List of recently disabled system accounts along with the name of the individual associated with each account",
+            "Access authorization records",
+            "Account management compliance reviews",
+            "System monitoring records",
+            "System audit logs and records",
+            "List of devices and systems authorized to connect to organizational systems",
+            "Other relevant documents or records"
+          ],
+          "considerations": [],
+          "relevant": [
+            "ac06",
+            "ac08",
+            "ac13"
+          ]
+        },
+        {
+          "id": "03.01.01.d",
+          "citation": "AC.L2-3.1.1[d]",
+          "text": "system access is limited to authorized users",
+          "requirementStatement": "Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems).",
+          "methodTerms": [
+            "Access control policy",
+            "Procedures addressing account management",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "List of active system accounts and the name of the individual associated with each account",
+            "Notifications or records of recently transferred, separated, or terminated employees",
+            "List of conditions for group and role membership",
+            "List of recently disabled system accounts along with the name of the individual associated with each account",
+            "Access authorization records",
+            "Account management compliance reviews",
+            "System monitoring records",
+            "System audit logs and records",
+            "List of devices and systems authorized to connect to organizational systems",
+            "Other relevant documents or records"
+          ],
+          "considerations": [
+            "Are account requests authorized before system access is granted [d,e,f]?"
+          ],
+          "relevant": [
+            "ac02",
+            "ac09"
+          ]
+        },
+        {
+          "id": "03.01.01.e",
+          "citation": "AC.L2-3.1.1[e]",
+          "text": "system access is limited to processes acting on behalf of authorized users",
+          "requirementStatement": "Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems).",
+          "methodTerms": [
+            "Access control policy",
+            "Procedures addressing account management",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "List of active system accounts and the name of the individual associated with each account",
+            "Notifications or records of recently transferred, separated, or terminated employees",
+            "List of conditions for group and role membership",
+            "List of recently disabled system accounts along with the name of the individual associated with each account",
+            "Access authorization records",
+            "Account management compliance reviews",
+            "System monitoring records",
+            "System audit logs and records",
+            "List of devices and systems authorized to connect to organizational systems",
+            "Other relevant documents or records"
+          ],
+          "considerations": [
+            "Are account requests authorized before system access is granted [d,e,f]?"
+          ],
+          "relevant": [
+            "ac05"
+          ]
+        },
+        {
+          "id": "03.01.01.f",
+          "citation": "AC.L2-3.1.1[f]",
+          "text": "system access is limited to authorized devices (including other systems)",
+          "requirementStatement": "Limit system access to authorized users, processes acting on behalf of authorized users, and devices (including other systems).",
+          "methodTerms": [
+            "Access control policy",
+            "Procedures addressing account management",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "List of active system accounts and the name of the individual associated with each account",
+            "Notifications or records of recently transferred, separated, or terminated employees",
+            "List of conditions for group and role membership",
+            "List of recently disabled system accounts along with the name of the individual associated with each account",
+            "Access authorization records",
+            "Account management compliance reviews",
+            "System monitoring records",
+            "System audit logs and records",
+            "List of devices and systems authorized to connect to organizational systems",
+            "Other relevant documents or records"
+          ],
+          "considerations": [
+            "Are account requests authorized before system access is granted [d,e,f]?"
+          ],
+          "relevant": [
+            "ac07",
+            "ac08",
+            "ac13"
+          ]
+        }
+      ],
+      "chunks": [
+        {
+          "id": "ac01",
+          "filename": "Access Control Policy v3.2.pdf",
+          "text": "Purpose. This policy establishes requirements for access control at Northwind Fabrication. It applies to all employees, contractors, and systems. Exceptions require CISO approval."
+        },
+        {
+          "id": "ac02",
+          "filename": "Access Control Policy v3.2.pdf",
+          "text": "Workday is the source of truth for who works at Northwind. A nightly sync creates an Active Directory account only for a person with an active Workday worker record, after the manager approves the ServiceNow request."
+        },
+        {
+          "id": "ac03",
+          "filename": "User Access Roster 2026-Q3.xlsx",
+          "text": "Name | Department | Role | Enclave\nJ. Ortiz | Engineering | CAD designer | CUI\nA. Chen | Quality | Inspector | CUI\nM. Patel | Finance | AP clerk | Corporate"
+        },
+        {
+          "id": "ac04",
+          "filename": "Service Accounts Register.docx",
+          "text": "svc_erp runs the Epicor ERP integration under a managed service account. svc_backup runs Veeam backup jobs. Each service account lists its owner and the scheduled task that runs as it."
+        },
+        {
+          "id": "ac05",
+          "filename": "Scheduled Tasks Baseline.docx",
+          "text": "Only the jobs on this list run unattended on CUI servers: the nightly Veeam backup (svc_backup) and the hourly Epicor sync (svc_erp). AppLocker blocks any other executable from running under these identities."
+        },
+        {
+          "id": "ac06",
+          "filename": "Asset Inventory 2026-Q3.xlsx",
+          "text": "Device | Owner | Enclave\nNW-LT-0412 | J. Ortiz | CUI\nNW-LT-0419 | A. Chen | CUI\nNW-SRV-DB02 | svc_erp | CUI"
+        },
+        {
+          "id": "ac07",
+          "filename": "Network Access Control Standard.pdf",
+          "text": "Laptops that are not enrolled in Microsoft Intune with a compliant status land on the guest VLAN and cannot reach the CUI VLAN (VLAN 40). The switches enforce this with 802.1X."
+        },
+        {
+          "id": "ac08",
+          "filename": "Interconnection Agreement - Precision Castings.pdf",
+          "text": "The supplier portal of Precision Castings connects to our SFTP server only from its fixed range 203.0.113.0/28, which is listed in the firewall allow list."
+        },
+        {
+          "id": "ac09",
+          "filename": "Offboarding Checklist.docx",
+          "text": "On the last day of a worker, HR closes the Workday record. The nightly sync then disables the AD account, and IT collects the badge and the laptop."
+        },
+        {
+          "id": "ac10",
+          "filename": "Security Awareness Training.pptx",
+          "text": "Phishing emails often ask you to click a link. Report suspicious messages with the Report Phish button in Outlook."
+        },
+        {
+          "id": "ac11",
+          "filename": "Password Standard.pdf",
+          "text": "Passwords must be at least 14 characters. Accounts lock after 10 failed attempts."
+        },
+        {
+          "id": "ac12",
+          "filename": "Visitor Log Procedure.docx",
+          "text": "Visitors sign in at the front desk and wear a red badge. An authorized employee escorts them at all times and limits their access to the lobby and conference rooms."
+        },
+        {
+          "id": "ac13",
+          "filename": "Firewall Rule Review 2026-08.xlsx",
+          "text": "Rule 114 | allow | 203.0.113.0/28 -> NW-SFTP-01 tcp/22 | Precision Castings | reviewed 2026-08-12"
+        },
+        {
+          "id": "ac14",
+          "filename": "Access Control Policy v3.2.pdf",
+          "text": "System access is granted on least privilege and need to know. Authorized users are responsible for protecting their credentials and devices."
+        }
+      ]
+    },
+    {
+      "requirementId": "03.03.01",
+      "objectives": [
+        {
+          "id": "03.03.01.a",
+          "citation": "AU.L2-3.3.1[a]",
+          "text": "audit logs needed (i.e., event types to be logged) to enable the monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity are specified",
+          "requirementStatement": "Create and retain system audit logs and records to the extent needed to enable the monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity.",
+          "methodTerms": [
+            "Audit and accountability policy",
+            "Procedures addressing auditable events",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "Procedures addressing control of audit records",
+            "Procedures addressing audit record generation",
+            "System audit logs and records",
+            "System auditable events",
+            "System incident reports",
+            "Other relevant documents or records"
+          ],
+          "considerations": [],
+          "relevant": [
+            "au01",
+            "au03"
+          ]
+        },
+        {
+          "id": "03.03.01.b",
+          "citation": "AU.L2-3.3.1[b]",
+          "text": "the content of audit records needed to support monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity is defined",
+          "requirementStatement": "Create and retain system audit logs and records to the extent needed to enable the monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity.",
+          "methodTerms": [
+            "Audit and accountability policy",
+            "Procedures addressing auditable events",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "Procedures addressing control of audit records",
+            "Procedures addressing audit record generation",
+            "System audit logs and records",
+            "System auditable events",
+            "System incident reports",
+            "Other relevant documents or records"
+          ],
+          "considerations": [],
+          "relevant": [
+            "au02"
+          ]
+        },
+        {
+          "id": "03.03.01.c",
+          "citation": "AU.L2-3.3.1[c]",
+          "text": "audit records are created (generated)",
+          "requirementStatement": "Create and retain system audit logs and records to the extent needed to enable the monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity.",
+          "methodTerms": [
+            "Audit and accountability policy",
+            "Procedures addressing auditable events",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "Procedures addressing control of audit records",
+            "Procedures addressing audit record generation",
+            "System audit logs and records",
+            "System auditable events",
+            "System incident reports",
+            "Other relevant documents or records"
+          ],
+          "considerations": [],
+          "relevant": [
+            "au03",
+            "au04"
+          ]
+        },
+        {
+          "id": "03.03.01.d",
+          "citation": "AU.L2-3.3.1[d]",
+          "text": "audit records, once created, contain the defined content",
+          "requirementStatement": "Create and retain system audit logs and records to the extent needed to enable the monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity.",
+          "methodTerms": [
+            "Audit and accountability policy",
+            "Procedures addressing auditable events",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "Procedures addressing control of audit records",
+            "Procedures addressing audit record generation",
+            "System audit logs and records",
+            "System auditable events",
+            "System incident reports",
+            "Other relevant documents or records"
+          ],
+          "considerations": [],
+          "relevant": [
+            "au04"
+          ]
+        },
+        {
+          "id": "03.03.01.e",
+          "citation": "AU.L2-3.3.1[e]",
+          "text": "retention requirements for audit records are defined",
+          "requirementStatement": "Create and retain system audit logs and records to the extent needed to enable the monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity.",
+          "methodTerms": [
+            "Audit and accountability policy",
+            "Procedures addressing auditable events",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "Procedures addressing control of audit records",
+            "Procedures addressing audit record generation",
+            "System audit logs and records",
+            "System auditable events",
+            "System incident reports",
+            "Other relevant documents or records"
+          ],
+          "considerations": [
+            "Are audit log retention requirements appropriate to the system and its associated level of risk [e]?"
+          ],
+          "relevant": [
+            "au05"
+          ]
+        },
+        {
+          "id": "03.03.01.f",
+          "citation": "AU.L2-3.3.1[f]",
+          "text": "audit records are retained as defined",
+          "requirementStatement": "Create and retain system audit logs and records to the extent needed to enable the monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity.",
+          "methodTerms": [
+            "Audit and accountability policy",
+            "Procedures addressing auditable events",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "Procedures addressing control of audit records",
+            "Procedures addressing audit record generation",
+            "System audit logs and records",
+            "System auditable events",
+            "System incident reports",
+            "Other relevant documents or records"
+          ],
+          "considerations": [],
+          "relevant": [
+            "au06",
+            "au07"
+          ]
+        }
+      ],
+      "chunks": [
+        {
+          "id": "au01",
+          "filename": "Logging Standard.pdf",
+          "text": "Servers and domain controllers must record successful and failed logons, account creation and deletion, privilege use, changes to security groups, and policy changes."
+        },
+        {
+          "id": "au02",
+          "filename": "Logging Standard.pdf",
+          "text": "Each log entry must include the timestamp in UTC, the source host, the user or service account, the event ID, and the outcome."
+        },
+        {
+          "id": "au03",
+          "filename": "Windows Event Forwarding GPO.txt",
+          "text": "Advanced Audit Policy: Audit Logon = Success, Failure. Audit User Account Management = Success, Failure. Subscription: http://nw-wec-01:5985/wsman/SubscriptionManager/WEC"
+        },
+        {
+          "id": "au04",
+          "filename": "Splunk Sample Export 2026-09-14.csv",
+          "text": "_time,host,user,EventCode,action\n2026-09-14T08:02:11Z,NW-DC-01,jortiz,4624,success\n2026-09-14T08:05:40Z,NW-DC-01,achen,4625,failure"
+        },
+        {
+          "id": "au05",
+          "filename": "Records Retention Schedule.xlsx",
+          "text": "Record type | Retention | Owner\nSecurity event logs | 1 year online, 3 years archive | IT Security\nPayroll records | 7 years | Finance"
+        },
+        {
+          "id": "au06",
+          "filename": "Splunk Index Configuration.txt",
+          "text": "[wineventlog]\nfrozenTimePeriodInSecs = 31536000\ncoldToFrozenDir = /archive/wineventlog"
+        },
+        {
+          "id": "au07",
+          "filename": "Backup Report 2026-09.pdf",
+          "text": "The archive volume /archive holds frozen Splunk buckets back to 2023-10. Veeam copies it weekly to the immutable repository."
+        },
+        {
+          "id": "au08",
+          "filename": "Incident Response Plan.pdf",
+          "text": "The incident commander declares an incident and opens a bridge call. Legal decides whether to notify customers and law enforcement."
+        },
+        {
+          "id": "au09",
+          "filename": "Acceptable Use Policy.pdf",
+          "text": "Users must not use company systems for unlawful or unauthorized activity. The company can monitor the use of its systems."
+        },
+        {
+          "id": "au10",
+          "filename": "Audit and Accountability Policy.pdf",
+          "text": "Northwind Fabrication creates and retains system audit logs and records to enable the monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity."
+        },
+        {
+          "id": "au11",
+          "filename": "Time Synchronization Standard.docx",
+          "text": "All servers sync time from NW-DC-01, which syncs from time.nist.gov."
+        },
+        {
+          "id": "au12",
+          "filename": "Internal Audit Report 2025.pdf",
+          "text": "The internal audit team reviewed accounts payable controls and found two exceptions in vendor master changes."
+        },
+        {
+          "id": "au13",
+          "filename": "SIEM Alert Runbook.docx",
+          "text": "When Splunk raises the alert Multiple failed logons, the analyst checks the source host and the user in the dashboard."
+        }
+      ]
+    },
+    {
+      "requirementId": "03.05.03",
+      "objectives": [
+        {
+          "id": "03.05.03.a",
+          "citation": "IA.L2-3.5.3[a]",
+          "text": "privileged accounts are identified",
+          "requirementStatement": "Use multifactor authentication for local and network access to privileged accounts and for network access to non-privileged accounts.",
+          "methodTerms": [
+            "Identification and authentication policy",
+            "Procedures addressing user identification and authentication",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "System audit logs and records",
+            "List of system accounts",
+            "Other relevant documents or records"
+          ],
+          "considerations": [],
+          "relevant": [
+            "ia01"
+          ]
+        },
+        {
+          "id": "03.05.03.b",
+          "citation": "IA.L2-3.5.3[b]",
+          "text": "multifactor authentication is implemented for local access to privileged accounts",
+          "requirementStatement": "Use multifactor authentication for local and network access to privileged accounts and for network access to non-privileged accounts.",
+          "methodTerms": [
+            "Identification and authentication policy",
+            "Procedures addressing user identification and authentication",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "System audit logs and records",
+            "List of system accounts",
+            "Other relevant documents or records"
+          ],
+          "considerations": [
+            "Does the system uniquely identify and authenticate users, including privileged accounts [b,c,d]?"
+          ],
+          "relevant": [
+            "ia02",
+            "ia04",
+            "ia12"
+          ]
+        },
+        {
+          "id": "03.05.03.c",
+          "citation": "IA.L2-3.5.3[c]",
+          "text": "multifactor authentication is implemented for network access to privileged accounts",
+          "requirementStatement": "Use multifactor authentication for local and network access to privileged accounts and for network access to non-privileged accounts.",
+          "methodTerms": [
+            "Identification and authentication policy",
+            "Procedures addressing user identification and authentication",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "System audit logs and records",
+            "List of system accounts",
+            "Other relevant documents or records"
+          ],
+          "considerations": [
+            "Does the system uniquely identify and authenticate users, including privileged accounts [b,c,d]?"
+          ],
+          "relevant": [
+            "ia03",
+            "ia04",
+            "ia13"
+          ]
+        },
+        {
+          "id": "03.05.03.d",
+          "citation": "IA.L2-3.5.3[d]",
+          "text": "multifactor authentication is implemented for network access to non-privileged accounts",
+          "requirementStatement": "Use multifactor authentication for local and network access to privileged accounts and for network access to non-privileged accounts.",
+          "methodTerms": [
+            "Identification and authentication policy",
+            "Procedures addressing user identification and authentication",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "System audit logs and records",
+            "List of system accounts",
+            "Other relevant documents or records"
+          ],
+          "considerations": [
+            "Does the system uniquely identify and authenticate users, including privileged accounts [b,c,d]?"
+          ],
+          "relevant": [
+            "ia03",
+            "ia05",
+            "ia08",
+            "ia13"
+          ]
+        }
+      ],
+      "chunks": [
+        {
+          "id": "ia01",
+          "filename": "Privileged Account List.xlsx",
+          "text": "Account | Type | Owner\nadm-jortiz | Domain Admin | J. Ortiz\nadm-kwu | Server Admin | K. Wu\nroot (NW-SRV-DB02) | Local admin | IT"
+        },
+        {
+          "id": "ia02",
+          "filename": "Privileged Access Procedure.docx",
+          "text": "Administrators sign in at the console of servers and of the jump host NW-JMP-01 with a PIV smart card and PIN."
+        },
+        {
+          "id": "ia03",
+          "filename": "Remote Access Standard.pdf",
+          "text": "All remote connections go through the GlobalProtect VPN. After the AD password, the user approves a Duo push on a phone or touches a YubiKey."
+        },
+        {
+          "id": "ia04",
+          "filename": "Jump Host Configuration.txt",
+          "text": "NW-JMP-01: RDP restricted to group GG-Admins; Duo Authentication for Windows Logon installed; offline access disabled."
+        },
+        {
+          "id": "ia05",
+          "filename": "Microsoft 365 Conditional Access Export.json",
+          "text": "{\"displayName\":\"Require MFA for all users\",\"state\":\"enabled\",\"conditions\":{\"users\":{\"include\":[\"All\"]}},\"grantControls\":{\"builtInControls\":[\"mfa\"]}}"
+        },
+        {
+          "id": "ia06",
+          "filename": "Password Standard.pdf",
+          "text": "Passwords must be at least 14 characters and must not reuse the last 24 passwords."
+        },
+        {
+          "id": "ia07",
+          "filename": "Identification and Authentication Policy.pdf",
+          "text": "Users are uniquely identified and authenticated before they access company systems. The IT Security Lead owns this policy."
+        },
+        {
+          "id": "ia08",
+          "filename": "Duo Admin Panel Report 2026-09.pdf",
+          "text": "Enrolled users: 214 of 214. Bypass codes issued this month: 0. Methods: Duo Push 81%, hardware token 19%."
+        },
+        {
+          "id": "ia09",
+          "filename": "Help Desk Procedure.docx",
+          "text": "When a user forgets a password, the help desk verifies the employee ID and sends a reset link to the registered phone."
+        },
+        {
+          "id": "ia10",
+          "filename": "Security Awareness Training.pptx",
+          "text": "Never approve a sign-in prompt that you did not start. Report unexpected prompts to the help desk."
+        },
+        {
+          "id": "ia11",
+          "filename": "Badge System Procedure.docx",
+          "text": "Employees tap their badge at the reader and enter a 4-digit PIN to enter the machining floor."
+        },
+        {
+          "id": "ia12",
+          "filename": "Server Hardening Checklist.xlsx",
+          "text": "Item | Setting\nInteractive logon: Require smart card | Enabled on all Tier 0 servers\nLocal Administrator Password Solution | Enabled"
+        },
+        {
+          "id": "ia13",
+          "filename": "VPN Configuration Export.txt",
+          "text": "gateway NW-GP-01; authentication-profile: AD-LDAP + RADIUS-Duo; client-cert required: yes"
+        }
+      ]
+    },
+    {
+      "requirementId": "03.08.03",
+      "objectives": [
+        {
+          "id": "03.08.03.a",
+          "citation": "MP.L2-3.8.3[a]",
+          "text": "system media containing CUI is sanitized or destroyed before disposal",
+          "requirementStatement": "Sanitize or destroy system media containing CUI before disposal or release for reuse.",
+          "methodTerms": [
+            "System media protection policy",
+            "Procedures addressing media sanitization and disposal",
+            "Applicable standards and policies addressing media sanitization",
+            "System security plan",
+            "Media sanitization records",
+            "System audit logs and records",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "Other relevant documents or records"
+          ],
+          "considerations": [
+            "Is all managed data storage erased, encrypted, or destroyed using mechanisms to ensure that no usable data is retrievable [a,b]?"
+          ],
+          "relevant": [
+            "mp02",
+            "mp03",
+            "mp08"
+          ]
+        },
+        {
+          "id": "03.08.03.b",
+          "citation": "MP.L2-3.8.3[b]",
+          "text": "system media containing CUI is sanitized before it is released for reuse",
+          "requirementStatement": "Sanitize or destroy system media containing CUI before disposal or release for reuse.",
+          "methodTerms": [
+            "System media protection policy",
+            "Procedures addressing media sanitization and disposal",
+            "Applicable standards and policies addressing media sanitization",
+            "System security plan",
+            "Media sanitization records",
+            "System audit logs and records",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "Other relevant documents or records"
+          ],
+          "considerations": [
+            "Is all managed data storage erased, encrypted, or destroyed using mechanisms to ensure that no usable data is retrievable [a,b]?"
+          ],
+          "relevant": [
+            "mp01",
+            "mp04",
+            "mp05"
+          ]
+        }
+      ],
+      "chunks": [
+        {
+          "id": "mp01",
+          "filename": "Media Sanitization Procedure.docx",
+          "text": "Before a laptop goes back into the spare pool, IT wipes the drive with Blancco and attaches the Blancco report to the asset record."
+        },
+        {
+          "id": "mp02",
+          "filename": "Certificate of Destruction - ShredPro 2026-07.pdf",
+          "text": "ShredPro Inc. certifies that the 38 hard drives and 12 SSDs listed in Appendix A were physically shredded to 2 mm particles on 2026-07-18."
+        },
+        {
+          "id": "mp03",
+          "filename": "IT Asset Disposal Standard.pdf",
+          "text": "Retired equipment stays in the locked cage until the quarterly pickup by our e-waste vendor. IT removes the drives first and sends them for shredding."
+        },
+        {
+          "id": "mp04",
+          "filename": "Blancco Erasure Report NW-LT-0388.pdf",
+          "text": "Erasure method: NIST 800-88 Purge. Result: Successful. Drive serial S4EVNF0M123456. Verified by: K. Wu."
+        },
+        {
+          "id": "mp05",
+          "filename": "Printer Lease Return Checklist.docx",
+          "text": "Before the leased copiers go back to the vendor, IT runs the Secure Overwrite function on the internal hard disk and records the completion code."
+        },
+        {
+          "id": "mp06",
+          "filename": "Records Retention Schedule.xlsx",
+          "text": "Engineering drawings | 10 years | Engineering\nQuality records | 15 years | Quality"
+        },
+        {
+          "id": "mp07",
+          "filename": "Media Protection Policy.pdf",
+          "text": "System media containing CUI must be protected and controlled. Media must be sanitized or destroyed before disposal or release for reuse."
+        },
+        {
+          "id": "mp08",
+          "filename": "Clean Desk Policy.pdf",
+          "text": "Lock printed CUI in the file cabinet at the end of the day. Put paper you no longer need in the locked shred bins."
+        },
+        {
+          "id": "mp09",
+          "filename": "Backup Tape Rotation.docx",
+          "text": "Weekly tapes rotate offsite with Iron Mountain. Tapes go back into the rotation after 8 weeks."
+        },
+        {
+          "id": "mp10",
+          "filename": "USB Device Control Standard.pdf",
+          "text": "Intune blocks USB mass storage on all laptops except approved encrypted Kingston IronKey drives."
+        },
+        {
+          "id": "mp11",
+          "filename": "Facilities Work Order 2026-104.pdf",
+          "text": "Replace the ceiling tiles in conference room B. Dispose of the old tiles in the dumpster."
+        },
+        {
+          "id": "mp12",
+          "filename": "Hardware Refresh Plan 2026.xlsx",
+          "text": "Model | Count | Refresh date\nDell Latitude 7440 | 40 | 2026-Q4"
+        }
+      ]
+    },
+    {
+      "requirementId": "03.13.11",
+      "objectives": [
+        {
+          "id": "03.13.11.a",
+          "citation": "SC.L2-3.13.11[a]",
+          "text": "FIPS-validated cryptography is employed to protect the confidentiality of CUI",
+          "requirementStatement": "Employ FIPS-validated cryptography when used to protect the confidentiality of CUI.",
+          "methodTerms": [
+            "System and communications protection policy",
+            "Procedures addressing cryptographic protection",
+            "System security plan",
+            "System design documentation",
+            "System configuration settings and associated documentation",
+            "Cryptographic module validation certificates",
+            "List of FIPS-validated cryptographic modules",
+            "System audit logs and records",
+            "Any other relevant documents or records"
+          ],
+          "considerations": [
+            "Is cryptography implemented to protect the confidentiality of CUI at rest and in transit, through the configuration of systems and applications or through the use of encryption tools [a]?"
+          ],
+          "relevant": [
+            "sc01",
+            "sc02",
+            "sc03",
+            "sc04",
+            "sc09",
+            "sc12"
+          ]
+        }
+      ],
+      "chunks": [
+        {
+          "id": "sc01",
+          "filename": "Cryptographic Module Inventory.xlsx",
+          "text": "System | Module | CMVP cert\nBitLocker on Windows 11 | Windows Cryptographic Primitives Library | #4536\nGlobalProtect VPN | Palo Alto PAN-OS 11.1 | #4802"
+        },
+        {
+          "id": "sc02",
+          "filename": "Group Policy Export - Security Options.txt",
+          "text": "System cryptography: Use FIPS compliant algorithms for encryption, hashing, and signing = Enabled"
+        },
+        {
+          "id": "sc03",
+          "filename": "Encryption Standard.pdf",
+          "text": "Data at rest on laptops is encrypted with BitLocker XTS-AES 256. File transfers use SFTP."
+        },
+        {
+          "id": "sc04",
+          "filename": "Email Encryption Procedure.docx",
+          "text": "Send CUI to customers only with Microsoft Purview Message Encryption. Type [Encrypt] in the subject line."
+        },
+        {
+          "id": "sc05",
+          "filename": "Password Standard.pdf",
+          "text": "Passwords must be at least 14 characters and must not reuse the last 24 passwords."
+        },
+        {
+          "id": "sc06",
+          "filename": "System and Communications Protection Policy.pdf",
+          "text": "Northwind Fabrication employs FIPS-validated cryptography when it is used to protect the confidentiality of CUI."
+        },
+        {
+          "id": "sc07",
+          "filename": "Vendor Security Questionnaire - Precision Castings.pdf",
+          "text": "Q14: Do you encrypt data in transit? A: Yes, TLS 1.2."
+        },
+        {
+          "id": "sc08",
+          "filename": "Certificate Renewal Log.xlsx",
+          "text": "Domain | CA | Expires\nportal.northwind.com | DigiCert | 2027-02-01"
+        },
+        {
+          "id": "sc09",
+          "filename": "Laptop Build Guide.docx",
+          "text": "Step 7: Turn on BitLocker with a TPM + PIN protector. Step 8: Check that Group Policy shows FIPS mode enabled."
+        },
+        {
+          "id": "sc10",
+          "filename": "Network Diagram Notes.docx",
+          "text": "The CUI VLAN reaches the internet only through the Palo Alto firewall cluster NW-FW-01/02."
+        },
+        {
+          "id": "sc11",
+          "filename": "Security Awareness Training.pptx",
+          "text": "CUI means Controlled Unclassified Information. Mark documents with the CUI banner."
+        },
+        {
+          "id": "sc12",
+          "filename": "Backup Report 2026-09.pdf",
+          "text": "Veeam encrypts backup files with AES-256 before it writes them to the immutable repository."
+        }
+      ]
+    }
+  ]
+}

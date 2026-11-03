@@ -33,7 +33,7 @@ import { getDeviceCapabilities } from "@/app/llm/capabilities";
 import { resolveUsableModel } from "@/app/llm/config";
 import { weightsAvailable } from "@/app/llm/engine";
 import { getSelectedModelId, isAiEnabled } from "@/app/llm/settings";
-import { summaryFingerprint } from "@/app/llm/summarize";
+import { isCurrentSummary } from "@/app/llm/summarize";
 import {
     ensureSummarySynced,
     getSummarySync,
@@ -367,27 +367,18 @@ const SummarySection = ({ artifact }: { artifact: IDBEvidenceV3 }) => {
                 }
                 return;
             }
-            const model = resolveUsableModel(
-                getSelectedModelId(),
-                await getDeviceCapabilities(),
-            );
             const [cached] = await IDB.evidenceSummaries.getAll(
                 IDBKeyRange.only(artifact.id),
             );
             const complete =
                 !!cached && cached.complete !== false && !!cached.summary;
             const fresh =
-                complete &&
-                !!model &&
-                cached.fingerprint ===
-                    (await summaryFingerprint(artifact.id, model.id));
+                complete && (await isCurrentSummary(cached, artifact.id));
             if (!cancelled) {
-                // Without a resolvable model the fingerprint cannot be
-                // judged — show the summary without the outdated label.
                 setSummary(
                     complete
                         ? {
-                              state: !model || fresh ? "fresh" : "stale",
+                              state: fresh ? "fresh" : "stale",
                               text: cached.summary,
                           }
                         : { state: "none" },
@@ -450,8 +441,8 @@ const SummarySection = ({ artifact }: { artifact: IDBEvidenceV3 }) => {
             )}
             {summary.state === "stale" && (
                 <span className="text-xs font-normal text-amber-700">
-                    This summary is outdated — the file, the model, or the
-                    pipeline changed since it was written.
+                    This summary is outdated — the file or the pipeline
+                    changed since it was written.
                 </span>
             )}
             {actionable && (

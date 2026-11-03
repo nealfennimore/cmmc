@@ -40,6 +40,17 @@ import {
     ensureSummarySynced,
     startSummarySync,
 } from "@/app/llm/summary_sync";
+import {
+    EmbedderState,
+    probeEmbedder,
+    subscribeEmbedderState,
+    unloadEmbedder,
+} from "@/app/llm/embedder";
+import {
+    cancelEmbedSync,
+    ensureEmbedSynced,
+    startEmbedSync,
+} from "@/app/llm/embed_sync";
 import { confirm } from "../confirm";
 import { InfoModal } from "../modal";
 import { closeDraftJob } from "./draft_job";
@@ -55,6 +66,43 @@ import {
 import { Badge, Button, Label, Select, menuItemClasses } from "../ui";
 
 export const AI_SETTINGS_OPEN_EVENT = "ai-settings-open";
+
+/** One status line for the retrieval embedder
+ *  (docs/embedding-retrieval-plan.md). Without it, retrieval is BM25 only. */
+const SemanticSearchStatus = ({ enabled }: { enabled: boolean }) => {
+    const [state, setState] = useState<EmbedderState | undefined>();
+    useEffect(() => {
+        let cancelled = false;
+        const refresh = () =>
+            void probeEmbedder().then((next) => {
+                if (!cancelled) {
+                    setState(next);
+                }
+            });
+        refresh();
+        const unsubscribe = subscribeEmbedderState(refresh);
+        return () => {
+            cancelled = true;
+            unsubscribe();
+        };
+    }, [enabled]);
+    return (
+        <div className="flex items-center justify-between gap-4">
+            <span className="text-muted-foreground">Semantic search</span>
+            {state === undefined ? (
+                <Badge variant="neutral">Detecting…</Badge>
+            ) : state === "off" ? (
+                <Badge variant="neutral">Off</Badge>
+            ) : state === "unavailable" ? (
+                <Badge variant="warning">Not available in this build</Badge>
+            ) : state === "failed" ? (
+                <Badge variant="warning">Failed to load</Badge>
+            ) : (
+                <Badge variant="success">On</Badge>
+            )}
+        </div>
+    );
+};
 
 export const openAiSettings = (): void => {
     window.dispatchEvent(new CustomEvent(AI_SETTINGS_OPEN_EVENT));
@@ -299,13 +347,18 @@ export const AiSettingsModal = () => {
                             setAiEnabled(on);
                             if (!on) {
                                 // Disabling stops everything and frees the
-                                // model's memory. Order matters: the draft
-                                // job must abort while its worker is alive
+                                // models' memory. Order matters: the jobs
+                                // must abort while their workers are alive
                                 // — an abort sent after disposal would
                                 // spawn a fresh worker.
                                 cancelSummarySync();
+                                cancelEmbedSync();
                                 closeDraftJob();
                                 unloadModel();
+                                unloadEmbedder();
+                            } else {
+                                startEmbedSync();
+                                void ensureEmbedSynced();
                             }
                         }}
                     />
@@ -340,6 +393,8 @@ export const AiSettingsModal = () => {
                     </p>
                 </div>
 
+                <SemanticSearchStatus enabled={enabled} />
+
                 <div className="flex items-center justify-between gap-4">
                     <span className="text-muted-foreground">Engine</span>
                     {capabilities === undefined ? (
@@ -363,8 +418,10 @@ export const AiSettingsModal = () => {
                         onChange={(event) => {
                             setModelId(event.target.value);
                             setSelectedModelId(event.target.value);
-                            // A model switch changes summary fingerprints; a
-                            // no-op when the auto toggle is off.
+                            // A model switch keeps stored summaries (their
+                            // fingerprint has no model). The pass only picks
+                            // up files that have no summary yet; a no-op when
+                            // the auto toggle is off.
                             void ensureSummarySynced();
                         }}
                     >

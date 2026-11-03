@@ -125,17 +125,32 @@ export const chunkDoc = (doc: EvidenceDoc): EvidenceChunk[] => {
 const normalizeForMatch = (text: string): string =>
     text.replace(/\s+/g, " ").trim().toLowerCase();
 
+/** Chunk ids in BM25 order for the query (matching chunks only). */
+export const bm25Ranking = (chunks: EvidenceChunk[], query: string): string[] => {
+    const index = new TextIndex(["text", "filename"], { filename: 2 });
+    for (const chunk of chunks) {
+        index.add(chunk.id, { text: chunk.text, filename: chunk.filename });
+    }
+    return index.searchAny(query, chunks.length).map((hit) => hit.id);
+};
+
 /** Pick the evidence excerpts for the prompt, in priority order: chunks that
  *  contain a pinned quote (sentences the objective review verified against
  *  this evidence — proven relevant, so they beat any BM25 guess), then the
- *  best BM25 matches for the control text, until the character budget runs
- *  out. Purely retrieval-driven: document opening chunks get no special
+ *  best matches for the control text, until the character budget runs
+ *  out. `ranked` (chunk ids of docs.flatMap(chunkDoc), best first) is the
+ *  dense order from ai/retrieval.ts rankDraftChunks; without it, the
+ *  order is BM25 for `query`. Purely retrieval-driven: document opening chunks get no special
  *  treatment, because they are mostly purpose/title boilerplate that
  *  crowded real implementation detail out of the budget. */
 export const selectChunks = (
     docs: EvidenceDoc[],
     query: string,
-    { budget = EVIDENCE_CHAR_BUDGET, pinnedQuotes = [] as string[] } = {},
+    {
+        budget = EVIDENCE_CHAR_BUDGET,
+        pinnedQuotes = [] as string[],
+        ranked: rankedIds = undefined as string[] | undefined,
+    } = {},
 ): EvidenceChunk[] => {
     const chunks = docs.flatMap(chunkDoc);
     if (!chunks.length) {
@@ -143,13 +158,8 @@ export const selectChunks = (
     }
     const byId = new Map(chunks.map((chunk) => [chunk.id, chunk]));
 
-    const index = new TextIndex(["text", "filename"], { filename: 2 });
-    for (const chunk of chunks) {
-        index.add(chunk.id, { text: chunk.text, filename: chunk.filename });
-    }
-    const ranked = index
-        .searchAny(query, chunks.length)
-        .map((hit) => byId.get(hit.id)!)
+    const ranked = (rankedIds ?? bm25Ranking(chunks, query))
+        .map((id) => byId.get(id)!)
         .filter(Boolean);
 
     const selected: EvidenceChunk[] = [];

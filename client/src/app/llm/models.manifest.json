@@ -1,5 +1,5 @@
 {
-    "note": "Pinned model-weight manifest. Every file is identified by URL, revision, size, and sha256. Bundled weights are a build-time input: flake.nix fetches these as fixed-output derivations, and scripts/fetch-model-weights.mjs does the same (with sha256 verification) for non-Nix desktop builds. At runtime the app downloads a model only on an explicit user request in the AI settings, from the pinned url here, verified against the same sha256 (model_store.rs). Regenerate an entry with: node scripts/update-model-manifest.mjs --id <id>. Empty sha256 values mean the entry is not yet pinned and is excluded from builds. bundlePlatforms limits which desktop bundles include a model's weights (Node process.platform values, optionally arch-qualified as <platform>-<arch> like darwin-arm64; absent = all platforms) — fetch-model-weights.mjs skips and prunes excluded models (override with MODELS_PLATFORM=all for local dev), the runtime just sees missing weights. format \"gguf\" marks single-file llama.cpp models for the native desktop path (minDevice \"native\"); dtype then names the quantization (for example Q4_K_M) instead of a transformers.js dtype key. An empty bundlePlatforms array keeps a model pinned (selectable in the picker, downloadable in-app, and importable through the verified import flow) while excluding its weights from every installer. Every entry uses this: installers ship no model weights, because GitHub caps release assets at 2 GiB and the Llama weights push every platform's installer toward or past that cap. Users add a model through the verified download or import in the AI settings. The models are the CMMC fine-tunes of Llama 3.2 1B and 3B from models/finetune/pipeline (published with publish_hf.sh).",
+    "note": "Pinned model-weight manifest. Every file is identified by URL, revision, size, and sha256. Bundled weights are a build-time input: flake.nix fetches these as fixed-output derivations, and scripts/fetch-model-weights.mjs does the same (with sha256 verification) for non-Nix desktop builds. At runtime the app downloads a model only on an explicit user request in the AI settings, from the pinned url here, verified against the same sha256 (model_store.rs). Regenerate an entry with: node scripts/update-model-manifest.mjs --id <id>. Empty sha256 values mean the entry is not yet pinned and is excluded from builds. bundlePlatforms limits which desktop bundles include a model's weights (Node process.platform values, optionally arch-qualified as <platform>-<arch> like darwin-arm64; absent = all platforms) — fetch-model-weights.mjs skips and prunes excluded models (override with MODELS_PLATFORM=all for local dev), the runtime just sees missing weights. format \"gguf\" marks single-file llama.cpp models for the native desktop path (minDevice \"native\"); dtype then names the quantization (for example Q4_K_M) instead of a transformers.js dtype key. An empty bundlePlatforms array keeps a model pinned (selectable in the picker, downloadable in-app, and importable through the verified import flow) while excluding its weights from every installer. Every LLM entry uses this: installers ship no LLM weights, because GitHub caps release assets at 2 GiB and the Llama weights push every platform's installer toward or past that cap. Users add a model through the verified download or import in the AI settings. The models are the CMMC fine-tunes of Llama 3.2 1B and 3B from models/finetune/pipeline (published with publish_hf.sh). The embedders array holds the retrieval embedding model (docs/embedding-retrieval-plan.md). It never feeds the LLM picker, it has no bundlePlatforms, and every installer ships it (about 50 MB at q8). Its ONNX files are our own export of the IBM source weights (models/embedder), published with models/embedder/publish_hf.sh. Regenerate it with: node scripts/update-model-manifest.mjs --embedder <id>.",
     "models": [
         {
             "id": "llama-3.2-1b-instruct-cmmc",
@@ -150,6 +150,57 @@
                     "url": "https://huggingface.co/nealfennimore/Llama-3.2-3B-Instruct-CMMC-GGUF/resolve/2baab7db9edf3c861d58ec154f1f67b3e7d66b6a/Llama-3.2-3B-Instruct-CMMC-Q4_K_M.gguf",
                     "size": 2019377216,
                     "sha256": "f7b5267000454eaa4863ecc429cc4ef114570a439490d8b0c6fcf15b87542b6b"
+                }
+            ]
+        }
+    ],
+    "embedders": [
+        {
+            "id": "granite-embedding-small-english-r2",
+            "label": "IBM Granite Embedding Small English R2",
+            "repo": "nealfennimore/granite-embedding-small-english-r2-ONNX",
+            "revision": "3a33c1a6732091af622bada188779791c5d8f279",
+            "dtype": "q8",
+            "upstream": "ibm-granite/granite-embedding-small-english-r2",
+            "upstreamRevision": "2ab6fa8ea2d674564defd37171ae19079b864b33",
+            "pooling": "cls",
+            "dimensions": 384,
+            "maxTokens": 8192,
+            "queryPrefix": "",
+            "passagePrefix": "",
+            "license": "Apache-2.0",
+            "licenseUrl": "https://huggingface.co/ibm-granite/granite-embedding-small-english-r2",
+            "totalBytes": 51698372,
+            "files": [
+                {
+                    "path": "config.json",
+                    "url": "https://huggingface.co/nealfennimore/granite-embedding-small-english-r2-ONNX/resolve/3a33c1a6732091af622bada188779791c5d8f279/config.json",
+                    "size": 1308,
+                    "sha256": "47833108425cf1d89f5d64f1210540e722b10f4602b0ae81238903025d91ef75"
+                },
+                {
+                    "path": "tokenizer.json",
+                    "url": "https://huggingface.co/nealfennimore/granite-embedding-small-english-r2-ONNX/resolve/3a33c1a6732091af622bada188779791c5d8f279/tokenizer.json",
+                    "size": 3583228,
+                    "sha256": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30"
+                },
+                {
+                    "path": "tokenizer_config.json",
+                    "url": "https://huggingface.co/nealfennimore/granite-embedding-small-english-r2-ONNX/resolve/3a33c1a6732091af622bada188779791c5d8f279/tokenizer_config.json",
+                    "size": 20840,
+                    "sha256": "2966a59b9e9cf122279aec1249e22e5bc7ad8430c754e95031b13fd128d4e560"
+                },
+                {
+                    "path": "special_tokens_map.json",
+                    "url": "https://huggingface.co/nealfennimore/granite-embedding-small-english-r2-ONNX/resolve/3a33c1a6732091af622bada188779791c5d8f279/special_tokens_map.json",
+                    "size": 694,
+                    "sha256": "ea97ecdbcc73713039d8d64dbb05e3689495c96657fbd9a18f5bed381be81049"
+                },
+                {
+                    "path": "onnx/model_quantized.onnx",
+                    "url": "https://huggingface.co/nealfennimore/granite-embedding-small-english-r2-ONNX/resolve/3a33c1a6732091af622bada188779791c5d8f279/onnx/model_quantized.onnx",
+                    "size": 48092302,
+                    "sha256": "f7ac9930c2958908b1d57efc1fb4e2fb197c668b5669156a774f6b2736d7bacd"
                 }
             ]
         }
