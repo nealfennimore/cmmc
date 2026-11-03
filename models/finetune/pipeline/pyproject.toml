@@ -1,0 +1,29 @@
+[project]
+name = "cmmc-finetune"
+version = "0.1.0"
+description = "LoRA fine-tune of the cmmc-app models on the CMMC / NIST SP 800-171 dataset"
+requires-python = ">=3.11"
+# Exact versions from modules/finetune/uv.lock, verified on the RTX 4070 Ti.
+dependencies = [
+    "torch==2.14.1",
+    "transformers==5.19.0",
+    "peft==0.21.2",
+    "datasets==5.1.0",
+    "accelerate==1.15.0",
+    "tensorboard==2.21.0",
+    "huggingface-hub==2.2.0",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+# Claude teacher for gen_drafts.py --backend claude. uv.lock pins the version.
+teacher = [
+    "anthropic>=1.0",
+]
+# Extra imports of llama.cpp's convert_hf_to_gguf.py (export_gguf.sh).
+export = [
+    "sentencepiece==0.2.2",
+    "mistral-common==1.12.0",
+]

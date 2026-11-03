@@ -1,0 +1,58 @@
+[
+  {
+    "requirementId": "03.01.01",
+    "chunks": [
+      {
+        "filename": "Access Control Policy v3.2.pdf",
+        "text": "Northwind Fabrication grants access to the CUI enclave only through accounts in the corp.northwind.local Active Directory domain. Each account request is filed as a ServiceNow ticket and approved by the requester's manager and the IT Security Lead before creation."
+      },
+      {
+        "filename": "Asset Inventory 2026-Q3.xlsx",
+        "text": "Device | Owner | Enclave\nNW-LT-0412 | J. Ortiz | CUI\nNW-LT-0419 | A. Chen | CUI\nNW-SRV-DB02 | svc_erp | CUI\nOnly devices enrolled in Microsoft Intune with a compliant status can join the CUI VLAN (VLAN 40)."
+      },
+      {
+        "filename": "Service Accounts Register.docx",
+        "text": "svc_erp runs the Epicor ERP integration. svc_backup runs Veeam backup jobs. Service accounts are reviewed every 90 days by the IT Security Lead."
+      }
+    ]
+  },
+  {
+    "requirementId": "03.05.03",
+    "chunks": [
+      {
+        "filename": "Remote Access Standard.pdf",
+        "text": "All remote access to Northwind systems goes through the Palo Alto GlobalProtect VPN. GlobalProtect requires Duo push or a YubiKey 5 hardware token in addition to the AD password."
+      },
+      {
+        "filename": "Privileged Access Procedure.docx",
+        "text": "Domain administrators sign in to the jump host NW-JMP-01 with a smart card (PIV) and PIN. Local network logons to servers by privileged accounts require Duo MFA through the Duo Authentication for Windows Logon agent, version 4.3."
+      }
+    ]
+  },
+  {
+    "requirementId": "03.03.01",
+    "chunks": [
+      {
+        "filename": "Logging Standard v1.4.pdf",
+        "text": "Windows security event logs, firewall logs from the two Palo Alto PA-440 firewalls, and Microsoft 365 unified audit logs forward to the Splunk Cloud instance. Logs are retained for 13 months, with the most recent 90 days searchable."
+      },
+      {
+        "filename": "Splunk Retention Config.txt",
+        "text": "index=wineventlog frozenTimePeriodInSecs=34186698\nindex=pan_logs frozenTimePeriodInSecs=34186698\nindex=o365 frozenTimePeriodInSecs=34186698"
+      }
+    ]
+  },
+  {
+    "requirementId": "03.08.03",
+    "chunks": [
+      {
+        "filename": "Media Sanitization Procedure.pdf",
+        "text": "Before disposal or reuse, hard drives that stored CUI are wiped with Blancco Drive Eraser using the NIST 800-88 Purge method. Drives that fail the wipe are physically shredded by Shred-It on site."
+      },
+      {
+        "filename": "Disposal Log 2026.xlsx",
+        "text": "Date | Asset | Method | Certificate\n2026-02-11 | NW-LT-0388 | Blancco Purge | BL-22841\n2026-05-03 | NW-SRV-FS01 disk 3 | Shredded | SI-77120"
+      }
+    ]
+  }
+]

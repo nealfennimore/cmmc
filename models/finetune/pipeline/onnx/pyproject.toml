@@ -1,0 +1,18 @@
+[project]
+name = "cmmc-finetune-onnx"
+version = "0.1.0"
+description = "ONNX export and quantization of a merged model for transformers.js"
+requires-python = ">=3.11"
+# A separate environment: the ONNX exporter supports a different transformers
+# range than the training environment. It reads only the merged safetensors
+# directory. Commit uv.lock after the first successful export.
+dependencies = [
+    "optimum-onnx[onnxruntime]",
+    "onnx",
+    "onnxruntime",
+    "onnxconverter-common",
+    "torch",
+]
+
+[tool.uv]
+package = false

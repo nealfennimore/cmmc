@@ -1,0 +1,149 @@
+601 sub-statements x 2 variants: 91 done, 1111 to do
+error 03.01.02.b: bad excerpts: 4
+error 03.01.03.b: bad excerpts: 4
+20/1111 {'ok': 18, 'rejected': 0, 'error': 2}
+error 03.01.18.c: bad excerpts: 3
+error 03.01.20.e: bad excerpts: 4
+40/1111 {'ok': 36, 'rejected': 0, 'error': 4}
+60/1111 {'ok': 56, 'rejected': 0, 'error': 4}
+error 03.02.01.d: bad excerpts: 4
+error 03.03.01.d: bad excerpts: 3
+error 03.03.01.e: bad excerpts: 3
+error 03.03.03.c: bad excerpts: 3
+error 03.03.04.a: bad excerpts: 3
+100/1111 {'ok': 90, 'rejected': 1, 'error': 9}
+error 03.03.08.c: bad excerpts: 1
+error 03.03.08.e: bad excerpts: 1
+error 03.04.02.a: bad excerpts: 3
+160/1111 {'ok': 146, 'rejected': 2, 'error': 12}
+error 03.04.06.b: bad excerpts: 4
+180/1111 {'ok': 163, 'rejected': 4, 'error': 13}
+error 03.04.07.k: bad excerpts: 3
+200/1111 {'ok': 181, 'rejected': 5, 'error': 14}
+error 03.04.08.a: bad excerpts: 3
+error 03.04.08.c: bad excerpts: 4
+220/1111 {'ok': 199, 'rejected': 5, 'error': 16}
+error 03.05.02.b: bad excerpts: 3
+error 03.05.02.c: bad excerpts: 1
+240/1111 {'ok': 217, 'rejected': 5, 'error': 18}
+error 03.05.06.b: bad excerpts: 3
+error 03.05.06.b: bad excerpts: 4
+error 03.05.07.d: bad excerpts: 3
+error 03.05.08.a: bad excerpts: 4
+error 03.05.08.a: bad excerpts: 3
+error 03.05.10.a: bad excerpts: 1
+260/1111 {'ok': 231, 'rejected': 5, 'error': 24}
+280/1111 {'ok': 251, 'rejected': 5, 'error': 24}
+300/1111 {'ok': 271, 'rejected': 5, 'error': 24}
+error 03.07.05.a: bad excerpts: 4
+error 03.08.01.c: bad excerpts: 4
+error 03.08.08.a: bad excerpts: 3
+error 03.09.02.b: bad excerpts: 3
+error 03.09.02.c: bad excerpts: 3
+360/1111 {'ok': 325, 'rejected': 6, 'error': 29}
+380/1111 {'ok': 345, 'rejected': 6, 'error': 29}
+error 03.11.02.a: bad excerpts: 3
+error 03.11.02.a: bad excerpts: 3
+error 03.11.02.b: bad excerpts: 3
+error 03.11.02.c: bad excerpts: 3
+error 03.11.02.e: bad excerpts: 3
+400/1111 {'ok': 360, 'rejected': 6, 'error': 34}
+420/1111 {'ok': 379, 'rejected': 7, 'error': 34}
+error 03.13.01.c: bad excerpts: 3
+440/1111 {'ok': 398, 'rejected': 7, 'error': 35}
+error 03.13.01.h: bad excerpts: 3
+error 03.13.02.b: bad excerpts: 3
+error 03.13.02.e: bad excerpts: 3
+error 03.13.02.f: bad excerpts: 3
+460/1111 {'ok': 413, 'rejected': 8, 'error': 39}
+error 03.13.05.b: bad excerpts: 3
+480/1111 {'ok': 431, 'rejected': 9, 'error': 40}
+error 03.13.09.b: bad excerpts: 3
+error 03.13.09.c: bad excerpts: 3
+500/1111 {'ok': 447, 'rejected': 11, 'error': 42}
+error 03.14.01.a: bad excerpts: 3
+520/1111 {'ok': 466, 'rejected': 11, 'error': 43}
+error 03.14.03.c: bad excerpts: 1
+error 03.14.04.a: bad excerpts: 1
+error 03.14.05.a: bad excerpts: 3
+error 03.14.05.b: bad excerpts: 4
+540/1111 {'ok': 481, 'rejected': 12, 'error': 47}
+error 03.14.01.a: bad excerpts: 3
+error 03.14.02.c: bad excerpts: 4
+560/1111 {'ok': 499, 'rejected': 12, 'error': 49}
+580/1111 {'ok': 519, 'rejected': 12, 'error': 49}
+error 03.11.02.b: bad excerpts: 4
+error 03.14.08: bad excerpts: 4
+error 03.11.02.c: bad excerpts: 4
+600/1111 {'ok': 534, 'rejected': 14, 'error': 52}
+error 03.08.09.a: bad excerpts: 3
+620/1111 {'ok': 553, 'rejected': 14, 'error': 53}
+640/1111 {'ok': 573, 'rejected': 14, 'error': 53}
+error 03.03.02.a: bad excerpts: 4
+error 03.03.02.a: bad excerpts: 4
+error 03.03.02.a.01: bad excerpts: 3
+error 03.03.02.a.02: bad excerpts: 3
+error 03.03.03.b: bad excerpts: 4
+error 03.03.02.b: bad excerpts: 1
+660/1111 {'ok': 587, 'rejected': 14, 'error': 59}
+error 03.03.02.a.05: bad excerpts: 3
+error 03.03.02.a.06: bad excerpts: 3
+error 03.03.02.a.04: bad excerpts: 4
+error 03.03.02.a.04: bad excerpts: 3
+error 03.03.02.a.05: bad excerpts: 4
+error 03.05.12.b: bad excerpts: 4
+680/1111 {'ok': 600, 'rejected': 15, 'error': 65}
+error 03.05.05.d: bad excerpts: 4
+700/1111 {'ok': 619, 'rejected': 15, 'error': 66}
+error 03.07.04.b: bad excerpts: 3
+720/1111 {'ok': 638, 'rejected': 15, 'error': 67}
+error 03.10.07.b: bad excerpts: 1
+740/1111 {'ok': 657, 'rejected': 15, 'error': 68}
+error 03.03.07.a: bad excerpts: 1
+error 03.13.01.a: bad excerpts: 4
+error 03.13.01.b: bad excerpts: 3
+error 03.13.04: bad excerpts: 4
+780/1111 {'ok': 690, 'rejected': 18, 'error': 72}
+error 03.12.02.b.02: bad excerpts: 1
+error 03.07.05.a: bad excerpts: 4
+800/1111 {'ok': 707, 'rejected': 19, 'error': 74}
+error 03.13.09: bad excerpts: 4
+error 03.13.13.a: bad excerpts: 3
+error 03.13.13.a: bad excerpts: 4
+error 03.13.12.b: bad excerpts: 3
+820/1111 {'ok': 722, 'rejected': 20, 'error': 78}
+840/1111 {'ok': 742, 'rejected': 20, 'error': 78}
+860/1111 {'ok': 762, 'rejected': 20, 'error': 78}
+error 03.15.02.a.07: bad excerpts: 3
+880/1111 {'ok': 781, 'rejected': 20, 'error': 79}
+error 03.01.01.b: bad excerpts: 3
+error 03.01.01.c: bad excerpts: 4
+error 03.01.01.f.01: bad excerpts: 4
+error 03.01.01.e: bad excerpts: 4
+900/1111 {'ok': 797, 'rejected': 20, 'error': 83}
+920/1111 {'ok': 817, 'rejected': 20, 'error': 83}
+940/1111 {'ok': 835, 'rejected': 22, 'error': 83}
+error 03.04.08.c: bad excerpts: 3
+error 03.04.08.b: bad excerpts: 3
+error 03.04.08.b: bad excerpts: 4
+error 03.04.04.a: bad excerpts: 4
+960/1111 {'ok': 850, 'rejected': 23, 'error': 87}
+error 03.06.05.d: bad excerpts: 3
+980/1111 {'ok': 869, 'rejected': 23, 'error': 88}
+error 03.01.10.b: bad excerpts: 3
+error 03.01.10.b: bad excerpts: 1
+1000/1111 {'ok': 886, 'rejected': 24, 'error': 90}
+1020/1111 {'ok': 906, 'rejected': 24, 'error': 90}
+1040/1111 {'ok': 926, 'rejected': 24, 'error': 90}
+1060/1111 {'ok': 945, 'rejected': 25, 'error': 90}
+error 03.01.18.a: bad excerpts: 3
+1080/1111 {'ok': 962, 'rejected': 27, 'error': 91}
+error 03.01.20.b: bad excerpts: 3
+1100/1111 {'ok': 981, 'rejected': 27, 'error': 92}
+error 03.09.02.b: bad excerpts: 3
+error 03.09.02.a.03: bad excerpts: 4
+{'ok': 990, 'rejected': 27, 'error': 94}
+usage this run: {'input_tokens': 12036, 'output_tokens': 3909163, 'requests': 3007, 'cost_usd': 102.71066219999969}
+train 911
+valid 42
+test 126
