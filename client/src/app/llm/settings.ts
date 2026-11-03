@@ -3,7 +3,7 @@
 // IndexedDB: these are per-device UI prefs, never exported with compliance
 // data, and needed synchronously before the DB opens.
 
-import { DEFAULT_MODEL_ID } from "./config";
+import { DEFAULT_MODEL_ID, getModel } from "./config";
 
 const ENABLED_KEY = "llm.enabled";
 const MODEL_KEY = "llm.model";
@@ -20,8 +20,14 @@ export const isAiEnabled = (): boolean =>
 export const setAiEnabled = (enabled: boolean): void =>
     storage()?.setItem(ENABLED_KEY, String(enabled));
 
-export const getSelectedModelId = (): string =>
-    storage()?.getItem(MODEL_KEY) ?? DEFAULT_MODEL_ID;
+/** The stored selection, or the default when the stored id is not in the
+ *  manifest (model ids change between releases). Without this check, the
+ *  settings modal shows MODELS[0] while resolveUsableModel falls through
+ *  to a different model, so the two disagree about which weights exist. */
+export const getSelectedModelId = (): string => {
+    const stored = storage()?.getItem(MODEL_KEY);
+    return stored && getModel(stored) ? stored : DEFAULT_MODEL_ID;
+};
 
 export const setSelectedModelId = (id: string): void =>
     storage()?.setItem(MODEL_KEY, id);

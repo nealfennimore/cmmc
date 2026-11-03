@@ -1,11 +1,14 @@
 "use client";
 // Entry point for the evidence summarizer on the requirement detail page.
 // Renders nothing on the free web tier. When weights are missing it opens
-// the AI settings modal instead of starting a draft. The draft itself runs
+// the AI settings modal instead of starting a draft. Weights can arrive
+// while the page is open (download or import in the modal), so the probe
+// runs again on each model change and on each click. The draft itself runs
 // in the module-level draft_job store; DraftHost (root layout) renders the
 // panel or its minimized chip, so this button only starts or restores jobs.
 
 import { ElementWrapper } from "@/api/entities/Framework";
+import { MODEL_CHANGED_EVENT } from "@/app/ai/model";
 import { IDB, TABLE_CHANGED_EVENT } from "@/app/db";
 import { resolveUsableModel } from "@/app/llm/config";
 import { getDeviceCapabilities } from "@/app/llm/capabilities";
@@ -24,6 +27,17 @@ import {
 import { openAiSettings } from "./model_settings";
 
 const getServerDraftJob = () => null;
+
+/** The model this device resolves to, and whether its weights exist. The
+ *  selection falls back to the default model when this device cannot run
+ *  it; only a device with no usable model disables the feature. */
+const probeWeights = async () => {
+    const model = resolveUsableModel(
+        getSelectedModelId(),
+        await getDeviceCapabilities(),
+    );
+    return { model, ready: model !== null && (await weightsAvailable(model)) };
+};
 
 export const SummarizeButton = ({
     requirement,
@@ -74,31 +88,18 @@ export const SummarizeButton = ({
             return;
         }
         let cancelled = false;
-        (async () => {
-            // The selection falls back to the default model when this
-            // device cannot run it; only a device with no usable model
-            // disables the feature.
-            const model = resolveUsableModel(
-                getSelectedModelId(),
-                await getDeviceCapabilities(),
-            );
-            if (!model) {
-                if (!cancelled) {
-                    setSupported(false);
-                    setWeightsReady(false);
-                }
-                return;
-            }
-            // Weights are build-time assets; their presence cannot change
-            // while the page is open, so one probe is enough.
-            const ready = await weightsAvailable(model);
+        const refresh = async () => {
+            const { model, ready } = await probeWeights();
             if (!cancelled) {
-                setSupported(true);
+                setSupported(model !== null);
                 setWeightsReady(ready);
             }
-        })();
+        };
+        refresh();
+        window.addEventListener(MODEL_CHANGED_EVENT, refresh);
         return () => {
             cancelled = true;
+            window.removeEventListener(MODEL_CHANGED_EVENT, refresh);
         };
     }, []);
 
@@ -122,13 +123,18 @@ export const SummarizeButton = ({
             ? "Attach evidence to this requirement first"
             : "Draft a narrative from the attached evidence";
 
-    const onClick = () => {
-        if (!weightsReady) {
-            openAiSettings();
-        } else if (owns) {
+    const onClick = async () => {
+        if (owns) {
             restoreDraftJob();
-        } else {
+            return;
+        }
+        // The last probe can be stale: probe again before the fallback.
+        const ready = weightsReady || (await probeWeights()).ready;
+        setWeightsReady(ready);
+        if (ready) {
             startDraftJob({ requirement, subStatements, focusId });
+        } else {
+            openAiSettings();
         }
     };
 
