@@ -34,7 +34,9 @@ ap.add_argument("--model", required=True, choices=sorted(PRESETS))
 ap.add_argument("--data", type=Path, default=HERE.parent / "rev3" / "out_combined")
 ap.add_argument("--runs", type=Path, default=HERE / "runs")
 ap.add_argument("--epochs", type=float, default=2)
-ap.add_argument("--max-seq-len", type=int, default=1536)  # longest row is about 1.2k tokens
+# Draft rows reach about 1.8k Gemma tokens. Rows over the limit are dropped, not truncated:
+# a truncated row teaches an answer with no end.
+ap.add_argument("--max-seq-len", type=int, default=2048)
 ap.add_argument("--no-system", action="store_true", help="drop the dataset system prompt")
 ap.add_argument("--general", type=Path,
                 help="extra JSONL of general chat rows ({messages: [...]}) to reduce forgetting")
@@ -48,6 +50,9 @@ out.mkdir(parents=True, exist_ok=True)
 torch.manual_seed(args.seed)
 
 tok = AutoTokenizer.from_pretrained(p["base"])
+# Pad on the right. No position_ids are passed, so left padding (the unsloth
+# tokenizer default) would shift the positions of every real token.
+tok.padding_side = "right"
 if tok.pad_token is None:
     # Safe here: labels are built explicitly below, and the collator pads labels with -100.
     tok.pad_token = tok.eos_token
@@ -91,12 +96,15 @@ if args.general:
     random.Random(args.seed).shuffle(train_msgs)
     print(f"mixed in {len(extra)} general rows")
 
-train_ds = Dataset.from_list([render(m) for m in train_msgs])
-valid_ds = Dataset.from_list([render(m) for m in valid_msgs])
-truncated = sum(train_ds["truncated"])
-if truncated:
-    print(f"warning: {truncated} train rows truncated at {args.max_seq_len} tokens")
-train_ds, valid_ds = train_ds.remove_columns(["truncated"]), valid_ds.remove_columns(["truncated"])
+def rendered(msgs):
+    rows = [render(m) for m in msgs]
+    kept = [r for r in rows if not r["truncated"]]
+    if len(kept) < len(rows):
+        print(f"dropped {len(rows) - len(kept)} rows longer than {args.max_seq_len} tokens")
+    return Dataset.from_list(kept).remove_columns(["truncated"])
+
+
+train_ds, valid_ds = rendered(train_msgs), rendered(valid_msgs)
 print(f"train {len(train_ds)}  valid {len(valid_ds)}")
 
 model = AutoModelForCausalLM.from_pretrained(p["base"], dtype=torch.bfloat16, device_map="auto",

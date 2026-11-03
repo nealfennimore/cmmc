@@ -6,9 +6,9 @@ repos that the app pins today:
   q8     onnx/model_quantized.onnx + model_quantized.onnx_data   (Gemma 3 270M)
   q4f16  onnx/model_q4f16.onnx     + model_q4f16.onnx_data       (Llama 3.2 1B / 3B)
 
-q4f16 follows the transformers.js recipe: 4-bit MatMulNBits weights (block
-32, symmetric), then the rest of the graph, including logits and the KV
-cache, in fp16. The app derives use_external_data_format from the count of
+q4f16 follows the transformers.js recipe (onnx_float16.py is its converter):
+4-bit MatMulNBits weights (block 32, symmetric), then float16 for the rest of
+the graph except the default blocked ops and the graph inputs and outputs. The app derives use_external_data_format from the count of
 .onnx_data files in the manifest, so this script always writes exactly one.
 
     uv run --project onnx python quantize_onnx.py --src runs/X/onnx-fp32 --dst runs/X/onnx --dtype q4f16
@@ -45,16 +45,41 @@ if args.dtype == "q8":
                          op_types_to_quantize=["MatMul", "Gather"], use_external_data_format=True)
         model = onnx.load(str(tmp_out))
 else:
-    from onnxconverter_common import float16
+    # The transformers.js recipe (scripts/quantize.py, mode q4f16): 4-bit
+    # MatMulNBits on the fp32 graph, then its own float16 converter with the
+    # default op block list and float32 graph inputs and outputs. Earlier
+    # attempts with onnxconverter-common produced graphs that ONNX Runtime
+    # rejected (mixed float/float16 types, then a broken RMSNorm fusion).
     from onnxruntime.quantization.matmul_nbits_quantizer import MatMulNBitsQuantizer
+
+    import onnx_float16
 
     model = onnx.load(str(src_model))
     q = MatMulNBitsQuantizer(model, block_size=32, is_symmetric=True)
     q.process()
     model = q.model.model
-    model = float16.convert_float_to_float16(model, keep_io_types=False, disable_shape_infer=True)
+    model = onnx_float16.convert_float_to_float16(
+        model, keep_io_types=True, disable_shape_infer=model.ByteSize() >= onnx.checker.MAXIMUM_PROTOBUF,
+        op_block_list=list(onnx_float16.DEFAULT_OP_BLOCK_LIST))
+
+# onnx.save_model appends to an existing external-data file instead of
+# replacing it, so each rerun into the same directory grew the file by one
+# model (1.22, then 2.44, then 3.66 GB). Remove the old output first.
+for old in (out_path, out_path.with_name(f"{out_name}_data")):
+    old.unlink(missing_ok=True)
 
 onnx.save_model(model, str(out_path), save_as_external_data=True, all_tensors_to_one_file=True,
                 location=f"{out_name}_data", size_threshold=1024)
 sizes = {p.name: p.stat().st_size for p in (args.dst / "onnx").iterdir()}
+# A 4-bit or 8-bit file is well under half of the fp32 export. The second
+# q4f16 attempt wrote 2.44 GB for the 1B (fp16 size), so check it.
+fp32_bytes = sum(p.stat().st_size for p in args.src.iterdir() if p.name.startswith("model.onnx"))
+out_bytes = sum(sizes.values())
+print(f"size: {out_bytes / 1e9:.2f} GB, {out_bytes / fp32_bytes:.0%} of the fp32 export")
+if out_bytes > 0.45 * fp32_bytes:
+    raise SystemExit("the quantized model is too large: the weights did not quantize")
+# Fail here, not in the app: ONNX Runtime rejects type mismatches at load time.
+import onnxruntime
+onnxruntime.InferenceSession(str(out_path), providers=["CPUExecutionProvider"])
+print("onnxruntime loads the model")
 print(f"wrote {args.dst}: {sizes}")

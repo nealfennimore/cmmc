@@ -6,9 +6,10 @@
 #
 # Usage: ./publish_hf.sh <hf user> <model id> [--private]
 #
-# Do not publish before evaluate.py shows the tuned model passes the draft
-# regression gate (README.md, "Ship criteria"). The repos must be public for
-# the app download: model_store.rs sends no token.
+# The script refuses an export that is older than runs/<model>/merged, and
+# refuses a public upload unless compare.py passes (README.md, "Ship
+# criteria"). The repos must be public for the app download: model_store.rs
+# sends no token.
 # Log in once with: uv run hf auth login
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -19,8 +20,25 @@ hub="$(uv run python -c "from presets import PRESETS; print(PRESETS['$model']['h
 run="runs/$model"
 [ -f "$run/eval/tuned.json" ] || { echo "missing $run/eval/tuned.json: run evaluate.py first"; exit 1; }
 
-base="$(jq -r .preset.base "$run/run.json")"
-case "$base" in
+# An export older than the merged weights comes from an earlier training run.
+for d in "$run/onnx" "$run/gguf"; do
+    if [ -d "$d" ] && [ "$d" -ot "$run/merged" ]; then
+        echo "$d is older than $run/merged: it holds an earlier model. Export again first."
+        exit 1
+    fi
+done
+# Public repos feed the app's download; only a model that passes the ship criteria goes there.
+if ! uv run python compare.py --model "$model"; then
+    if [ -z "$private" ]; then
+        echo "compare.py says FAIL: refusing a public upload. Add --private to upload for testing only."
+        exit 1
+    fi
+    echo "compare.py says FAIL: uploading as a private repo, for testing only."
+fi
+
+base="$(jq -r .preset.base "$run/run.json")"          # repo the weights came from (may be a mirror)
+upstream="$(jq -r '.preset.upstream // .preset.base' "$run/run.json")"  # original publisher, for license and card
+case "$upstream" in
     meta-llama/*) license="llama3.2"; notice="Built with Llama. Llama 3.2 is licensed under the Llama 3.2 Community License, Copyright (c) Meta Platforms, Inc. All Rights Reserved. A copy of the license ships in this repo as LICENSE." ;;
     google/*) license="gemma"; notice="Gemma is provided under and subject to the Gemma Terms of Use found at https://ai.google.dev/gemma/terms" ;;
 esac
@@ -29,12 +47,12 @@ card() {
     cat <<CARD
 ---
 license: $license
-base_model: $base
+base_model: $upstream
 tags: [cmmc, nist-800-171, lora]
 ---
 # $hub
 
-A LoRA fine-tune of [$base](https://huggingface.co/$base), merged into the base
+A LoRA fine-tune of [$upstream](https://huggingface.co/$upstream), merged into the base
 weights, for the local AI features of [cmmc-app](https://github.com/nealfennimore/cmmc).
 The training data comes from NIST SP 800-171 Rev. 2 and Rev. 3, SP 800-171A, and
 the CMMC Assessment Guide Level 2. A script assembled every answer from the source documents.
@@ -52,9 +70,10 @@ CARD
 up() { # up <repo> <dir>
     uv run hf repos create "$user/$1" --type model $private --exist-ok >/dev/null
     card > "$2/README.md"
-    case "$base" in
+    case "$upstream" in
         # Llama 3.2 license 1.b.i: redistribute with a copy of the license and the use policy.
-        meta-llama/*) uv run hf download "$base" LICENSE.txt USE_POLICY.md --local-dir "$2" >/dev/null
+        # From the Meta repo: mirrors such as unsloth/ do not carry these files.
+        meta-llama/*) uv run hf download "$upstream" LICENSE.txt USE_POLICY.md --local-dir "$2" >/dev/null
                       mv "$2/LICENSE.txt" "$2/LICENSE" ;;
         # Gemma Terms 3.1: pass on the use restrictions and the notice.
         google/*) printf '%s\n' "$notice" > "$2/NOTICE" ;;

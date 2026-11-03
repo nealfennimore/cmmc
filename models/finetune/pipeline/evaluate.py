@@ -38,6 +38,8 @@ ap.add_argument("--suites", default="mcq,recall,draft")
 ap.add_argument("--recall-n", type=int, default=400)
 ap.add_argument("--batch", type=int, default=16)
 ap.add_argument("--draft-data", default=str(HERE / "data" / "draft"))
+ap.add_argument("--rep-penalty", type=float, default=1.1, help="1.1 matches the app (worker.ts)")
+ap.add_argument("--tag", default="", help="suffix for the report file: eval/<which><tag>.json")
 ap.add_argument("--draft-n", type=int, default=150, help="held-out draft rows to score")
 args = ap.parse_args()
 
@@ -144,7 +146,7 @@ def suite_draft():
     cases = draft_cases()
     # Same settings as the app: DRAFT_MAX_NEW_TOKENS = 300, repetition_penalty 1.1 (worker.ts).
     preds = generate([app_prompt.build_messages(c["case"], c["chunks"]) for c in cases], 300,
-                     repetition_penalty=1.1)
+                     repetition_penalty=args.rep_penalty)
     results = []
     for c, pred in zip(cases, preds):
         r = checks.check(pred, c["chunks"])
@@ -169,7 +171,8 @@ for s in args.suites.split(","):
     report[s] = {"mcq": suite_mcq, "recall": suite_recall, "draft": suite_draft}[s]()
     print(s, json.dumps({k: v for k, v in report[s].items() if k not in ("samples", "cases", "per_task")}))
 
-dst = run / "eval" / f"{args.which}.json"
+report["rep_penalty"] = args.rep_penalty
+dst = run / "eval" / f"{args.which}{args.tag}.json"
 dst.parent.mkdir(parents=True, exist_ok=True)
 dst.write_text(json.dumps(report, indent=2, ensure_ascii=False))
 print(f"wrote {dst}")

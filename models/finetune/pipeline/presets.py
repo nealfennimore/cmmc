@@ -5,7 +5,12 @@ client/src/app/llm/models.manifest.json). Batch sizes fit a 12 GB card
 
 Effective batch size is batch * grad_accum = 16 for every model, so the
 learning-rate and step counts compare across models.
+
+LLAMA_MIRROR=unsloth swaps meta-llama/<repo> for unsloth/<repo>, an ungated
+copy with the same weight files, while Meta access is pending. "upstream"
+keeps the Meta name for the license notice and the model card.
 """
+import os
 
 PRESETS = {
     "gemma-3-270m-it": {
@@ -32,13 +37,15 @@ PRESETS = {
         "base": "meta-llama/Llama-3.2-1B-Instruct",
         # Llama 3.2 Community License 1.b.i: a derivative name must begin with "Llama".
         "hub_name": "Llama-3.2-1B-Instruct-CMMC",
-        # 128k vocabulary: about 1.3 MB of logits memory per token. Batch 8
-        # would need about 12 GB on the longest rows. Batch 2 needs about 3 GB.
-        "batch": 2,
-        "grad_accum": 8,
+        # 128k vocabulary: about 1.3 MB of logits memory per token. Draft rows
+        # reach about 1.4k tokens. Batch 2 without checkpointing ran out of memory
+        # on the 4070 Ti (10.3 GB allocated at step 0): logits plus the
+        # activations of all 16 layers. Batch 1 with checkpointing fits.
+        "batch": 1,
+        "grad_accum": 16,
         "lr": 2e-4,
         "lora_r": 32,
-        "grad_ckpt": False,
+        "grad_ckpt": True,
         "attn": "sdpa",
         "onnx_dtype": "q4f16",
         "gguf_quant": "Q4_K_M",
@@ -59,3 +66,9 @@ PRESETS = {
         "gguf_quant": "Q4_K_M",
     },
 }
+
+
+for _p in PRESETS.values():
+    _p["upstream"] = _p["base"]
+    if os.environ.get("LLAMA_MIRROR") and _p["base"].startswith("meta-llama/"):
+        _p["base"] = _p["base"].replace("meta-llama/", os.environ["LLAMA_MIRROR"].strip("/") + "/", 1)

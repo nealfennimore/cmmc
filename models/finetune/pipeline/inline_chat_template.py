@@ -11,10 +11,17 @@ Without this step, apply_chat_template() fails in the app.
     python inline_chat_template.py runs/<model>/merged runs/<model>/onnx
 """
 import json
+import shutil
 import sys
 from pathlib import Path
 
 merged, dst = Path(sys.argv[1]), Path(sys.argv[2])
+# The optimum export does not always write the tokenizer (it skipped it for
+# Llama 3.2 1B). The merged directory always has it, so copy what is missing.
+for name in ("tokenizer.json", "tokenizer_config.json", "special_tokens_map.json"):
+    if (merged / name).exists() and not (dst / name).exists():
+        shutil.copy2(merged / name, dst / name)
+        print(f"copied {name} from {merged}")
 cfg_path = dst / "tokenizer_config.json"
 cfg = json.loads(cfg_path.read_text())
 

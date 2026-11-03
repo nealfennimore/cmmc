@@ -15,6 +15,10 @@ FORMAT_RE = re.compile(r"^\s*(#|[-*•]\s|\d+[.)]\s)|\*\*", re.M)
 COMMON = {"The", "Its", "It", "This", "These", "Each", "Every", "All", "When", "After", "Before", "Both", "For", "In",
           "On", "At", "Only", "Staff", "Users", "New", "Any", "If", "Once", "During", "Within", "As", "And", "A", "An",
           "No", "To", "They", "Their", "Access", "Accounts", "Changes", "Logs", "Separate", "Requests", "Employees", "Personnel"}
+# Generic IT terms: naming one is not an invented fact about the organization.
+COMMON |= {"IT", "SSO", "MFA", "VPN", "VPNs", "IPS", "IDS", "IP", "IPs", "MAC", "ID", "IDs", "IdP", "IAM", "CUI", "OS",
+           "USB", "PIN", "PIV", "API", "DNS", "TLS", "SSH", "RDP", "LAN", "Wi", "Fi", "Windows", "macOS", "Linux", "HQ",
+           "PC", "PCs", "SaaS", "EDR", "SIEM", "MDM", "GPO", "HR", "CEO", "CFO", "CTO", "CISO", "ISSO"}
 
 
 def details(text):

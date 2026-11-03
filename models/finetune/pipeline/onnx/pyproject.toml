@@ -11,7 +11,15 @@ dependencies = [
     "onnx",
     "onnxruntime",
     "onnxconverter-common",
+    # onnxruntime.quantization.matmul_nbits_quantizer (q4f16) imports it, but
+    # onnxruntime does not declare it as a dependency.
+    "onnx-ir",
+    # onnx_float16.py (the transformers.js converter) imports its graph surgeon.
+    "onnxslim",
     "torch",
+    # transformers.js pins 2.2.6. onnx_float16.py calls np.fromstring and
+    # ndarray.tostring, which NumPy 2.3 removed.
+    "numpy==2.2.6",
 ]
 
 [tool.uv]
