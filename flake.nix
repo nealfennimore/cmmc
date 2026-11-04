@@ -312,7 +312,10 @@
             # not store symlinks, so the tree stays writable.
             # The hook may have entered src-tauri/ by preBuild time, so find
             # the frontend root (where public/ lives) relative to either cwd.
-            preBuild = lib.optionalString (linuxBundledModels != [ ]) ''
+            # The condition counts the embedder too: every LLM entry has an
+            # empty bundlePlatforms, so linuxBundledModels alone is empty.
+            preBuild = lib.optionalString
+              ((linuxBundledModels ++ pinnedEmbedders) != [ ]) ''
               frontend=.
               if [ ! -d "$frontend/public" ] && [ -d ../public ]; then
                 frontend=..
