@@ -23,12 +23,23 @@ jobs:
 
       - name: Install Determinate Nix
         uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+        with:
+          # cache.nixos.org sometimes drops many parallel connections at once.
+          # Fewer connections and more attempts make that failure less likely.
+          extra-conf: |
+            download-attempts = 10
+            http-connections = 16
 
       - name: Cache Nix store
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
         with:
           primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock', 'flake.nix') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
+
+      # Substitute the dev shell first, with retries. Nix does not retry a
+      # failed resumed download (HTTP 416), so one CDN fault fails the job.
+      - name: Fetch Nix shell (retry transient cache errors)
+        run: scripts/ci-retry.sh nix develop .#ci -c true
 
       - name: Create .env file
         working-directory: ./client
@@ -111,6 +122,12 @@ jobs:
 
       - name: Install Determinate Nix
         uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+        with:
+          # cache.nixos.org sometimes drops many parallel connections at once.
+          # Fewer connections and more attempts make that failure less likely.
+          extra-conf: |
+            download-attempts = 10
+            http-connections = 16
 
       - name: Cache Nix store
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
@@ -134,6 +151,11 @@ jobs:
           key: cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('client/src-tauri/Cargo.lock') }}
           restore-keys: |
             cargo-${{ runner.os }}-${{ runner.arch }}-
+
+      # Substitute the dev shell first, with retries. Nix does not retry a
+      # failed resumed download (HTTP 416), so one CDN fault fails the job.
+      - name: Fetch Nix shell (retry transient cache errors)
+        run: scripts/ci-retry.sh nix develop .#ci -c true
 
       # The desktop app is offline-first: don't point it at the hosted API.
       - name: Create .env file

@@ -36,6 +36,11 @@ jobs:
 
       - name: Install Determinate Nix
         uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+        with:
+          # Must match deploy.yml (see the comment there).
+          extra-conf: |
+            download-attempts = 10
+            http-connections = 16
 
       - name: Cache Nix store
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
@@ -60,12 +65,17 @@ jobs:
         run: |
           echo NEXT_PUBLIC_FRAMEWORK_VERSION=$(sha1sum public/data/sp_800_171_3_0_0/framework.json | awk '{print $1}') >> .env
 
+      # Substitute the dev shell first, with retries. Nix does not retry a
+      # failed resumed download (HTTP 416), so one CDN fault fails the job.
+      - name: Fetch Nix shell (retry transient cache errors)
+        run: scripts/ci-retry.sh nix develop .#ci -c true
+
       # The weights are fixed-output store paths. Build them here so the
       # saved store cache carries them — the cache key includes the manifest,
       # and the release job restores an exact hit without a Hugging Face
       # download.
       - name: Warm model weights
-        run: nix build .#model-weights --no-link
+        run: scripts/ci-retry.sh nix build .#model-weights --no-link
 
       # npm run build produces the frontend that generate_context! embeds; cargo
       # build (not tauri build) compiles the same deps without the bundling step.
