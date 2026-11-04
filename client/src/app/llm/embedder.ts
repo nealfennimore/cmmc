@@ -411,6 +411,19 @@ export const embedPassages = async (
     return vectors as Float32Array[];
 };
 
+/** Stored vectors of the current embedder: the count of distinct chunk
+ *  texts indexed. Identical chunks (the two chunkings overlap, and copies
+ *  of one file) share one row. Reads keys only, not the vectors. */
+export const countIndexedChunks = async (): Promise<number> => {
+    if (!EMBEDDER) {
+        return 0;
+    }
+    const prefix = `${EMBEDDER.id}:`;
+    return (await IDB.chunkVectors.getAllKeys()).filter((key) =>
+        String(key).startsWith(prefix),
+    ).length;
+};
+
 /** Stop the worker and free its memory. Call after the jobs that use it
  *  are cancelled (AI toggle off, model_settings.tsx). The session failure
  *  flag stays. */

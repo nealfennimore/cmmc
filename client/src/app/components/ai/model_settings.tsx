@@ -42,15 +42,20 @@ import {
 } from "@/app/llm/summary_sync";
 import {
     EmbedderState,
+    countIndexedChunks,
     probeEmbedder,
     subscribeEmbedderState,
     unloadEmbedder,
 } from "@/app/llm/embedder";
 import {
+    EmbedSyncState,
     cancelEmbedSync,
     ensureEmbedSynced,
+    getEmbedSync,
     startEmbedSync,
+    subscribeEmbedSync,
 } from "@/app/llm/embed_sync";
+import { IDB, TABLE_CHANGED_EVENT } from "@/app/db";
 import { confirm } from "../confirm";
 import { InfoModal } from "../modal";
 import { closeDraftJob } from "./draft_job";
@@ -71,6 +76,8 @@ export const AI_SETTINGS_OPEN_EVENT = "ai-settings-open";
  *  (docs/embedding-retrieval-plan.md). Without it, retrieval is BM25 only. */
 const SemanticSearchStatus = ({ enabled }: { enabled: boolean }) => {
     const [state, setState] = useState<EmbedderState | undefined>();
+    const [indexed, setIndexed] = useState<number | undefined>();
+    const [sync, setSync] = useState<EmbedSyncState>(getEmbedSync);
     useEffect(() => {
         let cancelled = false;
         const refresh = () =>
@@ -86,19 +93,69 @@ const SemanticSearchStatus = ({ enabled }: { enabled: boolean }) => {
             unsubscribe();
         };
     }, [enabled]);
+    useEffect(() => {
+        let cancelled = false;
+        let debounce: number | undefined;
+        const count = () =>
+            void countIndexedChunks().then((next) => {
+                if (!cancelled) {
+                    setIndexed(next);
+                }
+            });
+        count();
+        // Every stored vector fires a table event; recount at most twice
+        // a second while the background job writes.
+        const onTableChanged = (event: Event) => {
+            const detail = (event as CustomEvent<{ table?: string }>).detail;
+            if (detail?.table !== IDB.chunkVectors.table) {
+                return;
+            }
+            window.clearTimeout(debounce);
+            debounce = window.setTimeout(count, 500);
+        };
+        window.addEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+        const unsubscribe = subscribeEmbedSync((next) => {
+            setSync(next);
+            if (next.phase === "idle") {
+                count();
+            }
+        });
+        return () => {
+            cancelled = true;
+            window.clearTimeout(debounce);
+            window.removeEventListener(TABLE_CHANGED_EVENT, onTableChanged);
+            unsubscribe();
+        };
+    }, []);
+    const active =
+        state !== undefined &&
+        !["off", "unavailable", "failed"].includes(state);
     return (
-        <div className="flex items-center justify-between gap-4">
-            <span className="text-muted-foreground">Semantic search</span>
-            {state === undefined ? (
-                <Badge variant="neutral">Detecting…</Badge>
-            ) : state === "off" ? (
-                <Badge variant="neutral">Off</Badge>
-            ) : state === "unavailable" ? (
-                <Badge variant="warning">Not available in this build</Badge>
-            ) : state === "failed" ? (
-                <Badge variant="warning">Failed to load</Badge>
-            ) : (
-                <Badge variant="success">On</Badge>
+        <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-4">
+                <span className="text-muted-foreground">Semantic search</span>
+                {state === undefined ? (
+                    <Badge variant="neutral">Detecting…</Badge>
+                ) : state === "off" ? (
+                    <Badge variant="neutral">Off</Badge>
+                ) : state === "unavailable" ? (
+                    <Badge variant="warning">Not available in this build</Badge>
+                ) : state === "failed" ? (
+                    <Badge variant="warning">Failed to load</Badge>
+                ) : (
+                    <Badge variant="success">On</Badge>
+                )}
+            </div>
+            {active && (
+                <p className="text-xs text-muted-foreground">
+                    {indexed === undefined
+                        ? "Counting indexed chunks…"
+                        : `${indexed.toLocaleString()} ${
+                              indexed === 1 ? "chunk" : "chunks"
+                          } indexed`}
+                    {sync.phase === "running" &&
+                        ` — indexing file ${sync.fileDone + 1} of ${sync.fileTotal}…`}
+                </p>
             )}
         </div>
     );

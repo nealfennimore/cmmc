@@ -14,6 +14,7 @@ import { IDB, TABLE_CHANGED_EVENT } from "@/app/db";
 import { chunkText } from "@/app/ai/chunker";
 import { ensureEvidenceTextSynced } from "@/app/search/evidence_text_store";
 import { FREE_TIER } from "@/app/utils/tier";
+import { aiDebugLog } from "@/app/utils/tauri";
 import { embedPassages, embedderAvailable } from "./embedder";
 import { getLlmStatus, subscribeLlmStatus } from "./engine";
 import { chunkDoc } from "./prompt";
@@ -115,9 +116,13 @@ const reconcile = async (): Promise<void> => {
         try {
             // Stored vectors are skipped inside embedPassages, so an
             // up-to-date file costs only the hashing and one read.
+            const started = performance.now();
             if (!(await embedPassages(passages, aborter.signal))) {
                 break; // the embedder failed: BM25 only from here on
             }
+            aiDebugLog(
+                `embed-sync: ${doc.filename || row.id} ${passages.length} chunks in ${Math.round(performance.now() - started)} ms (${fileDone + 1}/${texts.length})`,
+            );
         } catch (error) {
             if (!(error instanceof DOMException && error.name === "AbortError")) {
                 console.error("Evidence embedding failed", error);
