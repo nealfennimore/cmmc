@@ -31,8 +31,10 @@ import {
     getSelectedModelId,
     isAiEnabled,
     isAutoSummarizeEnabled,
+    isDraftSummariesEnabled,
     setAiEnabled,
     setAutoSummarizeEnabled,
+    setDraftSummariesEnabled,
     setSelectedModelId,
 } from "@/app/llm/settings";
 import {
@@ -215,6 +217,7 @@ export const AiSettingsModal = () => {
     const [capabilities, setCapabilities] = useState<DeviceCapabilities>();
     const [enabled, setEnabled] = useState(true);
     const [autoSummarize, setAutoSummarize] = useState(false);
+    const [draftSummaries, setDraftSummaries] = useState(true);
     const [modelId, setModelId] = useState(DEFAULT_MODEL_ID);
     const [weights, setWeights] = useState<WeightState>("checking");
     /** True when the weights came from the app-data store (user import)
@@ -233,6 +236,7 @@ export const AiSettingsModal = () => {
         const onOpen = () => {
             setEnabled(isAiEnabled());
             setAutoSummarize(isAutoSummarizeEnabled());
+            setDraftSummaries(isDraftSummariesEnabled());
             setModelId(getSelectedModelId());
             setOpen(true);
         };
@@ -447,6 +451,29 @@ export const AiSettingsModal = () => {
                         Pre-summarizes evidence files whenever they change, so
                         drafts start almost immediately. Loads the model and
                         uses GPU and battery in the background.
+                    </p>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                    <label className="flex items-center justify-between gap-4">
+                        <span className="text-muted-foreground">
+                            Use document summaries in drafts
+                        </span>
+                        <input
+                            type="checkbox"
+                            checked={draftSummaries}
+                            disabled={!enabled}
+                            onChange={(event) => {
+                                const on = event.target.checked;
+                                setDraftSummaries(on);
+                                setDraftSummariesEnabled(on);
+                            }}
+                        />
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                        Off: drafts skip summarization and use only evidence
+                        excerpts, with room for more of them. Drafts start
+                        right away. Reviews still use stored summaries.
                     </p>
                 </div>
 

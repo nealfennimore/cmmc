@@ -38,7 +38,10 @@ import {
     summarizeQuery,
 } from "@/app/llm/prompt";
 import { ensureDocSummary } from "@/app/llm/summarize";
-import { getSelectedModelId } from "@/app/llm/settings";
+import {
+    getSelectedModelId,
+    isDraftSummariesEnabled,
+} from "@/app/llm/settings";
 import { pauseSummarySync } from "@/app/llm/summary_sync";
 
 export type DraftJobPhase = "preparing" | "generating" | "done" | "error";
@@ -199,9 +202,11 @@ const run = async () => {
         }
 
         // Map-reduce document summaries: cached after the first run, so
-        // this is slow exactly once per file/model/pipeline version.
+        // this is slow exactly once per file/pipeline version. With the
+        // setting off, the draft skips them: no summarization run, and the
+        // excerpts below get the whole evidence budget.
         const overviews: { filename: string; summary: string }[] = [];
-        for (const doc of docs) {
+        for (const doc of isDraftSummariesEnabled() ? docs : []) {
             patch({ statusNote: `Summarizing ${doc.filename}…` });
             const row = await ensureDocSummary(doc, model.id, {
                 signal: aborter.signal,

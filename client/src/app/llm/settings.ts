@@ -8,6 +8,7 @@ import { DEFAULT_MODEL_ID, getModel } from "./config";
 const ENABLED_KEY = "llm.enabled";
 const MODEL_KEY = "llm.model";
 const AUTO_SUMMARIZE_KEY = "llm.autoSummarize";
+const DRAFT_SUMMARIES_KEY = "llm.draftSummaries";
 
 const storage = (): Storage | undefined =>
     typeof window !== "undefined" ? window.localStorage : undefined;
@@ -39,3 +40,14 @@ export const isAutoSummarizeEnabled = (): boolean =>
 
 export const setAutoSummarizeEnabled = (enabled: boolean): void =>
     storage()?.setItem(AUTO_SUMMARIZE_KEY, String(enabled));
+
+/** Document summaries (overviews) in the draft prompt; on by default, the
+ *  behavior before the toggle existed. Off: a draft skips summarization,
+ *  and the excerpts get the whole evidence budget. A comparison switch for
+ *  the question whether drafts still need summaries now that the embedder
+ *  picks the excerpts (docs/embedding-retrieval-plan.md). */
+export const isDraftSummariesEnabled = (): boolean =>
+    storage()?.getItem(DRAFT_SUMMARIES_KEY) !== "false";
+
+export const setDraftSummariesEnabled = (enabled: boolean): void =>
+    storage()?.setItem(DRAFT_SUMMARIES_KEY, String(enabled));
