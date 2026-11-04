@@ -2,6 +2,7 @@
 import { MODEL_CHANGED_EVENT } from "@/app/ai/model";
 import { expectedReviewState } from "@/app/ai/review";
 import { IDB, IDBObjectiveReview, TABLE_CHANGED_EVENT } from "@/app/db";
+import { SUMMARY_CONTEXT_CHANGED_EVENT } from "@/app/llm/settings";
 import { useCallback, useEffect, useState } from "react";
 
 // Tables whose writes can change either the stored reviews or the expected
@@ -11,6 +12,8 @@ const WATCHED_TABLES = new Set<string>([
     IDB.evidence.table,
     IDB.evidenceRequirements.table,
     IDB.evidenceText.table,
+    // A summary that appears or changes enters the fingerprint.
+    IDB.evidenceSummaries.table,
 ]);
 
 export interface ObjectiveReviewsState {
@@ -62,7 +65,9 @@ export const useObjectiveReviews = (
         };
         window.addEventListener(TABLE_CHANGED_EVENT, onTableChanged);
         window.addEventListener(MODEL_CHANGED_EVENT, schedule);
+        window.addEventListener(SUMMARY_CONTEXT_CHANGED_EVENT, schedule);
         return () => {
+            window.removeEventListener(SUMMARY_CONTEXT_CHANGED_EVENT, schedule);
             window.clearTimeout(debounce);
             window.removeEventListener(TABLE_CHANGED_EVENT, onTableChanged);
             window.removeEventListener(MODEL_CHANGED_EVENT, schedule);

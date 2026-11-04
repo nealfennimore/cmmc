@@ -40,7 +40,7 @@ import {
 import { ensureDocSummary } from "@/app/llm/summarize";
 import {
     getSelectedModelId,
-    isDraftSummariesEnabled,
+    isSummaryContextEnabled,
 } from "@/app/llm/settings";
 import { pauseSummarySync } from "@/app/llm/summary_sync";
 
@@ -206,7 +206,7 @@ const run = async () => {
         // setting off, the draft skips them: no summarization run, and the
         // excerpts below get the whole evidence budget.
         const overviews: { filename: string; summary: string }[] = [];
-        for (const doc of isDraftSummariesEnabled() ? docs : []) {
+        for (const doc of isSummaryContextEnabled() ? docs : []) {
             patch({ statusNote: `Summarizing ${doc.filename}…` });
             const row = await ensureDocSummary(doc, model.id, {
                 signal: aborter.signal,

@@ -31,10 +31,10 @@ import {
     getSelectedModelId,
     isAiEnabled,
     isAutoSummarizeEnabled,
-    isDraftSummariesEnabled,
+    isSummaryContextEnabled,
     setAiEnabled,
     setAutoSummarizeEnabled,
-    setDraftSummariesEnabled,
+    setSummaryContextEnabled,
     setSelectedModelId,
 } from "@/app/llm/settings";
 import {
@@ -236,7 +236,7 @@ export const AiSettingsModal = () => {
         const onOpen = () => {
             setEnabled(isAiEnabled());
             setAutoSummarize(isAutoSummarizeEnabled());
-            setDraftSummaries(isDraftSummariesEnabled());
+            setDraftSummaries(isSummaryContextEnabled());
             setModelId(getSelectedModelId());
             setOpen(true);
         };
@@ -457,7 +457,7 @@ export const AiSettingsModal = () => {
                 <div className="flex flex-col gap-1">
                     <label className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">
-                            Use document summaries in drafts
+                            Use document summaries in drafts and reviews
                         </span>
                         <input
                             type="checkbox"
@@ -466,14 +466,15 @@ export const AiSettingsModal = () => {
                             onChange={(event) => {
                                 const on = event.target.checked;
                                 setDraftSummaries(on);
-                                setDraftSummariesEnabled(on);
+                                setSummaryContextEnabled(on);
                             }}
                         />
                     </label>
                     <p className="text-xs text-muted-foreground">
-                        Off: drafts skip summarization and use only evidence
-                        excerpts, with room for more of them. Drafts start
-                        right away. Reviews still use stored summaries.
+                        Off: drafts and reviews use only evidence excerpts,
+                        with room for more of them, and drafts skip
+                        summarization so they start right away. Changing
+                        this marks stored reviews as outdated.
                     </p>
                 </div>
 

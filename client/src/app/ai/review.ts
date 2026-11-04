@@ -10,7 +10,10 @@ import { getDeviceCapabilities } from "@/app/llm/capabilities";
 import { resolveUsableModel } from "@/app/llm/config";
 import { activeEmbedderId } from "@/app/llm/embedder";
 import { EvidenceDoc, gatherEvidence } from "@/app/llm/prompt";
-import { getSelectedModelId } from "@/app/llm/settings";
+import {
+    getSelectedModelId,
+    isSummaryContextEnabled,
+} from "@/app/llm/settings";
 import { DocSummary, freshDocSummaries } from "@/app/llm/summarize";
 import { pauseSummarySync } from "@/app/llm/summary_sync";
 import { ensureEvidenceTextSynced } from "@/app/search/evidence_text_store";
@@ -54,12 +57,16 @@ export const reviewFingerprint = (
         ].join("\n"),
     );
 
-/** The stored document summaries a review would use right now: complete and
- *  fresh only, and never generated here — the draft flow owns creating
+/** The stored document summaries a review would use right now: none when
+ *  the summary-context setting is off; else complete and fresh only, and
+ *  never generated here — the draft flow owns creating
  *  them, so review latency stays predictable. Keyed by the manifest id of
  *  the model this device actually runs (the id the draft flow stamps them
  *  with — both sides resolve through resolveUsableModel). */
 const storedSummaries = async (docs: EvidenceDoc[]): Promise<DocSummary[]> => {
+    if (!isSummaryContextEnabled()) {
+        return [];
+    }
     const model = resolveUsableModel(
         getSelectedModelId(),
         await getDeviceCapabilities(),
